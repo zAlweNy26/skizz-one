@@ -4,3 +4,23 @@
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
 }
+
+:root {
+  --ui-radius: 0.375rem;
+}
+
+::-webkit-scrollbar {
+  @apply size-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-(--ui-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-(--ui-primary) rounded-md;
+}
+
+::selection {
+  @apply text-(--ui-bg) bg-(--ui-primary)/50;
+}

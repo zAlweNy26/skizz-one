@@ -3,6 +3,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   modules: [
+    '@formkit/auto-animate/nuxt',
     '@nuxt/ui',
     '@nuxt/eslint',
     '@nuxt/content',
@@ -10,7 +11,7 @@ export default defineNuxtConfig({
     '@nuxt/scripts',
     '@nuxt/test-utils',
     '@vueuse/nuxt',
-    '@nuxthub/core'
+    '@nuxthub/core',
   ],
 
   ssr: false,
@@ -18,20 +19,20 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   future: {
-    compatibilityVersion: 4
+    compatibilityVersion: 4,
   },
 
   compatibilityDate: '2024-11-27',
 
   nitro: {
     experimental: {
-      websocket: true
-    }
+      websocket: true,
+    },
   },
 
   hub: {
     ai: true,
     workers: true,
-    kv: true
-  }
+    kv: true,
+  },
 })
