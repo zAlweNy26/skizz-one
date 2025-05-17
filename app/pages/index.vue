@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { GameLog, GameState } from '#shared/utils/interfaces'
 import { useDrauu } from '@vueuse/integrations/useDrauu'
 import { pascalCase } from 'scule'
 import { randomUUID } from 'uncrypto'
@@ -9,16 +10,17 @@ const paletteColors = [
   '#000000', '#505050', '#740b07', '#c23800', '#e8a200', '#004619', '#00785d', '#00569e', '#0e0865', '#550069', '#873554', '#cc774d', '#63300d',
 ]
 
-const randomName = pascalCase(uniqueNamesGenerator({
+const nickname = useLocalStorage('nickname', pascalCase(uniqueNamesGenerator({
   dictionaries: [adjectives, colors, animals],
   separator: '-',
   length: 2,
-}))
+})))
 
 const toast = useToast()
 const gameId = useRouteQuery('code', '', { transform: String })
 const sketch = useTemplateRef<SVGSVGElement>('sketch')
-const currentBg = ref('#FFFFFF')
+const currentBg = ref('#FFFFFF'), gameState = ref<GameState | null>(null)
+const logs = ref<GameLog[]>([])
 
 const { undo, redo, clear, canUndo, canRedo, brush } = useDrauu(sketch)
 
@@ -33,40 +35,85 @@ function shareGame() {
   })
 }
 
-const gameRound = ref(1)
-const totalRounds = ref(5)
+const protocol = computed(() => location.protocol.includes('s') ? 's' : '')
 
-const players = reactive([
-  {
-    name: randomName,
-    points: 340,
-  },
-  {
-    name: 'BiologistDrunk',
-    points: 125,
-  },
-  {
-    name: 'SoftWarden',
-    points: 275,
-  },
-])
+const wsUrl = computed(() => `ws${protocol.value}://${location.host}/ws?id=${gameId.value}&name=${nickname.value}`)
 
-const leaderboard = computed(() => players.toSorted((a, b) => b.points - a.points))
+const { status, data: wsData, send, open, close } = useWebSocket(wsUrl, {
+  heartbeat: {
+    interval: 5000,
+    pongTimeout: 5000,
+    message: 'ping',
+    responseMessage: 'pong',
+  },
+  onConnected() {
+    console.warn('WebSocket connected')
+  },
+  onDisconnected(ws, e) {
+    console.warn('WebSocket disconnected:', e)
+    // navigateTo({ path: '/', query: {} }, { redirectCode: 302 })
+  },
+  onError(_ws, event) {
+    console.error('WebSocket error:', event)
+  },
+})
 
-const logs = reactive([
-  {
-    text: 'Try',
-    sender: 'user1',
-  },
-  {
-    text: 'You win',
-    sender: 'system',
-  },
-  {
-    text: 'Test',
-    sender: randomName,
-  },
-])
+function assertLog(data: Record<string, any>): data is GameLog {
+  return 'type' in data && 'message' in data && 'sender' in data
+    && typeof data.type === 'string' && typeof data.message === 'string' && typeof data.sender === 'string'
+}
+
+function readBlobAsJson<T>(blob: Blob) {
+  return new Promise<T>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        if (!reader.result) {
+          reject(new Error('No result from FileReader'))
+          return
+        }
+        if (typeof reader.result !== 'string') {
+          reject(new Error('FileReader result is not a string'))
+          return
+        }
+        const json = JSON.parse(reader.result)
+        resolve(json)
+      }
+      catch (e) {
+        reject(e)
+      }
+    }
+    reader.onerror = reject
+    reader.readAsText(blob)
+  })
+}
+
+watch(wsData, async (data) => {
+  if (!data) return
+  let content: GameState | GameLog
+
+  try {
+    if (data instanceof Blob) content = await readBlobAsJson<GameState | GameLog>(data)
+    else if (data instanceof ArrayBuffer) {
+      const decoder = new TextDecoder('utf-8')
+      content = JSON.parse(decoder.decode(data))
+    }
+    else content = JSON.parse(data)
+  }
+  catch (error) {
+    console.error('Error parsing WebSocket data:', error)
+    return
+  }
+
+  if (assertLog(content)) {
+    logs.value.push(content)
+    return
+  }
+
+  gameState.value = content
+})
+
+const leaderboard = computed(() => gameState.value?.clients.toSorted((a, b) => b.points - a.points) ?? [])
 
 onMounted(() => {
   if (!gameId.value) gameId.value = randomUUID().split('-')[0]!
@@ -106,16 +153,11 @@ defineShortcuts({
     <ThemeSwitch />
     <UCard variant="soft" class="w-full" :ui="{ body: 'flex justify-between items-center gap-2' }">
       <p class="font-bold">
-        Round {{ gameRound }} of {{ totalRounds }}
+        Round {{ gameState?.round || 1 }} of {{ gameState?.totalRounds || 1 }}
       </p>
-      <div class="flex flex-col items-center">
-        <p class="text-sm font-semibold">
-          Game ID: {{ gameId }}
-        </p>
-        <p class="text-xs font-medium">
-          Created by {{ randomName }}
-        </p>
-      </div>
+      <p class="text-sm font-semibold">
+        Game ID: {{ gameId }}
+      </p>
       <UButton variant="soft" size="xl" icon="i-lucide-share-2" @click="shareGame()" />
     </UCard>
     <section class="grid grid-cols-1 lg:grid-cols-[minmax(min-content,1fr)_minmax(min-content,42rem)_minmax(16rem,1fr)] w-full gap-4">
@@ -133,7 +175,7 @@ defineShortcuts({
               {{ player.points }} points
             </p>
           </div>
-          <UBadge v-if="randomName === player.name" class="ms-auto" size="sm" variant="soft" label="You" />
+          <UBadge v-if="nickname === player.name" class="ms-auto" size="sm" variant="soft" label="You" />
         </div>
       </aside>
       <div class="flex flex-col gap-2">
@@ -193,18 +235,16 @@ defineShortcuts({
       <aside class="overflow-hidden flex flex-col gap-2">
         <div class="overflow-y-auto rounded-md grow bg-elevated h-[28rem] flex flex-col gap-1 text-sm shadow-lg">
           <div v-for="(log, index) in logs" :key="index" class="flex items-center gap-2 p-1 odd:bg-accented">
-            <UBadge :color="log.sender === randomName ? 'primary' : 'neutral'" class="font-semibold" :class="{ hidden: log.sender === 'system' }"
-                    :label="log.sender === randomName ? 'You' : log.sender" size="sm" />
-            <span :class="{ 'font-semibold': log.sender === 'system' }">{{ log.text }}</span>
+            <UBadge :color="log.sender === nickname ? 'primary' : 'neutral'" class="font-semibold" :class="{ hidden: log.sender === 'system' }"
+                    :label="log.sender === nickname ? 'You' : log.sender" size="sm" />
+            <span :class="{ 'font-semibold': log.sender === 'system' }">{{ log.message }}</span>
           </div>
         </div>
         <UInput class="w-full mt-auto sticky bottom-0" placeholder="Type your guess here..." @keyup.enter="(e: KeyboardEvent) => {
           const input = e.target as HTMLInputElement
           if (!input.value) return
-          logs.push({
-            text: input.value,
-            sender: randomName,
-          })
+          logs.push({ sender: nickname, type: 'guess', message: input.value })
+          send(JSON.stringify({ sender: nickname, type: 'guess', message: input.value } satisfies GameLog))
           input.value = ''
         }" />
       </aside>
