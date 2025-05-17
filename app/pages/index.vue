@@ -35,19 +35,35 @@ function shareGame() {
   })
 }
 
-const protocol = computed(() => location.protocol.includes('s') ? 's' : '')
-
-const wsUrl = computed(() => `ws${protocol.value}://${location.host}/ws?id=${gameId.value}&name=${nickname.value}`)
-
-const { status, data: wsData, send, open, close } = useWebSocket(wsUrl, {
+const { send, open } = useWebSocket(() => `/ws?id=${gameId.value}&name=${nickname.value}`, {
   heartbeat: {
     interval: 5000,
     pongTimeout: 5000,
     message: 'ping',
     responseMessage: 'pong',
   },
+  immediate: false,
   onConnected() {
     console.warn('WebSocket connected')
+  },
+  async onMessage(_ws, event) {
+    const data = event.data instanceof Blob ? await event.data.text() : event.data as string
+    let content: GameState | GameLog
+
+    try {
+      content = JSON.parse(data)
+    }
+    catch (error) {
+      console.error('Error parsing WebSocket data:', error)
+      return
+    }
+
+    if (assertLog(content)) {
+      logs.value.push(content)
+      return
+    }
+
+    gameState.value = content
   },
   onDisconnected(ws, e) {
     console.warn('WebSocket disconnected:', e)
@@ -63,60 +79,11 @@ function assertLog(data: Record<string, any>): data is GameLog {
     && typeof data.type === 'string' && typeof data.message === 'string' && typeof data.sender === 'string'
 }
 
-function readBlobAsJson<T>(blob: Blob) {
-  return new Promise<T>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        if (!reader.result) {
-          reject(new Error('No result from FileReader'))
-          return
-        }
-        if (typeof reader.result !== 'string') {
-          reject(new Error('FileReader result is not a string'))
-          return
-        }
-        const json = JSON.parse(reader.result)
-        resolve(json)
-      }
-      catch (e) {
-        reject(e)
-      }
-    }
-    reader.onerror = reject
-    reader.readAsText(blob)
-  })
-}
-
-watch(wsData, async (data) => {
-  if (!data) return
-  let content: GameState | GameLog
-
-  try {
-    if (data instanceof Blob) content = await readBlobAsJson<GameState | GameLog>(data)
-    else if (data instanceof ArrayBuffer) {
-      const decoder = new TextDecoder('utf-8')
-      content = JSON.parse(decoder.decode(data))
-    }
-    else content = JSON.parse(data)
-  }
-  catch (error) {
-    console.error('Error parsing WebSocket data:', error)
-    return
-  }
-
-  if (assertLog(content)) {
-    logs.value.push(content)
-    return
-  }
-
-  gameState.value = content
-})
-
 const leaderboard = computed(() => gameState.value?.clients.toSorted((a, b) => b.points - a.points) ?? [])
 
 onMounted(() => {
   if (!gameId.value) gameId.value = randomUUID().split('-')[0]!
+  open()
 })
 
 useHead({
