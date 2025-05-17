@@ -1,5 +1,6 @@
 import type { GameLog, GamePlayer, GameState } from '#shared/utils/interfaces'
 import type { Peer } from 'crossws'
+import { getQuery } from 'ufo'
 
 class Game implements GameState {
   public clients: GamePlayer[] = []
@@ -56,8 +57,7 @@ async function getActiveGames() {
 }
 
 async function getGame(peer: Peer) {
-  const params = new URL(peer.websocket.url!).searchParams
-  const id = params.get('id'), name = params.get('name')
+  const { id, name } = getQuery(peer.websocket.url!) as { id: string, name: string }
   if (!id || !name) return
   const game = await Game.getOrInit(id, peer.id, 3)
   return { game, id, name }
