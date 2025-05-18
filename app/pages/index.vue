@@ -35,7 +35,7 @@ function shareGame() {
   })
 }
 
-const { send, open } = useWebSocket(() => `/ws?id=${gameId.value}&name=${nickname.value}`, {
+const { send, open } = useWebSocket(() => `/ws/game?id=${gameId.value}&name=${nickname.value}`, {
   heartbeat: {
     interval: 5000,
     pongTimeout: 5000,
