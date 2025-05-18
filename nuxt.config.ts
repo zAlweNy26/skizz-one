@@ -6,7 +6,7 @@ export default defineNuxtConfig({
     '@formkit/auto-animate/nuxt',
     '@nuxt/ui',
     '@nuxt/eslint',
-    //'@nuxt/content',
+    '@nuxt/content',
     '@nuxt/image',
     '@nuxt/scripts',
     '@nuxt/test-utils',
