@@ -3,10 +3,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   modules: [
+    'nitro-cloudflare-dev',
     '@formkit/auto-animate/nuxt',
     '@nuxt/ui',
     '@nuxt/eslint',
-    '@nuxt/content',
     '@nuxt/image',
     '@nuxt/scripts',
     '@nuxt/test-utils',
@@ -28,11 +28,31 @@ export default defineNuxtConfig({
     experimental: {
       websocket: true,
     },
+    preset: 'cloudflare_module',
+    cloudflare: {
+      deployConfig: true,
+      nodeCompat: true,
+    },
+    cloudflareDev: {
+      configPath: './data/hub',
+    },
   },
 
   hub: {
-    ai: true,
-    workers: true,
-    kv: true,
+    kv: {
+      driver: 'cloudflare-kv-binding',
+      namespaceId: 'ff91b50cf1de4e1a827fdc2f6f486f07',
+    },
+  },
+
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+        '@vueuse/integrations/useDrauu',
+        'unique-names-generator',
+      ],
+    },
   },
 })

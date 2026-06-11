@@ -1,5 +1,6 @@
-import type { GameLog, GamePlayer, GameState } from '#shared/utils/interfaces'
 import type { Peer } from 'crossws'
+import type { GameLog, GamePlayer, GameState } from '#shared/utils/interfaces'
+import { kv } from '@nuxthub/kv'
 import { getQuery } from 'ufo'
 
 class Game implements GameState {
@@ -17,10 +18,10 @@ class Game implements GameState {
   }
 
   static async getOrInit(id: string, host: string, rounds: number) {
-    const game = await hubKV().get<Record<string, any>>(`game:${id}`)
+    const game = await kv.get<Record<string, any>>(`game:${id}`)
     if (!game) {
       const newGame = new Game(id, rounds, host)
-      await hubKV().set(`game:${id}`, newGame.toJSON(), { ttl: 60 * 60 * 24 })
+      await kv.set(`game:${id}`, newGame.toJSON(), { ttl: 60 * 60 * 24 })
       return newGame
     }
     return Game.fromKV(game)
@@ -43,16 +44,16 @@ class Game implements GameState {
   }
 
   async update(data: Partial<GameState>) {
-    await hubKV().set(`game:${this.id}`, data, { ttl: 60 * 60 * 24 })
+    await kv.set(`game:${this.id}`, data, { ttl: 60 * 60 * 24 })
   }
 
   delete() {
-    return hubKV().del(`game:${this.id}`)
+    return kv.del(`game:${this.id}`)
   }
 }
 
 async function getActiveGames() {
-  const keys = await hubKV().keys('game')
+  const keys = await kv.keys('game')
   return keys.length
 }
 
@@ -71,7 +72,7 @@ export default defineWebSocketHandler({
 
     peer.subscribe(id)
 
-    if (!game.clients.find(client => client.id === peer.id)) {
+    if (!game.clients.some(client => client.id === peer.id)) {
       game.clients.push({ id: peer.id, name, points: 0 })
       const log = {
         sender: 'system',
@@ -115,6 +116,7 @@ export default defineWebSocketHandler({
     if (game.clients.length > 0) {
       if (peer.id === game.host) {
         const newHost = game.clients[0]
+        if (!newHost) return
         game.host = newHost.id
         const log = {
           sender: 'system',

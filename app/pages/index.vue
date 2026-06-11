@@ -114,7 +114,7 @@ defineShortcuts({
 
 <template>
   <main class="flex flex-col items-center justify-center mx-auto gap-4 p-2 max-w-7xl">
-    <h1 class="font-bold text-2xl text-(--ui-primary)">
+    <h1 class="font-bold text-2xl text-primary">
       SkizzOne
     </h1>
     <ThemeSwitch />
@@ -148,7 +148,7 @@ defineShortcuts({
       <div class="flex flex-col gap-2">
         <div class="aspect-video rounded-md shadow-lg" :style="{ backgroundColor: currentBg }">
           <!-- eslint-disable-next-line vue/html-self-closing -->
-          <svg ref="sketch" class="size-full"></svg>
+          <svg ref="sketch" class="size-full cursor-pencil"></svg>
         </div>
         <div class="flex flex-wrap justify-between gap-4">
           <div
@@ -170,29 +170,29 @@ defineShortcuts({
             </template>
           </UPopover>
           <div class="flex flex-wrap gap-2">
-            <UChip inset position="top-left" size="3xl" text="B" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-(--ui-text)' }">
+            <UChip inset position="top-left" size="3xl" text="B" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
               <UButton size="xl" variant="soft" :color="brush.mode === 'draw' ? 'primary' : 'neutral'"
                        class="size-12 grid place-content-center" square icon="i-lucide-paintbrush" @click="brush.mode = 'draw'" />
             </UChip>
-            <UChip inset position="top-left" size="3xl" text="F" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-(--ui-text)' }">
+            <UChip inset position="top-left" size="3xl" text="F" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
               <UButton size="xl" variant="soft" disabled :color="brush.mode === 'rectangle' ? 'primary' : 'neutral'"
                        class="size-12 grid place-content-center" square icon="i-lucide-paint-bucket" @click="brush.mode = 'rectangle'" />
             </UChip>
-            <UChip inset position="top-left" size="3xl" text="E" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-(--ui-text)' }">
+            <UChip inset position="top-left" size="3xl" text="E" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
               <UButton size="xl" variant="soft" :color="brush.mode === 'eraseLine' ? 'primary' : 'neutral'"
                        class="size-12 grid place-content-center" square icon="i-lucide-eraser" @click="brush.mode = 'eraseLine'" />
             </UChip>
           </div>
           <div class="flex flex-wrap gap-2">
-            <UChip inset position="top-left" size="3xl" text="U" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-(--ui-text)' }">
+            <UChip inset position="top-left" size="3xl" text="U" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
               <UButton size="xl" variant="soft" color="neutral" class="size-12 grid place-content-center" square icon="i-lucide-undo-2"
                        :disabled="!canUndo" @click="undo()" />
             </UChip>
-            <UChip inset position="top-left" size="3xl" text="R" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-(--ui-text)' }">
+            <UChip inset position="top-left" size="3xl" text="R" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
               <UButton size="xl" variant="soft" color="neutral" class="size-12 grid place-content-center" square icon="i-lucide-redo-2"
                        :disabled="!canRedo" @click="redo()" />
             </UChip>
-            <UChip inset position="top-left" size="3xl" text="D" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-(--ui-text)' }">
+            <UChip inset position="top-left" size="3xl" text="D" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
               <UButton size="xl" variant="soft" color="error" class="size-12 grid place-content-center" square icon="i-lucide-trash-2"
                        @click="clear()" />
             </UChip>
@@ -200,7 +200,7 @@ defineShortcuts({
         </div>
       </div>
       <aside class="overflow-hidden flex flex-col gap-2">
-        <div class="overflow-y-auto rounded-md grow bg-elevated h-[28rem] flex flex-col gap-1 text-sm shadow-lg">
+        <div class="overflow-y-auto rounded-md grow bg-elevated h-112 flex flex-col gap-1 text-sm shadow-lg">
           <div v-for="(log, index) in logs" :key="index" class="flex items-center gap-2 p-1 odd:bg-accented">
             <UBadge :color="log.sender === nickname ? 'primary' : 'neutral'" class="font-semibold" :class="{ hidden: log.sender === 'system' }"
                     :label="log.sender === nickname ? 'You' : log.sender" size="sm" />
@@ -218,3 +218,9 @@ defineShortcuts({
     </section>
   </main>
 </template>
+
+<style scoped>
+.cursor-pencil {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 64 64'%3E%3Cg transform='rotate(90 32 32)'%3E%3Cpath fill='%23ffce31' d='M7.934 41.132L39.828 9.246l14.918 14.922l-31.895 31.886z'/%3E%3Cpath fill='%23ed4c5c' d='m61.3 4.6l-1.9-1.9C55.8-.9 50-.9 46.3 2.7l-6.5 6.5l15 15l6.5-6.5c3.6-3.6 3.6-9.5 0-13.1'/%3E%3Cpath fill='%2393a2aa' d='m35.782 13.31l4.1-4.102l14.92 14.92l-4.1 4.101z'/%3E%3Cpath fill='%23c7d3d8' d='m37.338 14.865l4.1-4.101l11.739 11.738l-4.102 4.1z'/%3E%3Cpath fill='%23fed0ac' d='m7.9 41.1l-6.5 17l4.5 4.5l17-6.5z'/%3E%3Cpath fill='%23333' d='M.3 61.1c-.9 2.4.3 3.5 2.7 2.6l8.2-3.1l-7.7-7.7z'/%3E%3Cpath fill='%23ffdf85' d='m7.89 41.175l27.86-27.86l4.95 4.95l-27.86 27.86z'/%3E%3Cpath fill='%23ff8736' d='m17.904 51.142l27.86-27.86l4.95 4.95l-27.86 27.86z'/%3E%3C/g%3E%3C/svg%3E"), auto;
+}
+</style>

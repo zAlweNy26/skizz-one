@@ -17,8 +17,16 @@ logs
 .DS_Store
 .fleet
 .idea
+.wrangler
 
 # Local env files
 .env
 .env.*
 !.env.example
+
+# Test coverage
+coverage/
+
+# Playwright
+playwright-report/
+test-results/
