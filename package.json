@@ -7,6 +7,7 @@
     "dev": "nuxi dev",
     "dev:realtime": "wrangler dev --config realtime/wrangler.jsonc",
     "deploy:realtime": "wrangler deploy --config realtime/wrangler.jsonc",
+    "test:realtime": "node realtime/test/sync.e2e.mjs",
     "generate": "nuxi generate",
     "preview": "nuxi preview",
     "postinstall": "nuxi prepare",

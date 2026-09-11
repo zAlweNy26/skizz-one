@@ -94,3 +94,13 @@ variable is the only thing gating who can open a room.
 bun run test        # unit + nuxt
 bun run test:e2e    # playwright
 ```
+
+The game room has its own end-to-end check that drives two real WebSocket
+clients through a round — it asserts the drawing actually reaches the watcher,
+that a non-drawer cannot draw, and that the word never leaks. It needs the
+worker running:
+
+```bash
+bun run dev:realtime --port 8799   # in one terminal
+bun run test:realtime              # in another
+```
