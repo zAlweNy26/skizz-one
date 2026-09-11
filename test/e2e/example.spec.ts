@@ -1,6 +1,7 @@
 import { expect, test } from '@nuxt/test-utils/playwright'
 
-test('example e2e test', async ({ page, goto }) => {
+test('loads the game page', async ({ page, goto }) => {
   await goto('/', { waitUntil: 'hydration' })
-  await expect(page).toHaveTitle(/Nuxt/)
+  await expect(page).toHaveTitle(/SkizzOne/)
+  await expect(page.getByRole('heading', { name: 'SkizzOne' })).toBeVisible()
 })

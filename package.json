@@ -5,6 +5,8 @@
   "scripts": {
     "build": "nuxi build",
     "dev": "nuxi dev",
+    "dev:realtime": "wrangler dev --config realtime/wrangler.jsonc",
+    "deploy:realtime": "wrangler deploy --config realtime/wrangler.jsonc",
     "generate": "nuxi generate",
     "preview": "nuxi preview",
     "postinstall": "nuxi prepare",
@@ -33,6 +35,8 @@
     "@vueuse/router": "^14.4.0",
     "drauu": "https://pkg.pr.new/zAlweNy26/drauu/drauu@main",
     "nuxt": "^4.5.2",
+    "partyserver": "^0.5.10",
+    "partysocket": "^1.3.0",
     "qrcode": "^1.5.4",
     "scule": "^1.3.0",
     "uncrypto": "^0.1.3",
