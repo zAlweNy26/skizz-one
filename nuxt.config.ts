@@ -31,12 +31,23 @@ export default defineNuxtConfig({
     // before our entry sees it, and on Cloudflare its `publish()` is a no-op
     // anyway. Realtime lives in the skizz-realtime Worker instead.
     preset: 'cloudflare_module',
-    // Replaces the preset's generated entry so websocket upgrades under
-    // /parties/ can be forwarded to that Worker over a service binding.
-    entry: fileURLToPath(new URL('./preset/entry.ts', import.meta.url)),
     cloudflare: {
       deployConfig: true,
       nodeCompat: true,
+    },
+  },
+
+  $production: {
+    nitro: {
+      // Replaces the preset's generated entry so websocket upgrades under
+      // /parties/ are forwarded to the skizz-realtime Worker over a service
+      // binding.
+      //
+      // Production only. `nuxt dev` runs its own Node worker from
+      // .nuxt/dev/index.mjs, and this entry is a Cloudflare module handler —
+      // set globally it is compiled into the dev worker too, which then never
+      // initialises and leaves the dev server reporting a missing entry.
+      entry: fileURLToPath(new URL('./preset/entry.ts', import.meta.url)),
     },
   },
 
