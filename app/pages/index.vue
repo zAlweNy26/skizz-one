@@ -22,7 +22,12 @@ const sketch = useTemplateRef<SVGSVGElement>('sketch')
 const currentBg = ref('#FFFFFF'), gameState = ref<GameState | null>(null)
 const logs = ref<GameLog[]>([])
 
-const { undo, redo, clear, canUndo, canRedo, brush } = useDrauu(sketch)
+const { undo, redo, clear, canUndo, canRedo, brush } = useDrauu(sketch, {
+  brush: {
+    color: '#000000',
+    size: 10,
+  },
+})
 
 const { copy } = useClipboard()
 
@@ -152,20 +157,20 @@ defineShortcuts({
         </div>
         <div class="flex flex-wrap justify-between gap-4">
           <div
-            class="size-12 rounded-md bg-linear-45 from-black from-50% to-50% to-white"
+            class="size-12 rounded-md bg-linear-45 from-black from-50% to-50% to-white cursor-pointer"
             @click="currentBg = currentBg === '#FFFFFF' ? '#000000' : '#FFFFFF'" />
           <div class="grid grid-cols-13 size-fit rounded-md overflow-hidden">
             <div
               v-for="(color, index) in paletteColors" :key="index"
-              class="size-6" :style="{ backgroundColor: color }" @click="brush.color = color" />
+              class="size-6 cursor-pointer" :style="{ backgroundColor: color }" @click="brush.color = color" />
           </div>
           <UPopover>
             <UButton variant="soft" size="xl" color="neutral" square class="size-12 grid place-content-center">
-              <div class="rounded-full transition-transform size-4" :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.2})` }" />
+              <div class="rounded-full transition-transform size-4" :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.1})` }" />
             </UButton>
             <template #content>
               <div class="w-48">
-                <USlider v-model="brush.size" size="sm" :min="1" :max="10" />
+                <USlider v-model="brush.size" size="sm" :min="5" :max="15" />
               </div>
             </template>
           </UPopover>
@@ -175,12 +180,13 @@ defineShortcuts({
                        class="size-12 grid place-content-center" square icon="i-lucide-paintbrush" @click="brush.mode = 'draw'" />
             </UChip>
             <UChip inset position="top-left" size="3xl" text="F" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" disabled :color="brush.mode === 'rectangle' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-paint-bucket" @click="brush.mode = 'rectangle'" />
+              <UButton size="xl" variant="soft" :color="brush.mode === 'bucket' ? 'primary' : 'neutral'"
+                       class="size-12 grid place-content-center" square icon="i-lucide-paint-bucket" @click="brush.mode = 'bucket'" />
             </UChip>
             <UChip inset position="top-left" size="3xl" text="E" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
               <UButton size="xl" variant="soft" :color="brush.mode === 'eraseLine' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-eraser" @click="brush.mode = 'eraseLine'" />
+                       class="size-12 grid place-content-center" square icon="i-lucide-eraser"
+                       @click="brush.mode = 'eraseLine'; brush.eraseMode = 'partial'" />
             </UChip>
           </div>
           <div class="flex flex-wrap gap-2">

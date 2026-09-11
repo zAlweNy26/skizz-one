@@ -1,0 +1,11 @@
+{
+  // Cloudflare bindings for this Worker.
+  // `nitro-cloudflare-dev` reads this file to emulate the bindings locally,
+  // and Nitro merges it into `.output/server/wrangler.json` on build.
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "ff91b50cf1de4e1a827fdc2f6f486f07"
+    }
+  ]
+}

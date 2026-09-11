@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     compatibilityVersion: 4,
   },
 
-  compatibilityDate: '2024-11-27',
+  compatibilityDate: '2026-09-11',
 
   nitro: {
     experimental: {
@@ -33,15 +33,11 @@ export default defineNuxtConfig({
       deployConfig: true,
       nodeCompat: true,
     },
-    cloudflareDev: {
-      configPath: './data/hub',
-    },
   },
 
   hub: {
     kv: {
       driver: 'cloudflare-kv-binding',
-      namespaceId: 'ff91b50cf1de4e1a827fdc2f6f486f07',
     },
   },
 
