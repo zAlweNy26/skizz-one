@@ -279,7 +279,6 @@ defineShortcuts({
           <ThemeSwitch />
         </div>
 
-        <!-- Phones: pause, share and theme fold into one 44px menu button. -->
         <UDropdownMenu :items="menuItems" :content="{ align: 'end' }">
           <UButton
             color="neutral" variant="solid" square icon="i-lucide-ellipsis" class="lg:hidden size-11 justify-center"
@@ -331,13 +330,11 @@ defineShortcuts({
           <SketchFrame
             :key="turnKey" :radius="18" :strokeWidth="3"
             class="pop-in flex items-center gap-3 px-4 py-1.5 min-h-12 min-w-0 lg:px-6 lg:py-2 lg:min-h-16">
-            <!-- Wraps between words, never inside one. -->
             <p class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word">
               <!-- Blanks read aloud are just "underscore" over and over. -->
               <span aria-hidden="true">{{ wordDisplay }}</span>
               <span class="sr-only">{{ word ?? $t('header.hint') }}</span>
             </p>
-            <!-- A sticky note stuck to the corner of the word card. -->
             <UTooltip v-if="lengths.length" :text="$t('header.wordLengths', lengths.length)">
               <SketchFrame
                 fill="var(--color-tangerine-200)" stroke="var(--ink-fixed)" :strokeWidth="1.8" :radius="7"
@@ -393,7 +390,6 @@ defineShortcuts({
           </div>
         </SketchFrame>
 
-        <!-- Desktop: everything inline. Phones: one row, with colour and size in a sheet. -->
         <SketchFrame
           v-if="canDraw" :radius="16" :strokeWidth="2.5"
           class="flex flex-wrap items-center justify-between gap-2 p-1.5 lg:gap-4 lg:p-3">

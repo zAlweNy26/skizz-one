@@ -136,7 +136,6 @@ describe('word selection', () => {
   })
 
   it('still yields a word once the list is exhausted', () => {
-    // A long game must not stall for want of an unused word.
     const everything = pickWords('en', 500)
     expect(pickWord('en', everything)).toBeTruthy()
   })

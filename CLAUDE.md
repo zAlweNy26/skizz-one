@@ -101,9 +101,13 @@ Client side of a room (`app/pages/room/[code].vue`):
   - camelCase props and events in Vue templates (`:drawerId`, `@update:modelValue`).
   - Lines up to 120 chars. This is only a warning: max-len can't auto-fix, so wrap long template `class` lists by hand.
   Run `bun run lint:fix` rather than formatting by hand.
-- **Comments:** the codebase documents *why* (platform constraints, billing,
-  failure modes) in JSDoc on constants and functions. Match that; don't narrate
-  what the code does.
+- **Comments:** only write a comment when it says something the code can't:
+  *why* (platform constraints, billing, failure modes, a non-obvious rule).
+  Never add comments that restate what the code, a name or a class list
+  already says, e.g. `// Only the current drawer may touch the canvas.` above
+  `if (playerId !== s.drawerId)`. JSDoc on functions and constants is the
+  default home for the why; a `//` (or `<!-- -->` / `/* */`) next to the line
+  it concerns is fine when that's clearer.
 - **UI:** Nuxt UI v4 components. The visual system ("The Sketchbook Party")
   is specified in `DESIGN.md` and the product context in `PRODUCT.md`; read both
   before UI work.

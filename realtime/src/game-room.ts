@@ -241,7 +241,6 @@ export class GameRoom extends Server<Env> {
     const existing = s.players[playerId]
 
     if (existing) {
-      // Reconnect: keep the score and the turn position.
       existing.connected = true
       existing.name = name
     } else {
@@ -258,7 +257,6 @@ export class GameRoom extends Server<Env> {
 
     s.hostId ??= playerId
 
-    // A drawer who came back inside the grace window resumes their round.
     if (existing && s.drawerId === playerId && s.alarmKind === 'grace') {
       const remaining = s.pausedMs ?? ROUND_MS
       s.pausedMs = null
@@ -272,7 +270,6 @@ export class GameRoom extends Server<Env> {
     this.#send(connection, { t: 'welcome', you: playerId, state: this.#publicState() })
     if (this.#canvas) this.#send(connection, { t: 'canvas', svg: this.#canvas })
 
-    // A returning drawer needs the word back.
     if (s.drawerId === playerId && s.word && s.phase === 'drawing') {
       this.#send(connection, {
         t: 'turn',
@@ -351,7 +348,6 @@ export class GameRoom extends Server<Env> {
 
     const s = this.#state
 
-    // Only the current drawer may touch the canvas.
     if (isDrawingMessage(msg)) {
       if (playerId !== s.drawerId || s.phase !== 'drawing' || s.pause) return
       this.#handleDrawing(connection, msg)
@@ -415,7 +411,6 @@ export class GameRoom extends Server<Env> {
     const text = rawText.slice(0, 120).trim()
     if (!text) return
 
-    // The drawer, and anyone who already got it, are just chatting.
     if (s.phase !== 'drawing' || playerId === s.drawerId || player.guessed) {
       this.#handleChat(playerId, text)
       return
@@ -431,7 +426,6 @@ export class GameRoom extends Server<Env> {
     const answer = normalizeGuess(s.word ?? '')
 
     if (!answer || guess !== answer) {
-      // A wrong guess is ordinary chat and everyone sees it.
       this.#broadcast({ t: 'chat', sender: player.name, text })
 
       if (answer && editDistance(guess, answer, NEAR_MISS_DISTANCE) <= NEAR_MISS_DISTANCE)

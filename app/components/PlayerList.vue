@@ -38,7 +38,6 @@ function fillOf(player: GamePlayer) {
         <UAvatar
           :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
           size="lg" :alt="player.name" class="bg-transparent" />
-        <!-- Perched on the avatar, tilted like it was drawn on in a hurry. -->
         <UTooltip v-if="leaders.has(player.id)" :text="$t('players.leader')">
           <!-- The frame's own root is `relative`, so the wrapper does the positioning. -->
           <span class="absolute -top-4 -start-2 -rotate-20" role="img" :aria-label="$t('players.leader')">

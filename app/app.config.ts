@@ -19,7 +19,7 @@ export default defineAppConfig({
       ],
     },
     // Fields share the buttons' hand-rounded corners; `sketch-field` swaps the
-    // stock focus halo for a marker loop (see main.css).
+    // stock focus halo for a marker loop (see theme.css).
     input: {
       slots: {
         base: 'rounded-sketch sketch-field',
