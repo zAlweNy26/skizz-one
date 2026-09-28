@@ -1,0 +1,14 @@
+Sounds from Freesound (freesound.org), all CC0 1.0
+https://creativecommons.org/publicdomain/zero/1.0/
+
+your-turn.mp3      "marker cap remove" by newagesoup          freesound.org/s/335933
+turn-start.mp3     "Page Turn 01" by LilMati                  freesound.org/s/397548
+guessed-self.mp3   "Balloon Pop / Confetti Cannon" by Breviceps freesound.org/s/458398
+guessed-other.mp3  "Paper Scrawling" by jackyyang09           freesound.org/s/476840
+tick.mp3           "Putting a pencil on paper" by ani_music   freesound.org/s/632474
+turn-end.mp3       "crumple.wav" by j1987                     freesound.org/s/106127
+game-over.mp3      "Party horn.wav" by audiosmedia            freesound.org/s/170583
+join.mp3           "Pen Click" by LexzachGames                freesound.org/s/431492
+leave.mp3          "Pen Click" by LexzachGames, pitched down  freesound.org/s/431492
+
+Trimmed, faded out, converted to mono 96 kbps MP3 and peak-normalised to -3 dBFS.

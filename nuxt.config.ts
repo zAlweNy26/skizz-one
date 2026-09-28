@@ -152,7 +152,7 @@ export default defineNuxtConfig({
       navigateFallback: '/',
       additionalManifestEntries: [{ url: '/', revision: Date.now().toString() }],
       navigateFallbackDenylist: [/^\/parties\//],
-      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2,mp3}'],
       globIgnores: ['og-image.png'],
       runtimeCaching: [
         {

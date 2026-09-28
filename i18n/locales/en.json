@@ -120,6 +120,10 @@
     "light": "Switch to light mode",
     "dark": "Switch to dark mode"
   },
+  "sound": {
+    "mute": "Mute sounds",
+    "unmute": "Turn sounds on"
+  },
   "seo": {
     "title": "SkizzOne – Online drawing and guessing game",
     "description": "Free multiplayer drawing and guessing game. Create a room, share the link and take turns drawing and guessing with friends. No sign-up, no download."

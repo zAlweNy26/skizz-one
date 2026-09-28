@@ -56,6 +56,8 @@ const secondsLeft = computed(() => {
   return Math.max(0, Math.ceil((endsAt.value - now.value.getTime()) / 1000))
 })
 
+const { muted } = useSounds({ onMessage: game.onMessage, you, state, secondsLeft })
+
 const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
 
@@ -140,6 +142,11 @@ const menuItems = computed(() => [
         }]
       : []),
     { label: t('header.share'), icon: 'i-lucide-share-2', onSelect: shareGame },
+    {
+      label: muted.value ? t('sound.unmute') : t('sound.mute'),
+      icon: muted.value ? 'i-lucide-volume-x' : 'i-lucide-volume-2',
+      onSelect: () => { muted.value = !muted.value },
+    },
     {
       label: isDark.value ? t('theme.light') : t('theme.dark'),
       icon: isDark.value ? 'i-lucide-sun' : 'i-lucide-moon',
@@ -258,6 +265,12 @@ defineShortcuts({
               :label="gameId" :aria-label="`${$t('header.gameId', { id: gameId })}. ${$t('header.share')}`"
               @click="shareGame()" />
           </UTooltip>
+          <UButton
+            square variant="ghost" color="neutral" size="lg"
+            class="text-(--on-stage) hover:bg-(--on-stage)/15"
+            :icon="muted ? 'i-lucide-volume-x' : 'i-lucide-volume-2'"
+            :aria-label="muted ? $t('sound.unmute') : $t('sound.mute')" :aria-pressed="muted"
+            @click="muted = !muted" />
           <ThemeSwitch />
         </div>
 
