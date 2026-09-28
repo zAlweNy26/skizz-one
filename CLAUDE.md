@@ -133,12 +133,12 @@ Client side of a room (`app/pages/room/[code].vue`):
     bottom sheet, and the chat filling the rest. From `lg` up it's the
     three-column grid. Keep tap targets ≥44px (`size-11`/`min-h-11`) and check
     changes at 390×844.
-  - iPhone keyboard: Safari overlays the keyboard and shifts the page to reveal
-    a focused input. `ChatPanel.vue` (iOS only, after React Aria's
-    `usePreventScroll`) focuses the guess input with `preventScroll`, locks page
-    scrolling while the keyboard is up, and floats the input bar above it via
-    `visualViewport` (resize events only). Android resizes the layout itself, so
-    none of it runs there.
+  - iPhone keyboard: Safari overlays the keyboard (ignoring
+    `interactive-widget=resizes-content`) and pans the page to reveal a focused
+    input. Don't fight the pan: `useKeyboardFit` (iOS only) pins the room's
+    `<main>` to the `visualViewport` (offset and height, on `resize` and
+    `scroll`) while an input in it is focused, so the room shrinks above the
+    keyboard as it does on Android.
 - **fallow:** entries or class members only reached by frameworks (e.g. new
   `partyserver` lifecycle hooks, `preset/entry.ts`) must be listed in
   `.fallowrc.json`, or they're reported as unused.

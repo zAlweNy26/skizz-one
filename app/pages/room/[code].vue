@@ -16,6 +16,8 @@ const route = useRoute()
 const gameId = computed(() => String(route.params.code ?? ''))
 const sketch = useTemplateRef<SVGSVGElement>('sketch')
 const currentBg = ref('#FFFFFF')
+const room = useTemplateRef<HTMLElement>('room')
+const keyboardFit = useKeyboardFit(room)
 
 const drauu = useDrauu(sketch, {
   brush: {
@@ -250,6 +252,7 @@ defineShortcuts({
     `lg` up it's the three-column desktop layout instead.
   -->
   <main
+    ref="room" :style="keyboardFit"
     class="group/room flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
       overscroll-y-contain lg:gap-5 lg:h-auto lg:min-h-dvh lg:overflow-visible">
     <header class="flex items-center gap-x-3 lg:flex-wrap lg:gap-x-5 lg:gap-y-3">
