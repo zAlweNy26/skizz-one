@@ -335,8 +335,8 @@ defineShortcuts({
     <section
       class="flex flex-col flex-1 min-h-0 w-full gap-2
         lg:grid lg:flex-none lg:gap-5 lg:items-start
-        lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_22rem]
-        2xl:grid-cols-[14rem_minmax(0,1fr)_24rem]">
+        lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_22rem]
+        2xl:grid-cols-[15rem_minmax(0,1fr)_24rem]">
       <PlayerList
         :players="leaderboard" :drawerId="state?.drawerId" :you="you"
         class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1" />
@@ -367,7 +367,6 @@ defineShortcuts({
             class="size-14 shrink-0 grid place-content-center lg:size-18"
             :class="{ 'text-(--ink-fixed)': timerTone !== 'calm' }"
             role="timer" :aria-label="`${secondsLeft}s`">
-            <UIcon v-if="paused" name="i-lucide-pause" class="size-4 mx-auto -mb-1" />
             <span
               :key="timerTone === 'error' ? secondsLeft : 'steady'"
               class="font-display font-extrabold text-xl tabular-nums lg:text-2xl"
