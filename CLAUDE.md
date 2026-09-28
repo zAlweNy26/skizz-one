@@ -23,7 +23,7 @@ Package manager is **bun**.
 
 ```bash
 bun run dev                  # app (:3000) + realtime worker (:8787) in parallel
-bun run lint / lint:fix      # eslint (@antfu/eslint-config)
+bun run lint / lint:fix      # eslint (@antfu/eslint-config + @shadcn/lint Tailwind rules)
 bun run fallow               # dead code / unused deps check (.fallowrc.json)
 bunx nuxi typecheck          # app typecheck (vue-tsc)
 bunx tsc -p realtime         # realtime worker typecheck (separate tsconfig)
@@ -104,8 +104,27 @@ Client side of a room (`app/pages/room/[code].vue`):
 - **Comments:** the codebase documents *why* (platform constraints, billing,
   failure modes) in JSDoc on constants and functions. Match that; don't narrate
   what the code does.
-- **UI:** Nuxt UI v4 components; theme in `app/app.config.ts` (primary
-  `emerald`, neutral `stone`) and `app/assets/css/main.css`.
+- **UI:** Nuxt UI v4 components. The visual system ("The Sketchbook Party")
+  is specified in `DESIGN.md` and the product context in `PRODUCT.md`; read both
+  before UI work.
+  - Colors: `primary` bordeaux, `secondary` tangerine (call to action only), `neutral` mulberry.
+  - Tokens: `--stage`, `--paper`, `--ink`, `--on-stage`, `--ink-fixed` and `--chip`/`--on-chip` (controls on the stage) live in
+    `app/assets/css/theme.css` (with the colour ramps, custom utilities and base
+    styles); component defaults are in `app/app.config.ts`. `main.css` only
+    imports Tailwind, Nuxt UI and `theme.css`.
+  - `@shadcn/lint` enforces `no-unknown-classes` and `no-arbitrary-values`
+    (layout values such as grid columns may stay arbitrary; radius, type and
+    colour must come from the theme). It reads the theme through
+    `components.json` → `app/assets/css/lint.css`, a lint-only copy of the
+    stylesheet stack, because it can't resolve Nuxt UI's `#build/ui.css` alias.
+    Add new design tokens to `theme.css`, never to `lint.css`.
+  - Panels are drawn with `SketchFrame.vue` (roughjs). Text goes on paper, not on the bordeaux stage.
+  - Phones are first-class. Below `lg` the room is one non-scrolling screen
+    (`h-dvh`): top bar with a "⋯" menu, `PlayerStrip` (bottom sheet for the
+    full list), word and timer, canvas, a one-row toolbar with colour/size in a
+    bottom sheet, and the chat filling the rest. From `lg` up it's the
+    three-column grid. Keep tap targets ≥44px (`size-11`/`min-h-11`) and check
+    changes at 390×844.
 - **fallow:** entries or class members only reached by frameworks (e.g. new
   `partyserver` lifecycle hooks, `preset/entry.ts`) must be listed in
   `.fallowrc.json`, or they're reported as unused.

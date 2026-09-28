@@ -5,11 +5,14 @@ const toggleDark = useToggle(isDark)
 
 <template>
   <LazyClientOnly>
-    <UButton square variant="soft" color="neutral" @click="toggleDark()">
-      <UIcon :name="isDark ? 'i-lucide-sun' : 'i-lucide-moon'" class="size-5" />
-    </UButton>
+    <!-- Sits on the stage, so it takes the stage's text colour, not a panel's. -->
+    <UButton
+      square variant="ghost" color="neutral" size="lg"
+      class="text-(--on-stage) hover:bg-(--on-stage)/15"
+      :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
+      :aria-label="isDark ? $t('theme.light') : $t('theme.dark')" @click="toggleDark()" />
     <template #fallback>
-      <div class="size-8" />
+      <div class="size-10" />
     </template>
   </LazyClientOnly>
 </template>

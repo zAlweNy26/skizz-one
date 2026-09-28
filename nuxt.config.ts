@@ -21,6 +21,31 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  app: {
+    head: {
+      meta: [
+        {
+          // `viewport-fit=cover` lets the safe-area utilities see the notch;
+          // `interactive-widget=resizes-content` shrinks the layout (and so
+          // `dvh`) when the on-screen keyboard opens, keeping the canvas in
+          // view above a guesser's chat input on Android.
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content',
+        },
+      ],
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        {
+          // Variable on weight plus the informal and bounce axes that the
+          // `font-display` and `font-bouncy` utilities drive.
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Shantell+Sans:wght,BNCE,INFM@300..800,-100..100,0..100&display=swap',
+        },
+      ],
+    },
+  },
+
   future: {
     compatibilityVersion: 4,
   },

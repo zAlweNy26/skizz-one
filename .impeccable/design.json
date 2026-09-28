@@ -1,0 +1,326 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T14:30:11.615634+00:00",
+  "title": "Design System: SkizzOne",
+  "extensions": {
+    "colorMeta": {
+      "bordeaux": {
+        "role": "primary",
+        "displayName": "Bordeaux",
+        "canonical": "oklch(0.35 0.13 16)",
+        "tonalRamp": [
+          "oklch(0.2 0.06 16)",
+          "oklch(0.24 0.09 16)",
+          "oklch(0.29 0.11 16)",
+          "oklch(0.35 0.13 16)",
+          "oklch(0.46 0.15 16)",
+          "oklch(0.58 0.15 16)",
+          "oklch(0.8 0.08 16)",
+          "oklch(0.97 0.012 16)"
+        ]
+      },
+      "bordeaux-glow": {
+        "role": "primary",
+        "displayName": "Bordeaux Glow",
+        "canonical": "oklch(0.8 0.08 16)",
+        "tonalRamp": [
+          "oklch(0.2 0.06 16)",
+          "oklch(0.24 0.09 16)",
+          "oklch(0.29 0.11 16)",
+          "oklch(0.35 0.13 16)",
+          "oklch(0.46 0.15 16)",
+          "oklch(0.58 0.15 16)",
+          "oklch(0.8 0.08 16)",
+          "oklch(0.97 0.012 16)"
+        ]
+      },
+      "wine-night": {
+        "role": "primary",
+        "displayName": "Wine Night",
+        "canonical": "oklch(0.2 0.06 16)",
+        "tonalRamp": [
+          "oklch(0.2 0.06 16)",
+          "oklch(0.24 0.09 16)",
+          "oklch(0.29 0.11 16)",
+          "oklch(0.35 0.13 16)",
+          "oklch(0.46 0.15 16)",
+          "oklch(0.58 0.15 16)",
+          "oklch(0.8 0.08 16)",
+          "oklch(0.97 0.012 16)"
+        ]
+      },
+      "tangerine-marker": {
+        "role": "secondary",
+        "displayName": "Tangerine Marker",
+        "canonical": "oklch(0.78 0.16 60)",
+        "tonalRamp": [
+          "oklch(0.28 0.08 60)",
+          "oklch(0.37 0.1 60)",
+          "oklch(0.46 0.13 60)",
+          "oklch(0.55 0.16 60)",
+          "oklch(0.72 0.17 60)",
+          "oklch(0.78 0.16 60)",
+          "oklch(0.89 0.09 60)",
+          "oklch(0.97 0.02 60)"
+        ]
+      },
+      "tangerine-note": {
+        "role": "secondary",
+        "displayName": "Tangerine Note",
+        "canonical": "oklch(0.89 0.09 65)",
+        "tonalRamp": [
+          "oklch(0.28 0.08 60)",
+          "oklch(0.37 0.1 60)",
+          "oklch(0.46 0.13 60)",
+          "oklch(0.55 0.16 60)",
+          "oklch(0.72 0.17 60)",
+          "oklch(0.78 0.16 60)",
+          "oklch(0.89 0.09 60)",
+          "oklch(0.97 0.02 60)"
+        ]
+      },
+      "mint-guessed": {
+        "role": "tertiary",
+        "displayName": "Mint Guessed",
+        "canonical": "oklch(0.508 0.118 165.6)",
+        "tonalRamp": [
+          "oklch(0.26 0.05 165.6)",
+          "oklch(0.38 0.09 165.6)",
+          "oklch(0.508 0.118 165.6)",
+          "oklch(0.6 0.14 165.6)",
+          "oklch(0.7 0.15 165.6)",
+          "oklch(0.8 0.13 165.6)",
+          "oklch(0.9 0.08 165.6)",
+          "oklch(0.97 0.03 165.6)"
+        ]
+      },
+      "mulberry-ink": {
+        "role": "neutral",
+        "displayName": "Mulberry Ink",
+        "canonical": "oklch(0.25 0.045 16)",
+        "tonalRamp": [
+          "oklch(0.19 0.04 16)",
+          "oklch(0.25 0.045 16)",
+          "oklch(0.31 0.04 16)",
+          "oklch(0.38 0.035 16)",
+          "oklch(0.47 0.03 16)",
+          "oklch(0.72 0.02 16)",
+          "oklch(0.92 0.012 16)",
+          "oklch(0.99 0.004 16)"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "oklch(0.99 0.004 16)",
+        "tonalRamp": [
+          "oklch(0.19 0.04 16)",
+          "oklch(0.25 0.045 16)",
+          "oklch(0.31 0.04 16)",
+          "oklch(0.38 0.035 16)",
+          "oklch(0.47 0.03 16)",
+          "oklch(0.72 0.02 16)",
+          "oklch(0.92 0.012 16)",
+          "oklch(0.99 0.004 16)"
+        ]
+      },
+      "pencil-grey": {
+        "role": "neutral",
+        "displayName": "Pencil Grey",
+        "canonical": "oklch(0.47 0.03 16)",
+        "tonalRamp": [
+          "oklch(0.19 0.04 16)",
+          "oklch(0.25 0.045 16)",
+          "oklch(0.31 0.04 16)",
+          "oklch(0.38 0.035 16)",
+          "oklch(0.47 0.03 16)",
+          "oklch(0.72 0.02 16)",
+          "oklch(0.92 0.012 16)",
+          "oklch(0.99 0.004 16)"
+        ]
+      },
+      "night-paper": {
+        "role": "neutral",
+        "displayName": "Night Paper",
+        "canonical": "oklch(0.31 0.04 16)",
+        "tonalRamp": [
+          "oklch(0.19 0.04 16)",
+          "oklch(0.25 0.045 16)",
+          "oklch(0.31 0.04 16)",
+          "oklch(0.38 0.035 16)",
+          "oklch(0.47 0.03 16)",
+          "oklch(0.72 0.02 16)",
+          "oklch(0.92 0.012 16)",
+          "oklch(0.99 0.004 16)"
+        ]
+      },
+      "chalk": {
+        "role": "neutral",
+        "displayName": "Chalk",
+        "canonical": "oklch(0.96 0.008 16)",
+        "tonalRamp": [
+          "oklch(0.19 0.04 16)",
+          "oklch(0.25 0.045 16)",
+          "oklch(0.31 0.04 16)",
+          "oklch(0.38 0.035 16)",
+          "oklch(0.47 0.03 16)",
+          "oklch(0.72 0.02 16)",
+          "oklch(0.92 0.012 16)",
+          "oklch(0.99 0.004 16)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The SkizzOne wordmark only, rotated -3deg."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Panel titles such as the lobby's 'Waiting to start'."
+      },
+      "word": {
+        "displayName": "Word",
+        "purpose": "The secret word or its blanks; the loudest text in a room."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Chat, descriptions, player names."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, form labels, points."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Press squash (150ms, scale 0.95) and the last-ten-seconds timer tick (400ms)."
+      },
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Word card pop-in at every new turn (280ms)."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "xs",
+        "value": "30rem"
+      },
+      {
+        "name": "sm",
+        "value": "40rem"
+      },
+      {
+        "name": "lg",
+        "value": "64rem"
+      },
+      {
+        "name": "3xl",
+        "value": "120rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Call to Action",
+      "kind": "button",
+      "refersTo": "button-cta",
+      "description": "Tangerine marker button; one per screen (Create a room, Start game).",
+      "html": "<button class=\"ds-btn-cta\">Create a room</button>",
+      "css": ".ds-btn-cta{font-family:'Shantell Sans',ui-rounded,system-ui,sans-serif;font-weight:600;border:none;cursor:pointer;border-radius:14px 9px 16px 8px / 9px 15px 8px 13px;transition:transform 150ms cubic-bezier(0.25,1,0.5,1),background-color 150ms;background:oklch(0.78 0.16 60);color:oklch(0.25 0.045 16);padding:12px 20px;font-size:1.125rem;box-shadow:inset 0 0 0 2px oklch(0.25 0.05 300 / 0.85);} .ds-btn-cta:hover{background:oklch(0.84 0.13 62);} .ds-btn-cta:active{transform:scale(0.95);} .ds-btn-cta:focus-visible{outline:2px solid oklch(0.35 0.13 16);outline-offset:2px;}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Bordeaux ink button: the selected tool, Join, confirmations.",
+      "html": "<button class=\"ds-btn-primary\">Join</button>",
+      "css": ".ds-btn-primary{font-family:'Shantell Sans',ui-rounded,system-ui,sans-serif;font-weight:600;border:none;cursor:pointer;border-radius:14px 9px 16px 8px / 9px 15px 8px 13px;transition:transform 150ms cubic-bezier(0.25,1,0.5,1),background-color 150ms;background:oklch(0.35 0.13 16);color:oklch(0.99 0.004 16);padding:8px 14px;box-shadow:inset 0 0 0 2px oklch(0.25 0.05 300 / 0.85);} .ds-btn-primary:hover{background:oklch(0.29 0.11 16);} .ds-btn-primary:active{transform:scale(0.95);} .ds-btn-primary:focus-visible{outline:2px solid oklch(0.35 0.13 16);outline-offset:2px;}"
+    },
+    {
+      "name": "Stage Chip",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Paper chip for controls sitting on the bordeaux stage (Pause, room code); a chalk chip in dark mode.",
+      "html": "<button class=\"ds-btn-ink\">Pause 0/2</button>",
+      "css": ".ds-btn-ink{font-family:'Shantell Sans',ui-rounded,system-ui,sans-serif;font-weight:600;border:none;cursor:pointer;border-radius:14px 9px 16px 8px / 9px 15px 8px 13px;transition:transform 150ms cubic-bezier(0.25,1,0.5,1),background-color 150ms;background:oklch(0.99 0.004 16);color:oklch(0.25 0.045 16);box-shadow:inset 0 0 0 2px oklch(0.25 0.045 16 / 0.85);padding:8px 12px;font-size:0.875rem;} .ds-btn-ink:hover{background:oklch(0.94 0.025 16);} .ds-btn-ink:active{transform:scale(0.95);} .ds-btn-ink:focus-visible{outline:2px solid oklch(0.35 0.13 16);outline-offset:2px;}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Paper field with an inked inset ring.",
+      "html": "<input class=\"ds-input\" placeholder=\"Room code or link\">",
+      "css": ".ds-input{font-family:'Shantell Sans',ui-rounded,system-ui,sans-serif;font-size:1rem;background:oklch(0.99 0.004 16);color:oklch(0.25 0.045 16);border:none;border-radius:0.625rem;padding:8px 12px;box-shadow:inset 0 0 0 2px oklch(0.25 0.05 300 / 0.35);} .ds-input::placeholder{color:oklch(0.47 0.03 16);} .ds-input:focus-visible{outline:none;box-shadow:inset 0 0 0 2px oklch(0.35 0.13 16);}"
+    },
+    {
+      "name": "Sketch Panel",
+      "kind": "card",
+      "refersTo": "sketch-panel",
+      "description": "Paper scrap outlined by a hand-drawn ink line (roughjs in the app; approximated here).",
+      "html": "<div class=\"ds-panel\"><h3 class=\"ds-panel-title\">Waiting to start</h3><p>Pick the word language and start when everyone has joined.</p></div>",
+      "css": ".ds-panel{font-family:'Shantell Sans',ui-rounded,system-ui,sans-serif;background:oklch(0.99 0.004 16);color:oklch(0.25 0.045 16);padding:20px 24px;border:3px solid oklch(0.25 0.045 16);border-radius:22px 14px 20px 16px / 16px 22px 14px 20px;} .ds-panel-title{margin:0 0 4px;font-size:1.5rem;font-weight:700;font-variation-settings:'INFM' 90,'BNCE' 60;} .ds-panel p{margin:0;color:oklch(0.47 0.03 16);}"
+    },
+    {
+      "name": "Player Row (drawing)",
+      "kind": "custom",
+      "refersTo": "player-row-drawing",
+      "description": "The current drawer's sketched row: tangerine note fill plus a pencil icon.",
+      "html": "<div class=\"ds-player\"><b class=\"ds-rank\">1</b><span>Dany<br><small>120 points</small></span><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M13 21h8\"/><path d=\"m15 5 4 4\"/><path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\"/></svg></div>",
+      "css": ".ds-player{font-family:'Shantell Sans',ui-rounded,system-ui,sans-serif;display:flex;align-items:center;gap:12px;background:oklch(0.89 0.09 65);color:oklch(0.25 0.045 16);padding:8px 16px 8px 12px;border:2px solid oklch(0.25 0.045 16);border-radius:14px 9px 16px 8px / 9px 15px 8px 13px;} .ds-player span{flex:1;font-weight:600;line-height:1.2;} .ds-player small{font-weight:500;} .ds-rank{font-size:1.25rem;font-weight:800;width:1.75rem;text-align:center;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Sketchbook Party",
+    "overview": "SkizzOne is a friend's sketchbook passed around a party. Every panel is a scrap of paper on a bordeaux tablecloth, outlined by the same shaky marker that draws on the canvas. The chrome is loud, but in a good-natured way, and it always makes room for the drawing. Tangerine is the sticky note that says \"press me\", mulberry ink is the pen, and the bordeaux stage is the party happening around it.",
+    "keyCharacteristics": [
+      "A committed bordeaux stage behind everything. Content sits on paper, never directly on the stage.",
+      "One pen: mulberry ink outlines, drawn by roughjs, so the chrome and the canvas feel like one world.",
+      "One type family, Shantell Sans, turned up to full wobble for display and kept calm for body text.",
+      "Tangerine appears only on the main call to action on each screen.",
+      "Motion only for state: a press squash, a new-turn pop, a last-ten-seconds tick."
+    ],
+    "rules": [
+      {
+        "name": "The Paper Rule",
+        "body": "Text lives on paper. The bordeaux stage carries only the wordmark, the round counter and bold header controls; anything smaller than 18px or lighter than semibold goes on a paper panel.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Marker Rule",
+        "body": "Tangerine marks the single most important action on a screen. If two tangerine buttons are visible at once, one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Hand Rule",
+        "body": "Never add a second typeface for flavour. Emphasis comes from Shantell's weight and its INFM/BNCE axes (font-display, font-bouncy), not from a new family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Drawn-Not-Lifted Rule",
+        "body": "Never add box-shadow for depth. If an element needs to stand out, give it a sketched outline, a tinted fill or a heavier stroke, never a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do put every paragraph, list and input on a paper panel; only the wordmark, round counter and bold controls go on the bordeaux stage.",
+      "Do outline new panels with SketchFrame, with a 2–3.5px stroke and a 14–22px radius.",
+      "Do pair every state colour with an icon or label: pencil for drawing, check for guessed, lock for private, pause for paused.",
+      "Do give every animation a prefers-reduced-motion: no-preference guard; the reduced version is instant.",
+      "Do check text contrast against the ratios above (AA ≥4.5:1) before adding a colour pairing."
+    ],
+    "donts": [
+      "Don't drift back to the SaaS dashboard: neutral grey cards, stone greys, flat component-library defaults with nothing drawn.",
+      "Don't go childish: no crayon scrawl on everything, rainbow text, or mascots that talk down to adults and coworkers.",
+      "Don't build the ad-cluttered, skribbl-era web game: no dense side-by-side widget walls, no low-contrast noise.",
+      "Don't reach for neon gamer RGB: no glows, no aggressive angles, no dark esports chrome.",
+      "Don't use tangerine as text, or place two tangerine buttons on one screen.",
+      "Don't add drop shadows, glassmorphism or gradient text; depth is drawn.",
+      "Don't add a second typeface."
+    ]
+  }
+}

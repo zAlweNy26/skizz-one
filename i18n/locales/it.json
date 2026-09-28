@@ -8,11 +8,15 @@
     "offline": "Offline",
     "gameId": "ID partita: {id}",
     "share": "Condividi il link della partita",
-    "wordLengths": "Lettere della parola | Lettere di ogni parola"
+    "wordLengths": "Lettere della parola | Lettere di ogni parola",
+    "hint": "Parola da indovinare",
+    "roundShort": "{round}/{total}",
+    "menu": "Menu della partita"
   },
   "share": {
     "title": "Link della partita copiato",
-    "description": "Condividi questo link con i tuoi amici per farli entrare!"
+    "description": "Condividi questo link con i tuoi amici per farli entrare!",
+    "text": "Vieni a disegnare e indovinare con me su SkizzOne!"
   },
   "lobby": {
     "title": "In attesa di iniziare",
@@ -22,19 +26,35 @@
     "wordLanguage": "Lingua delle parole"
   },
   "canvas": {
-    "guess": "Indovina cosa viene disegnato!",
-    "waitingForDrawer": "In attesa di chi disegna…"
+    "color": "Colore {color}",
+    "background": "Cambia sfondo della tela",
+    "brushSize": "Dimensione pennello",
+    "tools": {
+      "draw": "Pennello",
+      "bucket": "Riempimento",
+      "eraseLine": "Gomma",
+      "undo": "Annulla",
+      "redo": "Ripeti",
+      "clear": "Pulisci la tela"
+    },
+    "brush": "Colore e dimensione del pennello"
   },
   "chat": {
     "guessPlaceholder": "Scrivi qui la tua risposta...",
     "publicPlaceholder": "Scrivi qualcosa...",
-    "privatePlaceholder": "Lo vedono solo chi disegna e chi ha indovinato",
+    "privatePlaceholder": "Chat segreta per chi sa la parola",
     "pausedPlaceholder": "Partita in pausa — risposte sospese",
-    "private": "Messaggio privato"
+    "private": "Messaggio privato",
+    "title": "Chat"
   },
   "players": {
     "points": "{n} punto | {n} punti",
-    "you": "Tu"
+    "you": "Tu",
+    "title": "Giocatori",
+    "drawing": "Sta disegnando",
+    "guessed": "Ha indovinato la parola",
+    "leader": "In testa",
+    "showAll": "Mostra tutti i giocatori"
   },
   "log": {
     "joined": "{name} è entrato in partita",
@@ -73,7 +93,10 @@
     "resume": "Riprendi",
     "pauseHint": "La partita va in pausa quando votano tutti ({votes}/{needed})",
     "resumeHint": "La partita riprende quando vota la maggioranza ({votes}/{needed})",
-    "overlay": "Partita in pausa",
-    "drawer": "In pausa: potrai continuare a disegnare quando la partita riprende."
+    "overlay": "Partita in pausa"
+  },
+  "theme": {
+    "light": "Passa al tema chiaro",
+    "dark": "Passa al tema scuro"
   }
 }

@@ -91,15 +91,63 @@ function setLanguage(value: Language) {
 }
 
 const { copy } = useClipboard()
+const { share, isSupported: canShare } = useShare()
 
-function shareGame() {
-  copy(window.location.href)
+/**
+ * On a phone, hand the link to the system share sheet so it goes straight to
+ * WhatsApp or Messages; elsewhere, copy it. Dismissing the sheet rejects,
+ * which is not an error worth reporting.
+ */
+async function shareGame() {
+  const url = window.location.href
+  if (canShare.value) {
+    await share({ title: 'SkizzOne', text: t('share.text'), url }).catch(() => {})
+    return
+  }
+  await copy(url)
   toast.add({
     title: t('share.title'),
     description: t('share.description'),
     icon: 'i-lucide-link',
   })
 }
+
+/**
+ * Keep the screen awake while a round runs: a phone that locks mid-turn drops
+ * its socket, and the drawer's turn with it. Released in the lobby and after
+ * the game. VueUse re-acquires it when the page becomes visible again.
+ */
+const wakeLock = useWakeLock()
+watch(phase, (now) => {
+  if (!wakeLock.isSupported.value) return
+  if (now === 'drawing' || now === 'intermission')
+    wakeLock.request('screen').catch(() => {})
+  else
+    wakeLock.release().catch(() => {})
+}, { immediate: true })
+
+const isDark = useDark()
+const toggleDark = useToggle(isDark)
+
+/** On a phone the header's controls fold into one menu. */
+const menuItems = computed(() => [
+  [{ type: 'label' as const, label: t('header.gameId', { id: gameId.value }) }],
+  [
+    ...(canVotePause.value
+      ? [{
+          label: `${paused.value ? t('pause.resume') : t('pause.pause')} ${pauseTally.value.votes}/${pauseTally.value.needed}`,
+          icon: votedPause.value ? 'i-lucide-hand' : paused.value ? 'i-lucide-play' : 'i-lucide-pause',
+          onSelect: togglePause,
+        }]
+      : []),
+    { label: t('header.share'), icon: 'i-lucide-share-2', onSelect: shareGame },
+    {
+      label: isDark.value ? t('theme.light') : t('theme.dark'),
+      icon: isDark.value ? 'i-lucide-sun' : 'i-lucide-moon',
+      onSelect: () => toggleDark(),
+    },
+  ],
+])
 
 /**
  * Local edits still need pushing: drauu emits no event for these. Gated on
@@ -125,19 +173,37 @@ function localClear() {
 }
 
 const modeTools = [
-  { key: 'B', mode: 'draw', icon: 'i-lucide-paintbrush' },
-  { key: 'F', mode: 'bucket', icon: 'i-lucide-paint-bucket' },
-  { key: 'E', mode: 'eraseLine', icon: 'i-lucide-eraser' },
+  { key: 'B', mode: 'draw', icon: 'i-lucide-paintbrush', label: 'canvas.tools.draw' },
+  { key: 'F', mode: 'bucket', icon: 'i-lucide-paint-bucket', label: 'canvas.tools.bucket' },
+  { key: 'E', mode: 'eraseLine', icon: 'i-lucide-eraser', label: 'canvas.tools.eraseLine' },
 ] as const
 
 const actionTools = computed(() => [
-  { key: 'U', icon: 'i-lucide-undo-2', color: 'neutral', disabled: !canUndo.value, run: localUndo },
-  { key: 'R', icon: 'i-lucide-redo-2', color: 'neutral', disabled: !canRedo.value, run: localRedo },
-  { key: 'D', icon: 'i-lucide-trash-2', color: 'error', disabled: false, run: localClear },
+  { key: 'U', icon: 'i-lucide-undo-2', label: 'canvas.tools.undo', color: 'neutral', disabled: !canUndo.value, run: localUndo },
+  { key: 'R', icon: 'i-lucide-redo-2', label: 'canvas.tools.redo', color: 'neutral', disabled: !canRedo.value, run: localRedo },
+  { key: 'D', icon: 'i-lucide-trash-2', label: 'canvas.tools.clear', color: 'error', disabled: false, run: localClear },
 ] as const)
 
-/** Shortcut-key badge on each tool button. */
-const toolChipUi = { base: 'bg-trasparent ring-0 top-1 left-1 text-default' }
+/** The last ten seconds turn the timer red; a pause turns it amber. */
+const timerTone = computed(() => {
+  if (paused.value) return 'warning'
+  if (secondsLeft.value !== null && secondsLeft.value <= 10) return 'error'
+  return 'calm'
+})
+
+const timerFill = computed(() => ({
+  warning: 'color-mix(in oklab, var(--ui-color-warning-300) 70%, var(--paper))',
+  error: 'color-mix(in oklab, var(--ui-color-error-300) 70%, var(--paper))',
+  calm: 'var(--paper)',
+})[timerTone.value])
+
+/** Controls sitting on the stage: paper chips, since dark ink would vanish on bordeaux. */
+const stageChip = 'bg-(color:--chip) text-(color:--on-chip) hover:bg-(color:--chip)/85'
+
+const roundArgs = computed(() => ({ round: state.value?.round || 0, total: state.value?.totalRounds || 3 }))
+
+/** A new turn re-keys the word card, so it pops in fresh. */
+const turnKey = computed(() => `${state.value?.round ?? 0}:${state.value?.drawerId ?? ''}:${phase.value}`)
 
 function selectMode(mode: typeof modeTools[number]['mode']) {
   brush.value.mode = mode
@@ -152,6 +218,8 @@ function submitGuess(text: string) {
 
 useHead({
   title: computed(() => (canDraw.value ? t('title.drawing') : t('title.playing'))),
+  // A pull-to-refresh while drawing would drop the socket mid-turn.
+  htmlAttrs: { class: 'overscroll-y-none' },
 })
 
 defineShortcuts({
@@ -165,131 +233,269 @@ defineShortcuts({
 </script>
 
 <template>
-  <main class="flex flex-col items-center justify-center mx-auto gap-4 p-2 max-w-7xl">
-    <h1 class="font-bold text-2xl text-primary">
-      <NuxtLink to="/">
-        SkizzOne
+  <!--
+    Phones get a single screen that never scrolls in play: top bar, players,
+    word, canvas, then the tools and chat share whatever height is left. From
+    `lg` up it's the three-column desktop layout instead.
+  -->
+  <main
+    class="group/room flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
+      overscroll-y-contain lg:gap-5 lg:h-auto lg:min-h-dvh lg:overflow-visible">
+    <header class="flex items-center gap-x-3 lg:flex-wrap lg:gap-x-5 lg:gap-y-3">
+      <NuxtLink to="/" class="press inline-flex items-center min-h-11 -rotate-3 rounded-sketch">
+        <h1 class="font-display font-extrabold text-2xl lg:text-3xl text-(--on-stage)">
+          SkizzOne
+        </h1>
       </NuxtLink>
-    </h1>
-    <ThemeSwitch />
-    <UCard variant="soft" class="w-full" :ui="{ body: 'flex flex-wrap justify-between items-center gap-2' }">
-      <p class="font-bold">
-        {{ $t('header.round', { round: state?.round || 0, total: state?.totalRounds || 3 }) }}
+      <p class="font-display font-bold text-lg text-(--on-stage)">
+        <span class="lg:hidden">{{ $t('header.roundShort', roundArgs) }}</span>
+        <span class="max-lg:hidden">{{ $t('header.round', roundArgs) }}</span>
       </p>
-      <div class="flex items-center gap-2">
-        <p class="font-mono font-bold text-lg tracking-[0.3em]">
-          {{ wordDisplay }}
-        </p>
-        <UTooltip v-if="lengths.length" :text="$t('header.wordLengths', lengths.length)">
-          <UBadge color="neutral" variant="outline" class="font-mono" :label="lengths.join(' · ')" />
-        </UTooltip>
-      </div>
-      <UBadge
-        v-if="secondsLeft !== null" :color="paused ? 'warning' : secondsLeft <= 10 ? 'error' : 'neutral'"
-        :icon="paused ? 'i-lucide-pause' : undefined" variant="soft" size="lg">
-        {{ secondsLeft }}s
-      </UBadge>
-      <UTooltip
-        v-if="canVotePause"
-        :text="paused ? $t('pause.resumeHint', pauseTally) : $t('pause.pauseHint', pauseTally)">
-        <UButton
-          :icon="paused ? 'i-lucide-play' : 'i-lucide-pause'"
-          :variant="votedPause ? 'solid' : 'soft'" :color="paused ? 'success' : 'warning'"
-          :label="`${paused ? $t('pause.resume') : $t('pause.pause')} ${pauseTally.votes}/${pauseTally.needed}`"
-          @click="togglePause()" />
-      </UTooltip>
-      <!-- Only news when it breaks. `state` stays null until the first welcome,
-           so the moment before the socket opens doesn't flash as offline. -->
-      <UBadge v-if="!connected && state" color="error" variant="soft" icon="i-lucide-wifi-off" :label="$t('header.offline')" />
-      <p class="text-sm font-semibold">
-        {{ $t('header.gameId', { id: gameId }) }}
-      </p>
-      <UButton variant="soft" size="xl" icon="i-lucide-share-2" :aria-label="$t('header.share')" @click="shareGame()" />
-    </UCard>
 
-    <UAlert
-      v-if="phase === 'lobby'"
-      icon="i-lucide-users"
-      :title="$t('lobby.title')"
-      :description="isHost ? $t('lobby.host') : $t('lobby.guest', { language: LANGUAGES[language] })"
-      class="w-full">
-      <template v-if="isHost" #actions>
-        <USelect
-          :modelValue="language" :items="languageItems" icon="i-lucide-languages"
-          class="w-40" :aria-label="$t('lobby.wordLanguage')" @update:modelValue="setLanguage" />
-        <UButton :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
-      </template>
-    </UAlert>
+      <div class="ms-auto flex items-center gap-2">
+        <!-- Only news when it breaks. `state` stays null until the first welcome,
+             so the moment before the socket opens doesn't flash as offline. -->
+        <UBadge
+          v-if="!connected && state" color="error" variant="solid" size="lg" icon="i-lucide-wifi-off"
+          :label="$t('header.offline')" />
 
-    <section class="grid grid-cols-1 lg:grid-cols-[minmax(min-content,1fr)_minmax(min-content,42rem)_minmax(16rem,1fr)] w-full gap-4">
-      <PlayerList :players="leaderboard" :drawerId="state?.drawerId" :you="you" />
-
-      <div class="flex flex-col gap-2">
-        <div class="relative aspect-video rounded-md shadow-lg overflow-hidden" :style="{ backgroundColor: currentBg }">
-          <div
-            v-if="paused"
-            class="absolute inset-0 z-10 grid place-content-center justify-items-center gap-2 bg-default/70 backdrop-blur-sm">
-            <UIcon name="i-lucide-pause" class="size-12 text-warning" />
-            <p class="font-bold text-lg">
-              {{ $t('pause.overlay') }}
-            </p>
-          </div>
-          <!--
-            The viewBox is what keeps everyone in sync: drauu maps pointers
-            through getScreenCTM().inverse(), so a phone and a desktop both
-            produce coordinates in this same fixed 1600x900 space.
-          -->
-          <svg
-            ref="sketch"
-            class="size-full"
-            :class="canDraw ? 'cursor-pencil' : 'pointer-events-none'"
-            :viewBox="`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`"
-            preserveAspectRatio="xMidYMid meet" />
+        <div class="max-lg:hidden flex flex-wrap items-center gap-2">
+          <UTooltip
+            v-if="canVotePause"
+            :text="paused ? $t('pause.resumeHint', pauseTally) : $t('pause.pauseHint', pauseTally)">
+            <UButton
+              :icon="votedPause ? 'i-lucide-hand' : paused ? 'i-lucide-play' : 'i-lucide-pause'"
+              :color="votedPause ? (paused ? 'success' : 'warning') : 'neutral'" variant="solid"
+              :class="{ [stageChip]: !votedPause }"
+              :label="`${paused ? $t('pause.resume') : $t('pause.pause')} ${pauseTally.votes}/${pauseTally.needed}`"
+              @click="togglePause()" />
+          </UTooltip>
+          <UTooltip :text="$t('header.share')">
+            <UButton
+              color="neutral" variant="solid" trailingIcon="i-lucide-share-2" class="font-mono" :class="[stageChip]"
+              :label="gameId" :aria-label="`${$t('header.gameId', { id: gameId })}. ${$t('header.share')}`"
+              @click="shareGame()" />
+          </UTooltip>
+          <ThemeSwitch />
         </div>
 
-        <div v-if="canDraw" class="flex flex-wrap justify-between gap-4">
-          <div
-            class="size-12 rounded-md bg-linear-45 from-black from-50% to-50% to-white cursor-pointer"
-            @click="currentBg = currentBg === '#FFFFFF' ? '#000000' : '#FFFFFF'" />
-          <div class="grid grid-cols-13 size-fit rounded-md overflow-hidden">
+        <!-- Phones: pause, share and theme fold into one 44px menu button. -->
+        <UDropdownMenu :items="menuItems" :content="{ align: 'end' }">
+          <UButton
+            color="neutral" variant="solid" square icon="i-lucide-ellipsis" class="lg:hidden size-11 justify-center"
+            :class="[votedPause ? '' : stageChip]" :aria-label="$t('header.menu')" />
+        </UDropdownMenu>
+      </div>
+    </header>
+
+    <!-- Hidden while typing, so the keyboard doesn't push the canvas off screen. -->
+    <PlayerStrip
+      :players="leaderboard" :drawerId="state?.drawerId" :you="you"
+      class="lg:hidden group-has-[input:focus]/room:hidden" />
+
+    <SketchFrame
+      v-if="phase === 'lobby'" :radius="20" :strokeWidth="3"
+      class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 lg:gap-y-4 lg:px-6 lg:py-5">
+      <SketchFrame
+        shape="circle" fill="var(--color-tangerine-200)"
+        class="max-sm:hidden size-14 grid place-content-center shrink-0 text-(--ink-fixed)">
+        <UIcon name="i-lucide-users" class="size-7" />
+      </SketchFrame>
+      <div class="grow basis-64">
+        <h2 class="font-display font-bold text-xl lg:text-2xl">
+          {{ $t('lobby.title') }}
+        </h2>
+        <p class="text-muted">
+          {{ isHost ? $t('lobby.host') : $t('lobby.guest', { language: LANGUAGES[language] }) }}
+        </p>
+      </div>
+      <div v-if="isHost" class="flex flex-wrap items-center gap-3">
+        <USelect
+          :modelValue="language" :items="languageItems" icon="i-lucide-languages" size="lg"
+          class="w-44 min-h-11" :aria-label="$t('lobby.wordLanguage')" @update:modelValue="setLanguage" />
+        <UButton
+          color="secondary" size="xl" icon="i-lucide-rocket" class="text-lg min-h-11"
+          :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
+      </div>
+    </SketchFrame>
+
+    <section
+      class="flex flex-col flex-1 min-h-0 w-full gap-2
+        lg:grid lg:flex-none lg:gap-5 lg:items-start
+        lg:grid-cols-[13rem_minmax(0,1fr)_20rem] xl:grid-cols-[14rem_minmax(0,1fr)_22rem]
+        2xl:grid-cols-[14rem_minmax(0,1fr)_24rem]">
+      <PlayerList :players="leaderboard" :drawerId="state?.drawerId" :you="you" class="max-lg:hidden lg:order-1" />
+
+      <div class="flex flex-col gap-2 shrink-0 lg:gap-4 lg:order-2">
+        <div v-if="phase !== 'lobby'" class="flex items-center justify-center gap-3 lg:gap-4">
+          <SketchFrame
+            :key="turnKey" :radius="18" :strokeWidth="3"
+            class="pop-in flex items-center gap-3 px-4 py-1.5 min-h-12 min-w-0 lg:px-6 lg:py-2 lg:min-h-16">
+            <!-- Wraps between words, never inside one. -->
+            <p class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word">
+              <!-- Blanks read aloud are just "underscore" over and over. -->
+              <span aria-hidden="true">{{ wordDisplay }}</span>
+              <span class="sr-only">{{ word ?? $t('header.hint') }}</span>
+            </p>
+            <!-- A sticky note stuck to the corner of the word card. -->
+            <UTooltip v-if="lengths.length" :text="$t('header.wordLengths', lengths.length)">
+              <SketchFrame
+                fill="var(--color-tangerine-200)" stroke="var(--ink-fixed)" :strokeWidth="1.8" :radius="7"
+                :roughness="1.1" class="shrink-0 rotate-6 px-2.5 py-0.5 text-(--ink-fixed)">
+                <span class="font-display font-bold text-sm tabular-nums whitespace-nowrap">
+                  {{ lengths.join(' · ') }}
+                </span>
+                <span class="sr-only">{{ $t('header.wordLengths', lengths.length) }}</span>
+              </SketchFrame>
+            </UTooltip>
+          </SketchFrame>
+          <SketchFrame
+            v-if="secondsLeft !== null" shape="circle" :fill="timerFill" :strokeWidth="3"
+            class="size-14 shrink-0 grid place-content-center lg:size-18"
+            :class="{ 'text-(--ink-fixed)': timerTone !== 'calm' }"
+            role="timer" :aria-label="`${secondsLeft}s`">
+            <UIcon v-if="paused" name="i-lucide-pause" class="size-4 mx-auto -mb-1" />
+            <span
+              :key="timerTone === 'error' ? secondsLeft : 'steady'"
+              class="font-display font-extrabold text-xl tabular-nums lg:text-2xl"
+              :class="{ tick: timerTone === 'error' }">
+              {{ secondsLeft }}
+            </span>
+          </SketchFrame>
+        </div>
+
+        <!-- As wide as the column allows, but short enough to keep the toolbar on screen. -->
+        <SketchFrame
+          :radius="16" :strokeWidth="3.5" :roughness="1.4"
+          class="p-1.5 w-full mx-auto lg:p-2.5 lg:max-w-[calc((100dvh-21rem)*16/9)]">
+          <div class="relative aspect-video rounded-sm overflow-hidden" :style="{ backgroundColor: currentBg }">
             <div
-              v-for="(color, index) in paletteColors" :key="index"
-              class="size-6 cursor-pointer" :style="{ backgroundColor: color }" @click="brush.color = color" />
+              v-if="paused"
+              class="absolute inset-0 z-10 grid place-content-center justify-items-center gap-2
+                bg-default/80 backdrop-blur-sm">
+              <UIcon name="i-lucide-pause" class="size-12 text-warning" />
+              <p class="font-display font-bold text-2xl">
+                {{ $t('pause.overlay') }}
+              </p>
+            </div>
+            <!--
+              The viewBox is what keeps everyone in sync: drauu maps pointers
+              through getScreenCTM().inverse(), so a phone and a desktop both
+              produce coordinates in this same fixed 1600x900 space.
+              `touch-none` keeps a finger drawing instead of scrolling the page.
+            -->
+            <svg
+              ref="sketch"
+              class="size-full"
+              :class="canDraw ? 'cursor-pencil touch-none' : 'pointer-events-none'"
+              :viewBox="`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`"
+              preserveAspectRatio="xMidYMid meet" />
           </div>
-          <UPopover>
-            <UButton variant="soft" size="xl" color="neutral" square class="size-12 grid place-content-center">
-              <div class="rounded-full transition-transform size-4" :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.04})` }" />
+        </SketchFrame>
+
+        <!-- Desktop: everything inline. Phones: one row, with colour and size in a sheet. -->
+        <SketchFrame
+          v-if="canDraw" :radius="16" :strokeWidth="2.5"
+          class="flex flex-wrap items-center justify-between gap-2 p-1.5 lg:gap-4 lg:p-3">
+          <button
+            type="button"
+            class="max-lg:hidden press size-11 shrink-0 rounded-full ring-2 ring-(--ink) cursor-pointer
+              bg-linear-45 from-black from-50% to-50% to-white"
+            :aria-label="$t('canvas.background')"
+            @click="currentBg = currentBg === '#FFFFFF' ? '#000000' : '#FFFFFF'" />
+          <div class="max-lg:hidden grid grid-cols-13 gap-1">
+            <button
+              v-for="(color, index) in paletteColors" :key="index" type="button"
+              class="press size-6 rounded-full cursor-pointer ring-1 ring-(--ink)/30 transition-shadow"
+              :class="{ 'ring-3 ring-(--ink)': brush.color === color }"
+              :style="{ backgroundColor: color }" :aria-label="$t('canvas.color', { color })"
+              :aria-pressed="brush.color === color" @click="brush.color = color" />
+          </div>
+          <div class="max-lg:hidden">
+            <UPopover>
+              <UButton
+                variant="soft" size="xl" color="neutral" square class="size-11 grid place-content-center"
+                :aria-label="$t('canvas.brushSize')">
+                <div
+                  class="rounded-full transition-transform size-4"
+                  :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.04})` }" />
+              </UButton>
+              <template #content>
+                <div class="w-48 p-3">
+                  <USlider v-model="brush.size" size="sm" :min="8" :max="48" :aria-label="$t('canvas.brushSize')" />
+                </div>
+              </template>
+            </UPopover>
+          </div>
+
+          <UDrawer :title="$t('canvas.brush')" :ui="{ body: 'pb-safe flex flex-col gap-5' }">
+            <UButton
+              variant="soft" size="xl" color="neutral" square class="lg:hidden size-11 grid place-content-center"
+              :aria-label="$t('canvas.brush')">
+              <div
+                class="rounded-full ring-1 ring-(--ink)/30 transition-transform size-4"
+                :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.04})` }" />
             </UButton>
-            <template #content>
-              <div class="w-48">
-                <USlider v-model="brush.size" size="sm" :min="8" :max="48" />
+            <template #body>
+              <div class="grid grid-cols-7 gap-2 justify-items-center">
+                <button
+                  v-for="(color, index) in paletteColors" :key="index" type="button"
+                  class="press size-11 rounded-full cursor-pointer ring-1 ring-(--ink)/30 transition-shadow"
+                  :class="{ 'ring-4 ring-(--ink)': brush.color === color }"
+                  :style="{ backgroundColor: color }" :aria-label="$t('canvas.color', { color })"
+                  :aria-pressed="brush.color === color" @click="brush.color = color" />
+              </div>
+              <div class="flex items-center gap-4">
+                <USlider
+                  v-model="brush.size" size="lg" :min="8" :max="48" class="grow"
+                  :aria-label="$t('canvas.brushSize')" />
+                <button
+                  type="button"
+                  class="press size-11 shrink-0 rounded-full ring-2 ring-(--ink) cursor-pointer
+                    bg-linear-45 from-black from-50% to-50% to-white"
+                  :aria-label="$t('canvas.background')"
+                  @click="currentBg = currentBg === '#FFFFFF' ? '#000000' : '#FFFFFF'" />
               </div>
             </template>
-          </UPopover>
-          <div class="flex flex-wrap gap-2">
-            <UChip v-for="tool in modeTools" :key="tool.key" inset position="top-left" size="3xl" :text="tool.key" :ui="toolChipUi">
-              <UButton size="xl" variant="soft" :color="brush.mode === tool.mode ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square :icon="tool.icon" @click="selectMode(tool.mode)" />
-            </UChip>
+          </UDrawer>
+
+          <div class="flex gap-1.5 lg:gap-2">
+            <UTooltip v-for="tool in modeTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
+              <UButton
+                size="xl" :variant="brush.mode === tool.mode ? 'solid' : 'soft'"
+                :color="brush.mode === tool.mode ? 'primary' : 'neutral'"
+                class="relative size-11 grid place-content-center" square
+                :aria-label="$t(tool.label)" :aria-pressed="brush.mode === tool.mode" @click="selectMode(tool.mode)">
+                <UIcon :name="tool.icon" class="size-5" />
+                <span
+                  class="max-lg:hidden absolute top-0.5 start-1.5 text-2xs font-bold opacity-70"
+                  aria-hidden="true">
+                  {{ tool.key }}
+                </span>
+              </UButton>
+            </UTooltip>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <UChip v-for="tool in actionTools" :key="tool.key" inset position="top-left" size="3xl" :text="tool.key" :ui="toolChipUi">
-              <UButton size="xl" variant="soft" :color="tool.color" class="size-12 grid place-content-center" square :icon="tool.icon"
-                       :disabled="tool.disabled" @click="tool.run()" />
-            </UChip>
+          <div class="flex gap-1.5 lg:gap-2">
+            <UTooltip v-for="tool in actionTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
+              <UButton
+                size="xl" variant="soft" :color="tool.color" class="relative size-11 grid place-content-center" square
+                :aria-label="$t(tool.label)" :disabled="tool.disabled" @click="tool.run()">
+                <UIcon :name="tool.icon" class="size-5" />
+                <span
+                  class="max-lg:hidden absolute top-0.5 start-1.5 text-2xs font-bold opacity-70"
+                  aria-hidden="true">
+                  {{ tool.key }}
+                </span>
+              </UButton>
+            </UTooltip>
           </div>
-        </div>
-        <p v-else class="text-sm text-muted text-center py-2">
-          <template v-if="isDrawer && paused">
-            {{ $t('pause.drawer') }}
-          </template>
-          <template v-else>
-            {{ state?.drawerId ? $t('canvas.guess') : $t('canvas.waitingForDrawer') }}
-          </template>
-        </p>
+        </SketchFrame>
       </div>
 
+      <!-- Phones: the chat fills what's left. Desktop: sized by the row, never by its
+           own messages (`contain: size`), and stretched to the canvas' height. -->
       <ChatPanel
+        class="flex-1 min-h-24 lg:order-3 lg:flex-none lg:self-stretch lg:contain-size"
         :entries="chat" :isDrawer="isDrawer" :hasGuessed="hasGuessed"
         :drawing="phase === 'drawing'" :paused="paused" @guess="submitGuess" />
     </section>

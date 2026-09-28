@@ -8,11 +8,15 @@
     "offline": "Offline",
     "gameId": "Game ID: {id}",
     "share": "Share game link",
-    "wordLengths": "Letters in the word | Letters in each word"
+    "wordLengths": "Letters in the word | Letters in each word",
+    "hint": "Word to guess",
+    "roundShort": "{round}/{total}",
+    "menu": "Game menu"
   },
   "share": {
     "title": "Game link copied to clipboard",
-    "description": "Share this link with your friends to join the game!"
+    "description": "Share this link with your friends to join the game!",
+    "text": "Come draw and guess with me on SkizzOne!"
   },
   "lobby": {
     "title": "Waiting to start",
@@ -22,19 +26,35 @@
     "wordLanguage": "Word language"
   },
   "canvas": {
-    "guess": "Guess what is being drawn!",
-    "waitingForDrawer": "Waiting for a drawer…"
+    "color": "Colour {color}",
+    "background": "Swap canvas background",
+    "brushSize": "Brush size",
+    "tools": {
+      "draw": "Brush",
+      "bucket": "Fill",
+      "eraseLine": "Eraser",
+      "undo": "Undo",
+      "redo": "Redo",
+      "clear": "Clear canvas"
+    },
+    "brush": "Colour and brush size"
   },
   "chat": {
     "guessPlaceholder": "Type your guess here...",
     "publicPlaceholder": "Say something...",
-    "privatePlaceholder": "Only the drawer and players who guessed can see this",
+    "privatePlaceholder": "Secret chat for those in the know",
     "pausedPlaceholder": "Game paused — guessing is on hold",
-    "private": "Private message"
+    "private": "Private message",
+    "title": "Chat"
   },
   "players": {
     "points": "{n} point | {n} points",
-    "you": "You"
+    "you": "You",
+    "title": "Players",
+    "drawing": "Drawing now",
+    "guessed": "Guessed the word",
+    "leader": "In the lead",
+    "showAll": "Show all players"
   },
   "log": {
     "joined": "{name} joined the game",
@@ -73,7 +93,10 @@
     "resume": "Resume",
     "pauseHint": "The game pauses when everyone votes ({votes}/{needed})",
     "resumeHint": "The game resumes when the majority votes ({votes}/{needed})",
-    "overlay": "Game paused",
-    "drawer": "Paused: your drawing picks up when the room resumes."
+    "overlay": "Game paused"
+  },
+  "theme": {
+    "light": "Switch to light mode",
+    "dark": "Switch to dark mode"
   }
 }
