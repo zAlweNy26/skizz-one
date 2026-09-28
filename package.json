@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "nuxi build",
-    "dev": "nuxi dev",
+    "dev": "bun run --parallel dev:app dev:realtime",
+    "dev:app": "nuxi dev",
     "dev:realtime": "wrangler dev --config realtime/wrangler.jsonc",
     "deploy:realtime": "wrangler deploy --config realtime/wrangler.jsonc",
     "test:realtime": "node realtime/test/sync.e2e.mjs",

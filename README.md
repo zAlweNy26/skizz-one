@@ -50,17 +50,14 @@ bun install
 
 ## Development
 
-Two processes. The app:
-
 ```bash
 bun run dev
 ```
 
-The game rooms (Durable Objects cannot run under `nuxt dev`):
-
-```bash
-bun run dev:realtime
-```
+This starts two processes side by side: the app (`dev:app`, on :3000) and the
+game rooms (`dev:realtime`, on :8787), since Durable Objects cannot run under
+`nuxt dev`. The page connects straight to :8787. Either can be run alone with
+`bun run dev:app` or `bun run dev:realtime`.
 
 To run both as a single multi-worker session with the service binding wired up,
 build first and then:
