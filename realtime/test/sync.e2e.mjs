@@ -1,17 +1,11 @@
 /**
  * End-to-end check against a running `wrangler dev` of the realtime worker.
  *
- * Drives two real WebSocket clients through a round and asserts that the
- * drawing actually reaches the watcher, that a non-drawer cannot draw, and
- * that the word never leaks to anyone who is supposed to be guessing it.
- *
  *   bun run dev:realtime --port 8799   # one terminal
  *   bun run test:realtime              # another
  */
 
 const PORT = process.env.REALTIME_PORT ?? '8799'
-// A fresh room per run: a Durable Object keeps its state, so reusing a name
-// would carry the previous run's roster and scores into this one.
 const ROOM = `test-${crypto.randomUUID().slice(0, 8)}`
 const BASE = `ws://127.0.0.1:${PORT}/parties/game-room/${ROOM}`
 
@@ -194,7 +188,6 @@ async function main() {
   )
 
   // --- private chat once you've guessed ---------------------------------
-  // Carol is still guessing, so the round goes on.
   for (const ws of [a, b, c]) ws.inbox.length = 0
   send(watcherWs, { t: 'guess', text: 'psst, easy one' })
   const toDrawer = await waitFor(drawerWs, m => m.t === 'chat' && m.text === 'psst, easy one')

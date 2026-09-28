@@ -8,10 +8,6 @@ const props = defineProps<{
   you: string
 }>()
 
-/**
- * The row's fill carries its state at a glance; the icon beside the score
- * says the same thing for anyone who can't tell the colours apart.
- */
 const leaders = computed(() => leaderIds(props.players))
 
 function fillOf(player: GamePlayer) {
@@ -39,7 +35,6 @@ function fillOf(player: GamePlayer) {
           :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
           size="lg" :alt="player.name" class="bg-transparent" />
         <UTooltip v-if="leaders.has(player.id)" :text="$t('players.leader')">
-          <!-- The frame's own root is `relative`, so the wrapper does the positioning. -->
           <span class="absolute -top-4 -start-2 -rotate-20" role="img" :aria-label="$t('players.leader')">
             <SketchFrame
               shape="crown" fill="var(--color-tangerine-400)" stroke="var(--ink-fixed)"

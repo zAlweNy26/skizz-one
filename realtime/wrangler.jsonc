@@ -3,14 +3,9 @@
   "name": "skizz-realtime",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-11",
-  // Pinned: the app connects to localhost:8787 in dev (nuxt.config.ts). Left
-  // unset, wrangler silently moves to another port when this one is taken,
-  // and the page ends up talking to a stale worker.
   "dev": {
     "port": 8787
   },
-  // One Durable Object per game room. `routePartykitRequest` routes on the
-  // kebab-cased binding name, so this is reachable at /parties/game-room/:id
   "durable_objects": {
     "bindings": [
       {
@@ -19,8 +14,6 @@
       }
     ]
   },
-  // SQLite-backed storage. Key-value-backed namespaces are no longer offered
-  // to accounts that don't already have one.
   "migrations": [
     {
       "tag": "v1",
@@ -31,8 +24,7 @@
     "enabled": true
   },
   "vars": {
-    // Comma-separated. The deployed app's origin — WebSocket upgrades get no
-    // CORS preflight, so this is the only gate on who can open a room.
+    // Comma-separated.
     "ALLOWED_ORIGINS": "https://skizz.app"
   }
 }

@@ -3,33 +3,15 @@ import { createEventHook, useLocalStorage } from '@vueuse/core'
 import PartySocket from 'partysocket'
 import { randomUUID } from 'uncrypto'
 
-/**
- * A line in the chat panel.
- *
- * System lines keep their key rather than text, so they render in the
- * viewer's own UI language, and re-render if it changes.
- */
+/** A line in the chat panel. System lines keep their i18n key rather than text. */
 export type ChatEntry
   = | { system: false, sender: string, text: string, private: boolean }
     | { system: true, level: LogLevel, key: LogKey | 'wordWas', params?: LogParams }
 
-/** Keep the socket alive through idle proxies. */
 const PING_INTERVAL_MS = 25_000
 
-/**
- * The room connection.
- *
- * `partysocket` ships a React binding only, so the class is wrapped here.
- * It brings its own reconnect with backoff, which is why the old VueUse
- * `useWebSocket` heartbeat is gone.
- */
 export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
-  /**
-   * A player id that outlives the connection.
-   *
-   * `peer.id` used to be the identity, but it is regenerated per connection,
-   * so a refresh mid-round lost your score and your turn. This does not.
-   */
+  /** A player id that outlives the connection. */
   const playerId = useLocalStorage('playerId', () => randomUUID())
   const nickname = useNickname()
 
@@ -46,14 +28,13 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   /** Only the host is sent these; everyone else just sees a count. */
   const customWords = ref<string[]>([])
 
-  /** Raw stream, consumed by the drawing bridge. */
   const messageHook = createEventHook<ServerMessage>()
 
   const isDrawer = computed(() => Boolean(you.value) && state.value?.drawerId === you.value)
   const isHost = computed(() => Boolean(you.value) && state.value?.hostId === you.value)
   const players = computed(() => state.value?.players ?? [])
   const leaderboard = computed(() => players.value.toSorted((a, b) => b.points - a.points))
-  /** Out of the guessing this turn, so chat goes to the private channel. */
+  /** Out of the guessing this turn. */
   const hasGuessed = computed(() => players.value.some(p => p.id === you.value && p.guessed))
   const paused = computed(() => state.value?.paused ?? false)
   const votedPause = computed(() => state.value?.pauseVotes.includes(you.value) ?? false)
@@ -78,18 +59,13 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
         break
       case 'state':
         state.value = msg.state
-        // A pause freezes the countdown and a resume moves it, both without
-        // a new turn, so the state is what keeps the timer honest.
         endsAt.value = msg.state.endsAt
-        // Hints reveal letters mid-turn. Outside a turn the state's hint is
-        // empty, and the revealed answer from `roundEnd` must stay up.
         if (msg.state.phase === 'drawing') hint.value = msg.state.hint
         break
       case 'customWords':
         customWords.value = msg.words
         break
       case 'turn':
-        // `word` is present only in the drawer's copy.
         word.value = msg.word ?? null
         hint.value = msg.hint
         endsAt.value = msg.endsAt
@@ -126,9 +102,6 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     if (!room) return
 
     const ws = new PartySocket({
-      // Same origin in production: the Nuxt worker proxies /parties/* to
-      // skizz-realtime through a service binding. In dev there is no such
-      // proxy, so `realtimeHost` points at the local `wrangler dev` instead.
       host: realtimeHost || window.location.host,
       protocol: window.location.protocol === 'https:' ? 'wss' : 'ws',
       party: 'game-room',
@@ -146,7 +119,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       try {
         handle(JSON.parse(event.data as string) as ServerMessage)
       } catch {
-        // A frame we can't parse is not worth tearing the room down for.
+        // Ignore unparseable frames.
       }
     })
 

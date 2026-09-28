@@ -1,10 +1,5 @@
 {
-  // Cloudflare bindings for this Worker.
-  // `nitro-cloudflare-dev` reads this file to emulate the bindings locally,
-  // and Nitro merges it into `.output/server/wrangler.json` on build.
   "name": "skizz",
-  // Declared here so a deploy keeps the domain attached instead of relying on
-  // what was set in the dashboard.
   "routes": [
     { "pattern": "skizz.app", "custom_domain": true }
   ],
@@ -14,23 +9,12 @@
       "id": "ff91b50cf1de4e1a827fdc2f6f486f07"
     }
   ],
-  // The realtime game rooms live in their own Worker so they can own Durable
-  // Objects. Websocket upgrades under /parties/ are forwarded here by
-  // preset/entry.ts — Nitro only force-overrides `main` and `assets`, so this
-  // binding survives into .output/server/wrangler.json.
-  //
-  // NOTE: `nuxthub deploy` does not upload this file, and @nuxthub/core 0.10.8
-  // has no `hub.bindings` option to declare it instead. Deploy with
-  // `wrangler deploy`, or verify the binding landed after a NuxtHub deploy.
   "services": [
     {
       "binding": "REALTIME",
       "service": "skizz-realtime"
     }
   ],
-  // History of this Worker's own Durable Objects. v1 was the single global
-  // realtime object Nitro's `cloudflare_durable` preset created, before game
-  // rooms moved to skizz-realtime; v2 deletes it and its data.
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["$DurableObject"] },
     { "tag": "v2", "deleted_classes": ["$DurableObject"] }

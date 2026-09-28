@@ -20,7 +20,7 @@ import {
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
-/** Marks nodes this composable manages, so previews can be found and removed. */
+/** Marks nodes this composable manages. */
 const SYNC_ATTR = 'data-sync-id'
 
 interface GameBridge {
@@ -42,13 +42,7 @@ function toWireBrush(brush: Brush): WireBrush {
   }
 }
 
-/**
- * A group styled the way drauu styles this brush's path.
- *
- * The preview is drawn as several path chunks, so the style lives on the
- * group they inherit it from. Opacity on a group composites the chunks
- * first, so a highlighter shows no darker dots where chunks meet.
- */
+/** A group styled the way drauu styles this brush's path. */
 function createStrokeGroup(brush: WireBrush): SVGGElement {
   const el = document.createElementNS(SVG_NS, 'g')
   el.setAttribute('fill', brush.fill ?? 'transparent')
@@ -73,15 +67,7 @@ function parseSvgElement(markup: string): SVGElement | null {
   return (host.firstElementChild as SVGElement | null) ?? null
 }
 
-/**
- * Streams the drawing between the drawer and everyone watching.
- *
- * While a stroke is in flight the drawer sends timestamped points in small
- * batches, and watchers replay them at the pace they were drawn, rebuilding
- * the path with drauu's own geometry. When the stroke finishes, the drawer
- * sends the real node; once the replay reaches the end it replaces the
- * preview, leaving every canvas a byte-exact copy of the drawer's.
- */
+/** Streams the drawing between the drawer and everyone watching. */
 export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
   const { drauuInstance, brush, onStart, onChanged, onCommitted, onCanceled, dump, load } = drauu
 
@@ -118,24 +104,14 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
       return
     }
 
-    // A shape is a single fixed-size element; shipping it whole is cheaper
-    // than describing it, and it is transient so it never hits the cache.
     const node = currentNode()
     if (node) game.send({ t: 'preview', id: strokeId, svg: node.outerHTML })
   }
 
-  /**
-   * Record the point drauu just handled.
-   *
-   * This reads `model.point`, never `model.points`, so it doesn't depend on
-   * how a model stores its stroke. drauu's draw model used to replace that
-   * array with a simplified copy every few moves, and an index into it
-   * silently skipped and re-sent points.
-   */
+  /** Record the point drauu just handled. */
   function capturePoint() {
     const model = drauuInstance.value?.model
     const point = model?.point
-    // A modifier key re-runs the move with the same point; skip the repeat.
     if (!point || point === lastPoint) return
     lastPoint = point
 
@@ -144,12 +120,6 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     pending.push(quantize(point.x), quantize(point.y), Math.round(time - strokeT0))
   }
 
-  /**
-   * Coalesce pointer events.
-   *
-   * Cloudflare's guidance for high-frequency Durable Object traffic is to
-   * flush on whichever of a time window or a message count comes first.
-   */
   function scheduleFlush() {
     if (pending.length / POINT_STRIDE >= DRAW_FLUSH_POINTS) {
       flush()
@@ -167,8 +137,6 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     lastPoint = null
     strokeT0 = null
 
-    // Erase and bucket rewrite existing nodes and masks rather than adding
-    // one, so there is nothing meaningful to preview. They sync on commit.
     if (isOpaque(wire.mode)) {
       strokeId = null
       return
@@ -178,8 +146,6 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     game.send({ t: 'strokeStart', id: strokeId, brush: wire })
   })
 
-  // Fires on every pointer move. Buffer here and let the flush decide when
-  // it is worth a message — one message per pointer event would be 120/s.
   onChanged(() => {
     if (!game.isDrawer.value || !strokeId || !strokeBrush) return
     if (isFreehand(strokeBrush.mode)) capturePoint()
@@ -192,16 +158,12 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     const wire = strokeBrush
     const id = strokeId
 
-    // Whole-canvas resync: the cheapest correct answer for operations that
-    // mutate nodes already on the canvas.
     if (!wire || isOpaque(wire.mode)) {
       endStroke()
       syncCanvas()
       return
     }
 
-    // Send the points the last window didn't carry, so the watcher's replay
-    // reaches the end of the stroke before the real node replaces it.
     if (isFreehand(wire.mode)) flush()
     endStroke()
 
@@ -209,8 +171,6 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     if (id && node) game.send({ t: 'commit', id, svg: node.outerHTML })
   })
 
-  // drauu dropped the stroke without committing it. Nothing will ever
-  // replace the watchers' preview, so resync them to what is really there.
   onCanceled(() => {
     if (!game.isDrawer.value || !strokeId) return
     endStroke()
@@ -247,10 +207,7 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
 
   const strokes = new Map<string, RemoteStroke>()
 
-  /**
-   * How far behind the drawer the replay runs. Shared across strokes, it
-   * grows when batches arrive late and eases back down stroke by stroke.
-   */
+  /** How far behind the drawer the replay runs, shared across strokes. */
   let delay = PLAYBACK_DELAY_MS
   let raf: number | null = null
 
@@ -326,7 +283,6 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
       node: null,
       playback: freehand ? new StrokePlayback() : null,
       path: freehand
-        // Chunks restart the dash pattern, so dashed strokes stay whole.
         ? new ChunkedDrawPath(msg.brush.dasharray ? Infinity : undefined)
         : null,
       live: null,
@@ -364,7 +320,6 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
   function commitRemoteStroke(msg: Extract<ServerMessage, { t: 'commit' }>) {
     const stroke = strokes.get(msg.id)
     if (!stroke) {
-      // No preview to replace, e.g. we joined mid-stroke.
       const node = parseSvgElement(msg.svg)
       if (node) canvasEl()?.appendChild(node)
       return
@@ -397,8 +352,6 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
   }
 
   game.onMessage((msg) => {
-    // The drawer's own strokes are already on screen; the server never
-    // echoes them back, but guard anyway so a reconnect can't double-draw.
     if (game.isDrawer.value && msg.t !== 'canvas' && msg.t !== 'roundEnd') return
     applyRemote(msg)
   })

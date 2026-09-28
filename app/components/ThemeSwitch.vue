@@ -5,7 +5,6 @@ const toggleDark = useToggle(isDark)
 
 <template>
   <LazyClientOnly>
-    <!-- Sits on the stage, so it takes the stage's text colour, not a panel's. -->
     <UButton
       square variant="ghost" color="neutral" size="lg"
       class="text-(--on-stage) hover:bg-(--on-stage)/15"

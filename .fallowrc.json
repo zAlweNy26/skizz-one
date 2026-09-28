@@ -1,8 +1,6 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
-  // Loaded by Nitro through `nitro.entry` in nuxt.config.ts, which no plugin sees.
   "entry": ["preset/entry.ts", "app/assets/css/lint.css"],
-  // partyserver invokes these lifecycle members on Server subclasses.
   "usedClassMembers": [
     {
       "extends": "Server",
@@ -10,10 +8,8 @@
     }
   ],
   "ignoreDependencies": [
-    // Peer dependencies of @nuxt/test-utils, never imported directly.
     "@vue/test-utils",
     "playwright-core",
-    // Auto-imported by @vueuse/nuxt (useRouteQuery), so no import names it.
     "@vueuse/router",
     "vue"
   ]

@@ -21,12 +21,9 @@ const keyboardFit = useKeyboardFit(room)
 
 const drauu = useDrauu(sketch, {
   brush: {
-    // drauu defaults to `stylus`, whose perfect-freehand outline is rebuilt
-    // from every point on every move and has no incremental form.
     mode: 'draw',
     color: '#000000',
-    // Brush size is in SVG user space, which the viewBox fixes at 1600 wide
-    // for every client. These are roughly 2.4x the old CSS-pixel values.
+    // SVG user units, not CSS pixels.
     size: 16,
   },
 })
@@ -44,15 +41,12 @@ const sync = useDrawingSync(drauu, {
   isDrawer,
 })
 
-// The room drops every stroke sent while frozen, so a line cut off by the
-// pause never reached the others: republish the whole canvas on resume.
 watch(paused, (now, was) => {
   if (was && !now) sync.syncCanvas()
 })
 
 const now = useNow({ scheduler: cb => useIntervalFn(cb, 250) })
 const secondsLeft = computed(() => {
-  // Frozen: the room reports what is left instead of when it ends.
   if (paused.value) return Math.ceil((state.value?.remainingMs ?? 0) / 1000)
   if (!endsAt.value) return null
   return Math.max(0, Math.ceil((endsAt.value - now.value.getTime()) / 1000))
@@ -61,7 +55,6 @@ const secondsLeft = computed(() => {
 const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
 
-/** Voting only makes sense while a countdown runs, or is frozen. */
 const canVotePause = computed(() => phase.value === 'drawing' || phase.value === 'intermission')
 const pauseTally = computed(() => {
   const connectedCount = state.value?.players.filter(p => p.connected).length ?? 0
@@ -75,16 +68,13 @@ function togglePause() {
   game.send({ t: 'pause', want: !votedPause.value })
 }
 
-/** What the word display shows: the answer to the drawer, blanks to guessers. */
 const wordDisplay = computed(() => {
   if (word.value) return word.value
   return hint.value || '—'
 })
 
-/** Letters per word, so a long run of blanks doesn't have to be counted. */
 const lengths = computed(() => wordLengths(word.value ?? hint.value))
 
-/** How the next game plays, shown to everyone in the lobby. */
 const settingsSummary = computed(() => {
   const s = state.value
   if (!s) return []
@@ -106,11 +96,6 @@ function saveSettings(settings: RoomSettings) {
 const { copy } = useClipboard()
 const { share, isSupported: canShare } = useShare()
 
-/**
- * On a phone, hand the link to the system share sheet so it goes straight to
- * WhatsApp or Messages; elsewhere, copy it. Dismissing the sheet rejects,
- * which is not an error worth reporting.
- */
 async function shareGame() {
   const url = window.location.href
   if (canShare.value) {
@@ -125,11 +110,6 @@ async function shareGame() {
   })
 }
 
-/**
- * Keep the screen awake while a round runs: a phone that locks mid-turn drops
- * its socket, and the drawer's turn with it. Released in the lobby and after
- * the game. VueUse re-acquires it when the page becomes visible again.
- */
 const wakeLock = useWakeLock()
 watch(phase, (now) => {
   if (!wakeLock.isSupported.value) return
@@ -142,7 +122,6 @@ watch(phase, (now) => {
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
 
-/** On a phone the header's controls fold into one menu. */
 const menuItems = computed(() => [
   [{ type: 'label' as const, label: t('header.gameId', { id: gameId.value }) }],
   [
@@ -162,11 +141,6 @@ const menuItems = computed(() => [
   ],
 ])
 
-/**
- * Local edits still need pushing: drauu emits no event for these. Gated on
- * `canDraw` because the room would drop them while paused, and a watcher's
- * shortcut should never wipe their own copy of the drawing.
- */
 function localUndo() {
   if (!canDraw.value || !canUndo.value) return
   undo()
@@ -197,7 +171,6 @@ const actionTools = computed(() => [
   { key: 'D', icon: 'i-lucide-trash-2', label: 'canvas.tools.clear', color: 'error', disabled: false, run: localClear },
 ] as const)
 
-/** The last ten seconds turn the timer red; a pause turns it amber. */
 const timerTone = computed(() => {
   if (paused.value) return 'warning'
   if (secondsLeft.value !== null && secondsLeft.value <= 10) return 'error'
@@ -210,12 +183,10 @@ const timerFill = computed(() => ({
   calm: 'var(--paper)',
 })[timerTone.value])
 
-/** Controls sitting on the stage: paper chips, since dark ink would vanish on bordeaux. */
 const stageChip = 'bg-(color:--chip) text-(color:--on-chip) hover:bg-(color:--chip)/85'
 
 const roundArgs = computed(() => ({ round: state.value?.round || 0, total: state.value?.totalRounds || 3 }))
 
-/** A new turn re-keys the word card, so it pops in fresh. */
 const turnKey = computed(() => `${state.value?.round ?? 0}:${state.value?.drawerId ?? ''}:${phase.value}`)
 
 function selectMode(mode: typeof modeTools[number]['mode']) {
@@ -224,14 +195,11 @@ function selectMode(mode: typeof modeTools[number]['mode']) {
 }
 
 function submitGuess(text: string) {
-  // No optimistic echo: the server decides whether this is a guess worth
-  // showing, and a correct one is deliberately never broadcast.
   game.send({ t: 'guess', text })
 }
 
 useHead({
   title: computed(() => (canDraw.value ? t('title.drawing') : t('title.playing'))),
-  // A pull-to-refresh while drawing would drop the socket mid-turn.
   htmlAttrs: { class: 'overscroll-y-none' },
 })
 
@@ -246,11 +214,6 @@ defineShortcuts({
 </script>
 
 <template>
-  <!--
-    Phones get a single screen that never scrolls in play: top bar, players,
-    word, canvas, then the tools and chat share whatever height is left. From
-    `lg` up it's the three-column desktop layout instead.
-  -->
   <main
     ref="room" :style="keyboardFit"
     class="group/room flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
@@ -267,8 +230,6 @@ defineShortcuts({
       </p>
 
       <div class="ms-auto flex items-center gap-2">
-        <!-- Only news when it breaks. `state` stays null until the first welcome,
-             so the moment before the socket opens doesn't flash as offline. -->
         <UBadge
           v-if="!connected && state" color="error" variant="solid" size="lg" icon="i-lucide-wifi-off"
           :label="$t('header.offline')" />
@@ -301,7 +262,6 @@ defineShortcuts({
       </div>
     </header>
 
-    <!-- Hidden while typing, so the keyboard doesn't push the canvas off screen. -->
     <PlayerStrip
       :players="leaderboard" :drawerId="state?.drawerId" :you="you"
       class="lg:hidden group-has-[input:focus]/room:hidden" />
@@ -350,7 +310,6 @@ defineShortcuts({
             :key="turnKey" :radius="18" :strokeWidth="3"
             class="pop-in flex items-center gap-3 px-4 py-1.5 min-h-12 min-w-0 lg:px-6 lg:py-2 lg:min-h-16">
             <p class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word">
-              <!-- Blanks read aloud are just "underscore" over and over. -->
               <span aria-hidden="true">{{ wordDisplay }}</span>
               <span class="sr-only">{{ word ?? $t('header.hint') }}</span>
             </p>
@@ -379,7 +338,6 @@ defineShortcuts({
           </SketchFrame>
         </div>
 
-        <!-- As wide as the column allows, but short enough to keep the toolbar on screen. -->
         <SketchFrame
           :radius="16" :strokeWidth="3.5" :roughness="1.4"
           class="p-1.5 w-full mx-auto lg:p-2.5 lg:max-w-[calc((100dvh-21rem)*16/9)]">
@@ -393,12 +351,6 @@ defineShortcuts({
                 {{ $t('pause.overlay') }}
               </p>
             </div>
-            <!--
-              The viewBox is what keeps everyone in sync: drauu maps pointers
-              through getScreenCTM().inverse(), so a phone and a desktop both
-              produce coordinates in this same fixed 1600x900 space.
-              `touch-none` keeps a finger drawing instead of scrolling the page.
-            -->
             <svg
               ref="sketch"
               class="size-full"
@@ -506,9 +458,6 @@ defineShortcuts({
         </SketchFrame>
       </div>
 
-      <!-- Phones: the chat fills what's left. lg: a fixed-height panel under the canvas.
-           xl: a third column stretched to the canvas' height. Never sized by its own
-           messages (`contain: size`). -->
       <ChatPanel
         class="flex-1 min-h-24 lg:order-3 lg:flex-none lg:col-start-2 lg:h-80 lg:contain-size
           xl:col-start-3 xl:row-start-1 xl:h-auto xl:self-stretch"

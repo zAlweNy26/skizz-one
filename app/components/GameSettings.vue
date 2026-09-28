@@ -20,7 +20,6 @@ const totalRounds = ref(props.state.totalRounds)
 const hints = ref(props.state.hints)
 const wordsText = ref('')
 
-/** A draft, so a half-typed word list isn't sent on every keystroke. */
 watch(open, (now) => {
   if (!now) return
   language.value = props.state.language
@@ -32,7 +31,6 @@ watch(open, (now) => {
 
 const words = computed(() => splitCustomWords(wordsText.value))
 
-/** No optimistic update: the room confirms it by broadcasting its state. */
 function save() {
   emit('save', {
     language: language.value,

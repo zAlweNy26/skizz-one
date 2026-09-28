@@ -1,10 +1,4 @@
-/*
- * The same stylesheet stack as main.css, for @shadcn/lint only (named in
- * components.json). main.css imports '@nuxt/ui', whose own import of
- * `#build/ui.css` is a package-imports alias the linter can't resolve yet;
- * this file reaches the same generated CSS by relative path instead.
- * `.nuxt/ui.css` is written by `nuxi prepare`, which runs on postinstall.
- */
+/* main.css's stylesheet stack, for @shadcn/lint only (components.json). */
 @import 'tailwindcss';
 @import '../../../.nuxt/ui.css';
 @import '../../../node_modules/@nuxt/ui/dist/runtime/keyframes.css';

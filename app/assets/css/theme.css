@@ -1,7 +1,4 @@
-/*
- * SkizzOne's design tokens, utilities and base styles (see DESIGN.md).
- * Imported by main.css for the app and by lint.css for @shadcn/lint.
- */
+/* SkizzOne's design tokens, utilities and base styles. */
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -16,16 +13,14 @@
 
   --blur-2xs: 2px;
 
-  /* The secret word's blanks need room to read as separate letters. */
   --tracking-word: 0.25em;
 
-  /* The room page: wide enough for three columns, not a whole monitor. */
   --container-room: 96rem;
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Bordeaux: a real wine red. 700 is the stage and Nuxt UI's `primary`. */
+  /* Bordeaux (`primary`): 700 is the stage. */
   --color-bordeaux-50: oklch(0.97 0.012 16);
   --color-bordeaux-100: oklch(0.94 0.025 16);
   --color-bordeaux-200: oklch(0.88 0.05 16);
@@ -38,10 +33,7 @@
   --color-bordeaux-900: oklch(0.24 0.09 16);
   --color-bordeaux-950: oklch(0.2 0.06 16);
 
-  /*
-   * Tangerine: Nuxt UI's `secondary`, reserved for the big calls to action.
-   * Too light to be text on paper, so its solid buttons carry ink text.
-   */
+  /* Tangerine (`secondary`). */
   --color-tangerine-50: oklch(0.97 0.02 70);
   --color-tangerine-100: oklch(0.94 0.05 70);
   --color-tangerine-200: oklch(0.89 0.09 65);
@@ -54,7 +46,7 @@
   --color-tangerine-900: oklch(0.37 0.1 40);
   --color-tangerine-950: oklch(0.28 0.08 38);
 
-  /* Mulberry: the neutral ramp, tinted toward the stage's hue. 900 is the ink. */
+  /* Mulberry (`neutral`): 900 is the ink. */
   --color-mulberry-50: oklch(0.99 0.004 16);
   --color-mulberry-100: oklch(0.96 0.008 16);
   --color-mulberry-200: oklch(0.92 0.012 16);
@@ -68,20 +60,10 @@
   --color-mulberry-950: oklch(0.19 0.04 16);
 }
 
-/*
- * A hand-rounded corner: every corner a little different, the way a pen
- * never quite repeats itself. Small fixed radii, so a wide button and a
- * square tool button get the same wobble.
- */
 @utility rounded-sketch {
   border-radius: 14px 9px 16px 8px / 9px 15px 8px 13px;
 }
 
-/*
- * Gutters that respect a phone's notch and home indicator. They need
- * `viewport-fit=cover` (nuxt.config.ts); elsewhere env() is 0 and the plain
- * gutter wins.
- */
 @utility px-safe {
   padding-left: max(0.5rem, env(safe-area-inset-left));
   padding-right: max(0.5rem, env(safe-area-inset-right));
@@ -106,7 +88,7 @@
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
-/* Shantell Sans' informal and bounce axes: headings get the marker's full wobble. */
+/* Shantell Sans' informal and bounce axes. */
 @utility font-display {
   font-variation-settings: 'INFM' 90, 'BNCE' 60;
 }
@@ -116,21 +98,14 @@
 }
 
 :root {
-  /*
-   * The three surfaces everything else is built on: the stage behind the
-   * page, the paper panels sit on, and the ink they are drawn with.
-   */
   --stage: var(--color-bordeaux-700);
   --paper: var(--color-mulberry-50);
   --ink: var(--color-mulberry-900);
-  /* Text directly on the stage. Only bold or large text goes there. */
+  /* Text directly on the stage. */
   --on-stage: var(--color-mulberry-50);
-  /* Ink that stays dark in both themes, for text on tangerine. */
+  /* Dark in both themes. */
   --ink-fixed: var(--color-mulberry-900);
-  /*
-   * Controls sitting directly on the stage. Dark ink would vanish against
-   * the bordeaux, so they're paper chips here and chalk chips in dark mode.
-   */
+  /* Controls sitting directly on the stage. */
   --chip: var(--paper);
   --on-chip: var(--ink);
 
@@ -215,19 +190,11 @@ body {
   @apply text-inverted bg-primary;
 }
 
-/*
- * A focused field is traced over once more by a slightly unsteady hand: a
- * second stroke, nudged 1.5px, doubles the ring's weight on two sides. It
- * stays inside the field and reuses the ring's own colour (bordeaux, or mint
- * for private chat). Unlayered on purpose, so it beats the stock
- * `outline-primary/25` halo.
- */
 .sketch-field:focus-visible {
   outline: none;
   --tw-inset-shadow: inset 1.5px -1.5px 0 0 var(--tw-ring-color);
 }
 
-/* Pressing anything feels tactile: a quick squash, never a spring. */
 @media (prefers-reduced-motion: no-preference) {
   .press {
     transition: transform 150ms var(--ease-out-quart);
@@ -237,12 +204,10 @@ body {
     transform: scale(0.95);
   }
 
-  /* A new turn: the word card is dropped onto the table. */
   .pop-in {
     animation: pop-in 280ms var(--ease-out-expo) both;
   }
 
-  /* The last ten seconds: each one lands with a small thump. */
   .tick {
     display: inline-block;
     animation: tick 400ms var(--ease-out-quart) both;

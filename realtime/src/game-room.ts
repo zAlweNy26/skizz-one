@@ -38,14 +38,13 @@ import { pickWord } from './words'
 /** Pause between the word reveal and the next turn. */
 const INTERMISSION_MS = 6_000
 
-/** Guessing fast is worth more; guessing at all is worth something. */
 const BASE_GUESS_POINTS = 50
 const SPEED_GUESS_POINTS = 200
 
 /** What the drawer earns for each player who gets it. */
 const DRAWER_POINTS_PER_GUESS = 25
 
-/** A guess this close to the word earns a private "you're close" nudge. */
+/** Edit distance at which a guess earns a private "you're close" nudge. */
 const NEAR_MISS_DISTANCE = 2
 
 type AlarmKind = 'round' | 'intermission' | 'grace'
@@ -70,7 +69,6 @@ interface RoomState {
   hostId: string | null
   drawerId: string | null
   endsAt: number | null
-  /** The secret. Never leaves this object except to the drawer. */
   word: string | null
   /** Indices of the word's letters that hints have revealed this turn. */
   revealed: number[]
@@ -84,10 +82,7 @@ interface RoomState {
   pausedMs: number | null
   /** Players voting to pause, or to resume once paused. */
   pauseVotes: string[]
-  /**
-   * The countdown frozen by a vote: which alarm to re-arm, and with how
-   * long. Separate from `pausedMs`, which the drawer's grace window owns.
-   */
+  /** The countdown frozen by a vote: which alarm to re-arm, and with how long. */
   pause: { kind: AlarmKind, remainingMs: number } | null
 }
 
@@ -121,33 +116,17 @@ function initialState(): RoomState {
 }
 
 export class GameRoom extends Server<Env> {
-  /**
-   * Hibernate between messages.
-   *
-   * partyserver defaults this to `false`, which bills wall-clock duration for
-   * every open connection. Cloudflare's own comparison for 100 rooms of 50
-   * players: ~$143/mo without hibernation against ~$21/mo with it.
-   */
   static options = { hibernate: true }
 
   #state: RoomState = initialState()
 
-  /**
-   * Cached SVG innerHTML, so a late joiner sees the drawing immediately.
-   *
-   * Kept out of `#state` so a guess or a join doesn't rewrite a canvas that
-   * can grow to hundreds of KB.
-   */
+  /** Cached SVG innerHTML for late joiners. */
   #canvas = ''
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
-    // Hydrate before any handler runs. This also covers waking from
-    // hibernation, where the constructor runs again on a fresh isolate.
     ctx.blockConcurrencyWhile(async () => {
       const stored = await ctx.storage.get<RoomState | string>(['state', 'canvas'])
-      // Spread over the defaults so a room saved before a field existed
-      // (e.g. `language`) still wakes up with every field set.
       this.#state = { ...initialState(), ...(stored.get('state') as RoomState | undefined) }
       this.#canvas = (stored.get('canvas') as string | undefined) ?? ''
     })
@@ -157,14 +136,6 @@ export class GameRoom extends Server<Env> {
     return this.ctx.storage.put('state', this.#state)
   }
 
-  /**
-   * Persist the canvas without holding back outgoing messages.
-   *
-   * A Durable Object's output gate delays every message sent while a write
-   * is pending, so a confirmed write here would stall the next stroke's
-   * points behind every commit. Losing the last stroke of a sketch if the
-   * object crashes mid-write is an acceptable price.
-   */
   #saveCanvas() {
     void this.ctx.storage.put('canvas', this.#canvas, { allowUnconfirmed: true })
   }
@@ -183,7 +154,6 @@ export class GameRoom extends Server<Env> {
     this.#broadcast({ t: 'log', level, key, params })
   }
 
-  /** Every live connection belonging to a player. */
   #connectionsOf(playerId: string) {
     return [...this.getConnections<ConnState>(playerId)]
   }
@@ -192,12 +162,7 @@ export class GameRoom extends Server<Env> {
     return (connection.state as ConnState | null)?.playerId ?? null
   }
 
-  /**
-   * The room as everyone is allowed to see it.
-   *
-   * Deliberately has no `word` field — the secret is only ever sent to the
-   * drawer, in a `turn` message addressed to their connections.
-   */
+  /** The room as everyone is allowed to see it. */
   #publicState(): GameState {
     const s = this.#state
     return {
@@ -233,7 +198,6 @@ export class GameRoom extends Server<Env> {
     this.#broadcast({ t: 'state', state: this.#publicState() })
   }
 
-  /** The custom words are the host's to edit and nobody else's to read. */
   #sendCustomWords() {
     const s = this.#state
     if (!s.hostId) return
@@ -247,7 +211,6 @@ export class GameRoom extends Server<Env> {
 
   // --- connection lifecycle ----------------------------------------------
 
-  /** Tag each connection with its player id so we can address a player. */
   getConnectionTags(_connection: Connection, ctx: ConnectionContext): string[] {
     const playerId = new URL(ctx.request.url).searchParams.get('playerId')
     return playerId ? [playerId] : []
@@ -321,13 +284,11 @@ export class GameRoom extends Server<Env> {
     const player = s.players[playerId]
     if (!player) return
 
-    // Another tab may still hold this player open.
     const stillOpen = this.#connectionsOf(playerId)
       .some(c => c !== connection && c.readyState === WebSocket.OPEN)
     if (stillOpen) return
 
     player.connected = false
-    // A vote is cast by someone at the table: leaving withdraws it.
     s.pauseVotes = s.pauseVotes.filter(id => id !== playerId)
 
     if (s.hostId === playerId) {
@@ -341,10 +302,8 @@ export class GameRoom extends Server<Env> {
       this.#log('info', 'disconnected', { name: player.name })
 
     if (s.pause) {
-      // A frozen countdown has nothing to run out. The grace window, or the
-      // "everyone guessed" check, waits for the resume.
+      // Deferred until resume.
     } else if (s.phase === 'drawing' && s.drawerId === playerId) {
-      // Hold the round briefly: a locked phone or a refresh shouldn't end it.
       s.pausedMs = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
       s.endsAt = null
       await this.#setAlarm('grace', DRAWER_GRACE_MS)
@@ -352,7 +311,6 @@ export class GameRoom extends Server<Env> {
     } else if (s.phase === 'drawing')
       await this.#endRoundIfEveryoneGuessed()
 
-    // The one holdout leaving can make the rest unanimous.
     await this.#checkPauseVotes()
 
     await this.#save()
@@ -406,30 +364,19 @@ export class GameRoom extends Server<Env> {
   }
 
   #handleDrawing(connection: Connection, msg: DrawingMessage) {
-    // Relay verbatim — the server never parses stroke geometry.
     this.#broadcast(msg, [connection.id])
 
-    // Keep a snapshot so anyone joining late sees the drawing so far. Only
-    // the settled states are persisted, never the in-flight points.
     if (msg.t === 'commit') this.#canvas += msg.svg
     else if (msg.t === 'canvas') this.#canvas = msg.svg
     else return
     this.#saveCanvas()
   }
 
-  /** Only the host sets the game up, and only between games. */
   #canConfigure(playerId: string) {
     const s = this.#state
     return playerId === s.hostId && (s.phase === 'lobby' || s.phase === 'finished')
   }
 
-  /**
-   * Apply the host's settings. Not mid-game: turns already scored against
-   * one draw time or word list would be unfair against the next.
-   *
-   * Each field is checked on its own and anything malformed is ignored, so a
-   * bad value can't knock out the good ones sent with it.
-   */
   async #configure(playerId: string, settings: Partial<RoomSettings> | undefined) {
     const s = this.#state
     if (!this.#canConfigure(playerId) || typeof settings !== 'object' || settings === null) return
@@ -463,8 +410,6 @@ export class GameRoom extends Server<Env> {
     const guess = normalizeGuess(text)
     const answer = normalizeGuess(s.word ?? '')
 
-    // The drawing is frozen too: studying it for free isn't fair play. Talk
-    // still flows, but the answer itself is held back so it can't leak.
     if (s.pause) {
       if (answer && guess === answer)
         this.#send(connection, { t: 'log', level: 'warning', key: 'guessOnHold' })
@@ -482,7 +427,6 @@ export class GameRoom extends Server<Env> {
       return
     }
 
-    // Correct. The text is never echoed — that would hand everyone the answer.
     player.guessed = true
 
     const remaining = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
@@ -498,12 +442,6 @@ export class GameRoom extends Server<Env> {
     await this.#endRoundIfEveryoneGuessed()
   }
 
-  /**
-   * Chat among players who are out of the guessing.
-   *
-   * Kept away from players still guessing so a correct answer can't leak
-   * sideways through conversation.
-   */
   #handleChat(playerId: string, rawText: string) {
     const s = this.#state
     const player = s.players[playerId]
@@ -534,18 +472,11 @@ export class GameRoom extends Server<Env> {
 
   // --- pausing -----------------------------------------------------------
 
-  /** Voters still at the table, in a stable order. */
   #pauseVoters() {
     const s = this.#state
     return s.pauseVotes.filter(id => s.players[id]?.connected)
   }
 
-  /**
-   * Cast or withdraw a vote.
-   *
-   * Not while the drawer's grace window runs: that timer already holds the
-   * round, and two freezes over one countdown would fight over it.
-   */
   async #votePause(playerId: string, want: unknown) {
     const s = this.#state
     if (!PAUSABLE_PHASES.includes(s.phase) || s.alarmKind === 'grace') return
@@ -593,7 +524,6 @@ export class GameRoom extends Server<Env> {
     s.pause = null
     this.#log('info', 'resumed')
 
-    // The drawer left while the room was frozen: now their grace window runs.
     const drawer = s.drawerId ? s.players[s.drawerId] : null
     if (s.phase === 'drawing' && drawer && !drawer.connected) {
       s.pausedMs = pause.remainingMs
@@ -606,7 +536,6 @@ export class GameRoom extends Server<Env> {
     if (pause.kind === 'round') await this.#armRound()
     else await this.#setAlarm(pause.kind, pause.remainingMs)
 
-    // Guessers may have left while frozen, leaving only players who got it.
     if (s.phase === 'drawing') await this.#endRoundIfEveryoneGuessed()
   }
 
@@ -617,11 +546,7 @@ export class GameRoom extends Server<Env> {
     await this.ctx.storage.setAlarm(Date.now() + ms)
   }
 
-  /**
-   * Arm the drawing countdown for whichever comes first: the next hint or
-   * the end of the turn. A Durable Object has one alarm, so hints ride on
-   * the round's rather than getting their own.
-   */
+  /** Arm the drawing countdown for whichever comes first: the next hint or the end of the turn. */
   async #armRound() {
     const s = this.#state
     const drawMs = this.#drawMs()
@@ -664,7 +589,6 @@ export class GameRoom extends Server<Env> {
     await this.#startTurn()
   }
 
-  /** The next connected player in turn order, or null if nobody can draw. */
   #nextDrawerIndex(): number | null {
     const s = this.#state
     for (let step = 1; step <= s.order.length; step++) {
@@ -695,7 +619,6 @@ export class GameRoom extends Server<Env> {
     const next = this.#nextDrawerIndex()
     if (next === null) return
 
-    // Wrapping past the end of the order completes a round.
     if (next <= s.turnIndex || s.turnIndex === -1) s.round += 1
 
     if (s.round > s.totalRounds) {
@@ -719,7 +642,6 @@ export class GameRoom extends Server<Env> {
     await this.#armRound()
     await this.#save()
 
-    // Everyone gets the masked hint; only the drawer gets the word itself.
     const hint = maskWord(s.word)
     this.#broadcast({ t: 'canvas', svg: '' })
     this.#broadcast(
@@ -798,7 +720,6 @@ export class GameRoom extends Server<Env> {
 
     switch (kind) {
       case 'round':
-        // Woken early for a hint: the turn goes on.
         if (s.endsAt && s.endsAt > Date.now()) {
           const revealed = this.#revealDueHints()
           await this.#armRound()
@@ -810,7 +731,6 @@ export class GameRoom extends Server<Env> {
         await this.#endRound()
         break
       case 'grace':
-        // The drawer never came back.
         this.#log('warning', 'drawerGone')
         await this.#endRound()
         break

@@ -2,14 +2,13 @@
 import rough from 'roughjs'
 
 const props = withDefaults(defineProps<{
-  /** Element to render as. */
   as?: string
   /**
    * `box` frames the content; `circle` rings it; `underline` scribbles below
    * it; `crown` fills the element with a three-pointed doodled crown.
    */
   shape?: 'box' | 'circle' | 'underline' | 'crown'
-  /** CSS colour of the pen. Any `var()` works: it's applied as a style, not an attribute. */
+  /** CSS colour of the pen; `var()` works. */
   stroke?: string
   /** CSS colour of the fill, or `none`. */
   fill?: string
@@ -30,13 +29,8 @@ const props = withDefaults(defineProps<{
   roughness: 1.2,
 })
 
-/** One generator for every frame; it holds no per-drawing state. */
 const generator = rough.generator()
 
-/**
- * A stable seed per instance, so a frame keeps the same wobble across
- * re-renders and resizes instead of jittering every time it's redrawn.
- */
 const id = useId()
 const idSeed = ([...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2 ** 31) || 1
 const seed = computed(() => props.seed ?? idSeed)
@@ -52,7 +46,6 @@ function roundedRect(x: number, y: number, w: number, h: number, r: number) {
 }
 
 function draw(w: number, h: number) {
-  // Keep the whole stroke inside the box so nothing clips at the edges.
   const inset = props.strokeWidth
   const filled = props.fill !== 'none' && props.shape !== 'underline'
   const options = {
@@ -60,7 +53,7 @@ function draw(w: number, h: number) {
     roughness: props.roughness,
     bowing: 0.8,
     strokeWidth: props.strokeWidth,
-    // Placeholders: the real colours go on as styles below, so `var()` works.
+    // Placeholders, replaced by styles below.
     stroke: 'ink',
     fill: filled ? 'paper' : undefined,
     fillStyle: 'solid',

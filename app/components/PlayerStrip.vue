@@ -10,7 +10,6 @@ const props = defineProps<{
 
 const leaders = computed(() => leaderIds(props.players))
 
-/** The strip's own ring says who draws and who has guessed; the badge repeats it for colour-blind players. */
 function ringOf(player: GamePlayer) {
   if (player.id === props.drawerId) return 'ring-(--color-tangerine-400)'
   if (player.guessed) return 'ring-success'
@@ -19,10 +18,6 @@ function ringOf(player: GamePlayer) {
 </script>
 
 <template>
-  <!--
-    The phone's scoreboard: one row of avatars that fits beside the canvas.
-    Tapping it opens the full list in a bottom sheet.
-  -->
   <div>
     <UDrawer :title="$t('players.title')" :ui="{ body: 'pb-safe' }">
       <button

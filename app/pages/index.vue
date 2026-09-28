@@ -5,7 +5,6 @@ import { MAX_NAME_LENGTH } from '#shared/utils/protocol'
 const { t } = useI18n()
 const nickname = useNickname()
 
-/** Set when a shared link sent a nameless visitor here first. */
 const invitedCode = useRouteQuery('code', '', { transform: String })
 
 const name = ref(nickname.value || randomNickname())
@@ -14,9 +13,7 @@ const code = ref(invitedCode.value)
 const trimmedName = computed(() => name.value.trim())
 const nameError = computed(() => (trimmedName.value ? false : t('home.nameRequired')))
 
-/**
- * Accept a bare code or a whole pasted link, old `/?code=` style included.
- */
+/** Accepts a bare code or a whole pasted link, old `/?code=` style included. */
 const roomCode = computed(() => {
   const raw = code.value.trim()
   try {

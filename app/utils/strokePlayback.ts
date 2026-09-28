@@ -9,35 +9,18 @@ export interface TimedPoint {
   t: number
 }
 
-/**
- * How far behind the drawer a watcher replays, in ms.
- *
- * It has to cover one flush window plus network jitter, or the replay runs
- * dry and stalls. It starts here and grows whenever a batch arrives late.
- */
+/** How far behind the drawer a watcher replays, in ms. */
 export const PLAYBACK_DELAY_MS = 80
 export const MAX_PLAYBACK_DELAY_MS = 300
 
-/**
- * Replays one stroke at the pace it was drawn.
- *
- * Points arrive in bursts, one per flush. Showing each burst as it lands
- * makes the line lurch forward ~30 times a second; instead every point is
- * scheduled at its drawer timestamp plus a fixed delay, and each animation
- * frame reveals whatever is due, interpolating toward the next point.
- */
+/** Replays one stroke at the pace it was drawn. */
 export class StrokePlayback {
   readonly points: TimedPoint[] = []
   /** Local time minus drawer time. Null until the first point arrives. */
   #offset: number | null = null
   #revealed = 0
 
-  /**
-   * Queue a batch. Returns how many ms late it arrived for its schedule.
-   *
-   * A late batch pushes the schedule back rather than having its points
-   * shown all at once: a brief pause reads far smoother than a jump.
-   */
+  /** Queue a batch. Returns how many ms late it arrived for its schedule. */
   push(batch: TimedPoint[], now: number, delay: number): number {
     const first = batch[0]
     if (!first) return 0
@@ -55,12 +38,7 @@ export class StrokePlayback {
     return late
   }
 
-  /**
-   * Advance the replay to `now`.
-   *
-   * `count` points are fully due; `head`, when present, sits between the
-   * last due point and the next one, so the line moves every frame.
-   */
+  /** Advance the replay to `now`: `count` points are due, `head` sits between the last due one and the next. */
   frame(now: number): { count: number, head: Point | null } {
     if (this.#offset == null) return { count: 0, head: null }
 
@@ -90,19 +68,7 @@ export class StrokePlayback {
 /** Segments per path element before it is sealed and a new one begun. */
 export const PATH_CHUNK_SEGMENTS = 64
 
-/**
- * Builds a draw-mode path incrementally, in chunks.
- *
- * Re-rendering the whole `d` every frame costs O(points) in string building
- * and, worse, in the browser re-parsing the path. But a Bézier segment only
- * depends on the two points before it and the one after, so once its next
- * point exists it never changes. Settled segments are appended once, and
- * every `chunkSize` of them the path element is sealed and a new one begun,
- * so the element being rewritten each frame stays small.
- *
- * Joined back together, the chunks describe exactly the curve
- * `DrawModel.toSvgData` would for the same points.
- */
+/** Builds a draw-mode path incrementally, in chunks. */
 export class ChunkedDrawPath {
   #live = ''
   /** Index of the last segment folded into `#live`; -1 before the first point. */
@@ -111,12 +77,7 @@ export class ChunkedDrawPath {
 
   constructor(readonly chunkSize = PATH_CHUNK_SEGMENTS) {}
 
-  /**
-   * Render the first `count` of `points`, plus an optional moving `head`.
-   *
-   * Returns the chunks sealed by this call, in order, and the `d` of the
-   * chunk still being drawn.
-   */
+  /** Render the first `count` of `points`, plus an optional moving `head`. */
   update(points: readonly Point[], count: number, head: Point | null = null) {
     const sealed: string[] = []
     if (count === 0) return { sealed, live: '' }
@@ -126,7 +87,6 @@ export class ChunkedDrawPath {
       this.#settled = 0
     }
 
-    // Segment i is final once point i + 1 is due.
     for (let i = this.#settled + 1; i <= count - 2; i++) {
       this.#live += ` ${DrawModel.bezierCommand(points[i]!, i, points as Point[])}`
       this.#settled = i
@@ -137,8 +97,6 @@ export class ChunkedDrawPath {
       }
     }
 
-    // The unsettled tail is recomputed every frame. Only its neighbours are
-    // copied, so this stays O(tail) however long the stroke gets.
     const base = Math.max(0, this.#settled - 1)
     const win = points.slice(base, count) as Point[]
     if (head) win.push(head)

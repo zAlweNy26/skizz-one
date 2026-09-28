@@ -2,33 +2,13 @@ import type { Language } from '../../../shared/utils/protocol'
 import en from './en'
 import it from './it'
 
-/**
- * Word lists for rounds, one per language.
- *
- * Bundled as plain arrays on purpose: picking a word sits on the round-start
- * path, and the word must never leave the Durable Object. No I/O, no binding.
- *
- * To add a language, add its name to `LANGUAGES` in the protocol and a file
- * here. Keep words concrete and drawable, lowercase, and free of apostrophes
- * and hyphens: guessers can't see them in the masked hint.
- */
+/** Word lists for rounds, one per language. */
 export const WORDS: Record<Language, readonly string[]> = { en, it }
 
-/**
- * How much likelier a custom word is to come up than a built-in one.
- *
- * Per word, so a handful of custom words among a few hundred still turn up
- * only now and then: the host asked for "a bit more often", not "mostly".
- */
+/** How much likelier a custom word is to come up than a built-in one. */
 export const CUSTOM_WORD_WEIGHT = 2
 
-/**
- * Pick `count` distinct words, avoiding any already used this game.
- *
- * `custom` words join the language's list at `CUSTOM_WORD_WEIGHT`. Falls
- * back to the full pool once a long game has exhausted it, so a room can
- * never stall for want of an unused word.
- */
+/** Pick `count` distinct words, avoiding any already used this game unless the pool is exhausted. */
 export function pickWords(
   language: Language,
   count: number,

@@ -4,9 +4,8 @@ import type { ChatEntry } from '~/composables/useGameSocket'
 const props = defineProps<{
   entries: ChatEntry[]
   isDrawer: boolean
-  /** Got the word this turn, so anything typed is private chat. */
   hasGuessed: boolean
-  /** A turn is running: the chat splits into guessers and everyone else. */
+  /** A turn is running. */
   drawing: boolean
   paused: boolean
 }>()
@@ -15,12 +14,7 @@ const emit = defineEmits<{
   guess: [text: string]
 }>()
 
-/**
- * Who reads what you type right now.
- *
- * The room enforces all of this; the panel only says it out loud so nobody
- * is surprised by who can (or can't) see their message.
- */
+/** Who reads what you type right now. */
 const channel = computed(() => {
   if (!props.drawing) return 'public'
   if (props.isDrawer || props.hasGuessed) return 'private'
@@ -41,25 +35,14 @@ const placeholder = computed(() => ({
   guess: 'chat.guessPlaceholder',
 })[channel.value])
 
-/**
- * On a phone the input sits above the log, right under the canvas, so the
- * newest message goes first, next to where you type. Desktop keeps the usual
- * chat order with the input at the bottom. Same breakpoint as Tailwind's `lg`.
- */
+/** Tailwind's `lg` breakpoint. */
 const isDesktop = useMediaQuery('(min-width: 64rem)')
 
-/** Each entry keeps its arrival index as its key, so reversing re-renders nothing. */
 const shown = computed(() => {
   const list = props.entries.map((entry, index) => ({ entry, index }))
   return isDesktop.value ? list : list.reverse()
 })
 
-/**
- * Follow new messages, but only when already at the newest end (the bottom on
- * desktop, the top on a phone): someone scrolling back through the chat
- * shouldn't be yanked away by every guess. The watcher runs before the DOM
- * update, so it measures the old scroll position.
- */
 const log = useTemplateRef<HTMLElement>('log')
 watch(() => props.entries.length, async () => {
   const el = log.value
@@ -84,7 +67,6 @@ function submit(event: KeyboardEvent) {
   <SketchFrame
     as="aside" :strokeWidth="2.5" :radius="18" class="flex flex-col gap-3 p-3"
     :aria-label="$t('chat.title')">
-    <!-- First on a phone, right under the canvas; last on desktop. -->
     <UInput
       class="w-full lg:order-last" size="lg" :ui="{ base: 'min-h-11' }"
       autocomplete="off" enterkeyhint="send"
@@ -96,7 +78,6 @@ function submit(event: KeyboardEvent) {
     <div
       ref="log" class="overflow-y-auto overscroll-contain grow min-h-0 flex flex-col gap-0.5 text-sm pe-1"
       role="log">
-      <!-- Striped by arrival index, not position, so rows keep their shade as new messages push in. -->
       <div
         v-for="{ entry, index } in shown" :key="index" class="flex items-start gap-2 px-2 py-1 rounded-sketch"
         :class="!entry.system && entry.private ? 'bg-success/12' : index % 2 ? 'bg-elevated' : ''">

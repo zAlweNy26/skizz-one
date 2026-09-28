@@ -12,14 +12,10 @@ export default defineAppConfig({
         base: 'press rounded-sketch cursor-pointer disabled:cursor-not-allowed font-semibold',
       },
       compoundVariants: [
-        // Solid buttons are inked: the same pen outline as the sketch frames.
         { variant: 'solid', class: 'ring-2 ring-inset ring-(--ink-fixed)/85' },
-        // Tangerine is too light for paper-white text.
         { color: 'secondary', variant: 'solid', class: 'text-(--ink-fixed) hover:bg-secondary-300' },
       ],
     },
-    // Fields share the buttons' hand-rounded corners; `sketch-field` swaps the
-    // stock focus halo for a marker loop (see theme.css).
     input: {
       slots: {
         base: 'rounded-sketch sketch-field',

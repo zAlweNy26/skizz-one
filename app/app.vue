@@ -3,7 +3,6 @@ import * as uiLocales from '@nuxt/ui/locale'
 
 const { locale } = useI18n()
 
-/** Nuxt UI's own strings (close buttons, empty states…) follow the app locale. */
 const uiLocale = computed(() => uiLocales[locale.value])
 
 useHead({

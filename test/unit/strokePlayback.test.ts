@@ -24,9 +24,7 @@ describe('stroke playback', () => {
 
   it('reveals points at the pace they were drawn, not as they arrived', () => {
     const p = new StrokePlayback()
-    // The whole batch lands at once...
     p.push(stroke(10), 1000, 80)
-    // ...but plays out one point per 8ms.
     expect(p.frame(1080 + 8 * 3).count).toBe(4)
     expect(p.frame(1080 + 8 * 6).count).toBe(7)
   })
@@ -44,10 +42,8 @@ describe('stroke playback', () => {
     const p = new StrokePlayback()
     const pts = stroke(20)
     p.push(pts.slice(0, 10), 1000, 80)
-    // Batch two was drawn at t=80, so due at 1160; it arrives at 1200.
     const late = p.push(pts.slice(10), 1200, 80)
     expect(late).toBe(40)
-    // Its first point is due right away, the rest still one per 8ms.
     expect(p.frame(1200).count).toBe(11)
     expect(p.frame(1200 + 8 * 4).count).toBe(15)
   })
@@ -110,7 +106,6 @@ describe('chunked draw path', () => {
     const head = { x: 123, y: 456, pressure: 0.5 }
     const withHead = path.update(points, 10, head).live
     expect(withHead).toBe(DrawModel.toSvgData([...points.slice(0, 10), head]))
-    // The head was not folded in: the next frame is as if it never existed.
     expect(path.update(points, 11).live).toBe(DrawModel.toSvgData(points.slice(0, 11)))
   })
 })

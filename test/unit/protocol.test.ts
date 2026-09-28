@@ -42,7 +42,6 @@ describe('coordinate quantisation', () => {
 
 describe('stroke modes', () => {
   it('sends a timestamp with every point', () => {
-    // x, y, and ms since the stroke began: watchers replay by the clock.
     expect(POINT_STRIDE).toBe(3)
   })
 
@@ -50,13 +49,10 @@ describe('stroke modes', () => {
     expect(isFreehand('draw')).toBe(true)
     expect(isFreehand('highlighter')).toBe(true)
     expect(isFreehand('rectangle')).toBe(false)
-    // perfect-freehand has no incremental form; it previews as a shape.
     expect(isFreehand('stylus')).toBe(false)
   })
 
   it('treats erase and bucket as whole-canvas operations', () => {
-    // These rewrite existing nodes and masks, so a point stream cannot
-    // describe them and they resync the full canvas instead.
     expect(isOpaque('eraseLine')).toBe(true)
     expect(isOpaque('bucket')).toBe(true)
     expect(isOpaque('draw')).toBe(false)
@@ -173,11 +169,8 @@ describe('word lists', () => {
   it.each(Object.entries(WORDS))('keeps %s guessable', (_, words) => {
     expect(words.length).toBeGreaterThan(50)
     expect(new Set(words).size).toBe(words.length)
-    for (const word of words) {
-      // The hint masks every non-space character, so a hyphen or apostrophe
-      // would be invisible to guessers yet still required by the answer.
+    for (const word of words)
       expect(word).toMatch(/^\p{Ll}+(?: \p{Ll}+)*$/u)
-    }
   })
 
   it('draws only from the requested language', () => {
