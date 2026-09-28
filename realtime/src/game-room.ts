@@ -33,16 +33,11 @@ import {
   ROUNDS,
   votesNeeded,
 } from '../../shared/utils/protocol'
+import { drawerShare, guessPoints } from './scoring'
 import { pickWord } from './words'
 
 /** Pause between the word reveal and the next turn. */
 const INTERMISSION_MS = 6_000
-
-const BASE_GUESS_POINTS = 50
-const SPEED_GUESS_POINTS = 200
-
-/** What the drawer earns for each player who gets it. */
-const DRAWER_POINTS_PER_GUESS = 25
 
 /** Edit distance at which a guess earns a private "you're close" nudge. */
 const NEAR_MISS_DISTANCE = 2
@@ -427,13 +422,17 @@ export class GameRoom extends Server<Env> {
       return
     }
 
+    const others = Object.values(s.players).filter(p => p.id !== s.drawerId)
+    const rank = others.filter(p => p.guessed).length
+    const guessers = others.filter(p => p.connected).length
     player.guessed = true
 
     const remaining = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
-    player.points += BASE_GUESS_POINTS + Math.round(SPEED_GUESS_POINTS * Math.min(1, remaining / this.#drawMs()))
+    const points = guessPoints(remaining, this.#drawMs(), rank)
+    player.points += points
 
     const drawer = s.drawerId ? s.players[s.drawerId] : null
-    if (drawer) drawer.points += DRAWER_POINTS_PER_GUESS
+    if (drawer) drawer.points += drawerShare(points, guessers)
 
     this.#log('success', 'guessed', { name: player.name })
     await this.#save()
