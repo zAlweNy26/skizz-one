@@ -62,7 +62,6 @@ const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
 
 const drawerName = computed(() => state.value?.players.find(p => p.id === state.value?.drawerId)?.name ?? '')
-const winner = computed(() => (phase.value === 'finished' ? leaderboard.value[0] : undefined))
 
 const canVotePause = computed(() => phase.value === 'drawing' || phase.value === 'intermission')
 const pauseTally = computed(() => {
@@ -364,7 +363,7 @@ defineShortcuts({
           <div class="relative aspect-video rounded-sm overflow-hidden" :style="{ backgroundColor: currentBg }">
             <CanvasOverlay
               :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices"
-              :drawerName="drawerName" :winner="winner" :you="you"
+              :drawerName="drawerName" :players="leaderboard" :you="you"
               @choose="game.send({ t: 'choose', index: $event })" />
             <svg
               ref="sketch"

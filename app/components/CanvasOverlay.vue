@@ -7,7 +7,8 @@ const props = defineProps<{
   isDrawer: boolean
   choices: string[]
   drawerName: string
-  winner?: GamePlayer
+  /** Already sorted, best score first. */
+  players: GamePlayer[]
   you: string
 }>()
 
@@ -17,10 +18,23 @@ defineEmits<{
 
 const { t } = useI18n()
 
+const places = computed(() => podium(props.players))
+
 const winnerTitle = computed(() => {
-  if (!props.winner) return t('log.gameOver')
-  return props.winner.id === props.you ? t('finished.youWin') : t('finished.winner', { name: props.winner.name })
+  const winner = props.players[0]
+  if (!winner) return t('log.gameOver')
+  return winner.id === props.you ? t('finished.youWin') : t('finished.winner', { name: winner.name })
 })
+
+const STEP_ORDER = ['order-2', 'order-1', 'order-3']
+const STEP_HEIGHT: Record<number, string> = { 1: 'h-12 lg:h-24', 2: 'h-8 lg:h-16', 3: 'h-5 lg:h-10' }
+const STEP_FILL: Record<number, string> = {
+  1: 'var(--color-tangerine-300)',
+  2: 'var(--color-tangerine-200)',
+  3: 'var(--color-tangerine-100)',
+}
+/** ms; the podium fills from third place up. */
+const STEP_DELAY = [360, 180, 0]
 </script>
 
 <template>
@@ -60,14 +74,40 @@ const winnerTitle = computed(() => {
   </div>
   <div
     v-else-if="phase === 'finished'"
-    class="absolute inset-0 z-10 grid place-content-center justify-items-center gap-1 p-3 bg-default/90 lg:gap-3">
-    <UIcon name="i-lucide-trophy" class="pop-in size-10 text-warning lg:size-16" />
-    <p class="pop-in font-bouncy font-bold text-2xl text-center lg:text-4xl">
+    class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-3 bg-default/90 lg:gap-5">
+    <p class="pop-in font-bouncy font-bold text-xl text-center lg:text-4xl">
       {{ winnerTitle }}
     </p>
-    <p v-if="winner" class="font-display font-semibold text-muted">
-      {{ $t('players.points', winner.points) }}
-    </p>
+    <ol class="flex items-end justify-center gap-1.5 lg:gap-4">
+      <li
+        v-for="(place, index) in places" :key="place.player.id"
+        class="pop-in flex flex-col items-center w-20 lg:w-36" :class="STEP_ORDER[index]"
+        :style="{ animationDelay: `${STEP_DELAY[index]}ms` }">
+        <span class="relative">
+          <UAvatar
+            :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(place.player.name)}`"
+            :alt="place.player.name" class="size-9 bg-transparent lg:size-16" />
+          <span v-if="place.rank === 1" class="absolute -top-3 -start-2 -rotate-20 lg:-top-5 lg:-start-3">
+            <SketchFrame
+              shape="crown" fill="var(--color-tangerine-400)" stroke="var(--ink-fixed)"
+              :strokeWidth="2" :roughness="0.9" class="w-6 h-4 lg:w-9 lg:h-6" />
+          </span>
+        </span>
+        <p
+          class="max-w-full truncate text-xs font-semibold leading-tight lg:text-base"
+          :class="{ 'text-primary': place.player.id === you }">
+          {{ place.player.name }}
+        </p>
+        <p class="text-xs font-medium text-muted tabular-nums lg:text-sm">
+          {{ $t('players.points', place.player.points) }}
+        </p>
+        <SketchFrame
+          :fill="STEP_FILL[place.rank]" stroke="var(--ink-fixed)" :strokeWidth="2" :radius="6"
+          class="grid place-content-center w-full mt-1 text-(--ink-fixed)" :class="STEP_HEIGHT[place.rank]">
+          <span class="font-display font-extrabold text-sm lg:text-2xl">{{ place.rank }}</span>
+        </SketchFrame>
+      </li>
+    </ol>
   </div>
 </template>
 
