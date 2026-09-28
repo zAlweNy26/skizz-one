@@ -321,9 +321,11 @@ defineShortcuts({
     <section
       class="flex flex-col flex-1 min-h-0 w-full gap-2
         lg:grid lg:flex-none lg:gap-5 lg:items-start
-        lg:grid-cols-[13rem_minmax(0,1fr)_20rem] xl:grid-cols-[14rem_minmax(0,1fr)_22rem]
+        lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_22rem]
         2xl:grid-cols-[14rem_minmax(0,1fr)_24rem]">
-      <PlayerList :players="leaderboard" :drawerId="state?.drawerId" :you="you" class="max-lg:hidden lg:order-1" />
+      <PlayerList
+        :players="leaderboard" :drawerId="state?.drawerId" :you="you"
+        class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1" />
 
       <div class="flex flex-col gap-2 shrink-0 lg:gap-4 lg:order-2">
         <div v-if="phase !== 'lobby'" class="flex items-center justify-center gap-3 lg:gap-4">
@@ -488,10 +490,12 @@ defineShortcuts({
         </SketchFrame>
       </div>
 
-      <!-- Phones: the chat fills what's left. Desktop: sized by the row, never by its
-           own messages (`contain: size`), and stretched to the canvas' height. -->
+      <!-- Phones: the chat fills what's left. lg: a fixed-height panel under the canvas.
+           xl: a third column stretched to the canvas' height. Never sized by its own
+           messages (`contain: size`). -->
       <ChatPanel
-        class="flex-1 min-h-24 lg:order-3 lg:flex-none lg:self-stretch lg:contain-size"
+        class="flex-1 min-h-24 lg:order-3 lg:flex-none lg:col-start-2 lg:h-80 lg:contain-size
+          xl:col-start-3 xl:row-start-1 xl:h-auto xl:self-stretch"
         :entries="chat" :isDrawer="isDrawer" :hasGuessed="hasGuessed"
         :drawing="phase === 'drawing'" :paused="paused" @guess="submitGuess" />
     </section>
