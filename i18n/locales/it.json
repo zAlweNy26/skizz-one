@@ -94,7 +94,6 @@
     "guessOnHold": "La partita è in pausa — le risposte contano di nuovo alla ripresa"
   },
   "home": {
-    "title": "Home",
     "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",
     "name": "Il tuo nome",
     "nameRequired": "Scegli prima un nome",
@@ -117,5 +116,9 @@
   "theme": {
     "light": "Passa al tema chiaro",
     "dark": "Passa al tema scuro"
+  },
+  "seo": {
+    "title": "SkizzOne – Gioco online di disegno e indovinelli",
+    "description": "Gioco multigiocatore gratuito di disegno e indovinelli. Crea una stanza, condividi il link e fai a turno a disegnare e indovinare con gli amici. Senza registrazione, senza download."
   }
 }

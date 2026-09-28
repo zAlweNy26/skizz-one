@@ -1,5 +1,9 @@
 import { fileURLToPath } from 'node:url'
 
+const siteTitle = 'SkizzOne – Online drawing and guessing game'
+const siteDescription = 'Free multiplayer drawing and guessing game. Create a room, share the link and take turns '
+  + 'drawing and guessing with friends. No sign-up, no download.'
+
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
@@ -15,6 +19,7 @@ export default defineNuxtConfig({
     '@nuxthub/core',
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
+    '@nuxtjs/seo',
   ],
 
   ssr: false,
@@ -23,7 +28,13 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      title: siteTitle,
       meta: [
+        { name: 'description', content: siteDescription },
+        { property: 'og:title', content: siteTitle },
+        { property: 'og:description', content: siteDescription },
+        { property: 'og:image', content: 'https://skizz.app/og-image.png' },
+        { name: 'twitter:card', content: 'summary_large_image' },
         {
           name: 'viewport',
           content: 'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content',
@@ -43,6 +54,29 @@ export default defineNuxtConfig({
         },
       ],
     },
+  },
+
+  site: {
+    url: 'https://skizz.app',
+    name: 'SkizzOne',
+    description: siteDescription,
+    defaultLocale: 'en',
+  },
+
+  robots: {
+    disallow: ['/parties/'],
+  },
+
+  ogImage: {
+    enabled: false,
+  },
+
+  schemaOrg: {
+    reactive: true,
+  },
+
+  routeRules: {
+    '/room/**': { robots: false },
   },
 
   future: {
@@ -119,6 +153,7 @@ export default defineNuxtConfig({
       additionalManifestEntries: [{ url: '/', revision: Date.now().toString() }],
       navigateFallbackDenylist: [/^\/parties\//],
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      globIgnores: ['og-image.png'],
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/,

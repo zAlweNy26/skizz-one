@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { randomUUID } from 'uncrypto'
+import { useSchemaOrg } from '#imports'
 import { MAX_NAME_LENGTH } from '#shared/utils/protocol'
 
 const { t } = useI18n()
@@ -45,7 +46,25 @@ const footerUi = {
   right: 'flex-none order-3',
 }
 
-useHead({ title: computed(() => t('home.title')) })
+useHead({ title: () => t('seo.title'), titleTemplate: null })
+useSeoMeta({
+  description: () => t('seo.description'),
+  ogTitle: () => t('seo.title'),
+  ogDescription: () => t('seo.description'),
+  ogImage: { url: 'https://skizz.app/og-image.png', width: 1200, height: 630, alt: 'SkizzOne' },
+  twitterCard: 'summary_large_image',
+})
+
+useSchemaOrg([
+  defineSoftwareApp({
+    name: 'SkizzOne',
+    description: () => t('seo.description'),
+    applicationCategory: 'GameApplication',
+    operatingSystem: 'Any',
+    image: 'https://skizz.app/og-image.png',
+    offers: { price: 0 },
+  }),
+])
 </script>
 
 <template>
