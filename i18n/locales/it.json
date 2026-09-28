@@ -5,7 +5,6 @@
   },
   "header": {
     "round": "Round {round} di {total}",
-    "connected": "Connesso",
     "offline": "Offline",
     "gameId": "ID partita: {id}",
     "share": "Condividi il link della partita",

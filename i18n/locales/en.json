@@ -5,7 +5,6 @@
   },
   "header": {
     "round": "Round {round} of {total}",
-    "connected": "Connected",
     "offline": "Offline",
     "gameId": "Game ID: {id}",
     "share": "Share game link",

@@ -198,7 +198,9 @@ defineShortcuts({
           :label="`${paused ? $t('pause.resume') : $t('pause.pause')} ${pauseTally.votes}/${pauseTally.needed}`"
           @click="togglePause()" />
       </UTooltip>
-      <UBadge :color="connected ? 'success' : 'error'" variant="soft" :label="connected ? $t('header.connected') : $t('header.offline')" />
+      <!-- Only news when it breaks. `state` stays null until the first welcome,
+           so the moment before the socket opens doesn't flash as offline. -->
+      <UBadge v-if="!connected && state" color="error" variant="soft" icon="i-lucide-wifi-off" :label="$t('header.offline')" />
       <p class="text-sm font-semibold">
         {{ $t('header.gameId', { id: gameId }) }}
       </p>
