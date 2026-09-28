@@ -104,6 +104,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     messageHook.trigger(msg)
   }
 
+  const realtimeHost = useRuntimeConfig().public.realtimeHost as string
+
   let pingTimer: ReturnType<typeof setInterval> | undefined
 
   function open() {
@@ -111,9 +113,10 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     if (!room) return
 
     const ws = new PartySocket({
-      // Same origin: the Nuxt worker proxies /parties/* to skizz-realtime
-      // through a service binding, so there is no cross-origin handshake.
-      host: window.location.host,
+      // Same origin in production: the Nuxt worker proxies /parties/* to
+      // skizz-realtime through a service binding. In dev there is no such
+      // proxy, so `realtimeHost` points at the local `wrangler dev` instead.
+      host: realtimeHost || window.location.host,
       protocol: window.location.protocol === 'https:' ? 'wss' : 'ws',
       party: 'game-room',
       room,

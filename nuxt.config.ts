@@ -37,6 +37,26 @@ export default defineNuxtConfig({
     },
   },
 
+  runtimeConfig: {
+    public: {
+      // Host the game socket connects to. Empty means same origin, which is
+      // what production wants: the app worker proxies /parties/* itself.
+      realtimeHost: '',
+    },
+  },
+
+  $development: {
+    runtimeConfig: {
+      public: {
+        // `nuxt dev` cannot proxy the upgrade: the entry below is production
+        // only, and Nitro's dev server hands every upgrade to its own worker
+        // (`devProxy` covers plain HTTP, not websockets). Connect straight to
+        // `bun run dev:realtime` instead. Override with NUXT_PUBLIC_REALTIME_HOST.
+        realtimeHost: 'localhost:8787',
+      },
+    },
+  },
+
   $production: {
     nitro: {
       // Replaces the preset's generated entry so websocket upgrades under
