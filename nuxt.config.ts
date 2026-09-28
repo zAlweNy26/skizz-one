@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { version } from './package.json'
 
 const siteTitle = 'SkizzOne – Online drawing and guessing game'
 const siteDescription = 'Free multiplayer drawing and guessing game. Create a room, share the link and take turns '
@@ -96,6 +97,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       realtimeHost: '',
+      version,
     },
   },
 
