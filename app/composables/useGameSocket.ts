@@ -27,6 +27,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const endsAt = ref<number | null>(null)
   /** Only the host is sent these; everyone else just sees a count. */
   const customWords = ref<string[]>([])
+  /** Words on offer while you are the drawer choosing one. */
+  const choices = ref<string[]>([])
 
   const messageHook = createEventHook<ServerMessage>()
 
@@ -61,6 +63,14 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
         state.value = msg.state
         endsAt.value = msg.state.endsAt
         if (msg.state.phase === 'drawing') hint.value = msg.state.hint
+        if (msg.state.phase === 'choosing') {
+          word.value = null
+          hint.value = ''
+        } else
+          choices.value = []
+        break
+      case 'choices':
+        choices.value = msg.words
         break
       case 'customWords':
         customWords.value = msg.words
@@ -150,6 +160,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     hint,
     endsAt,
     customWords,
+    choices,
     players,
     leaderboard,
     isDrawer,

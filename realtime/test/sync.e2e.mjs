@@ -105,17 +105,28 @@ async function main() {
   b.inbox.length = 0
   send(a, { t: 'start' })
 
+  const choosing = await waitFor(a, m => m.t === 'state' && m.state.phase === 'choosing')
+  check('the turn opens with the drawer choosing', Boolean(choosing))
+  const drawer = choosing?.state?.drawerId
+  const drawerWs = drawer === 'player-a' ? a : b
+  const watcherWs = drawer === 'player-a' ? b : a
+  const choices = await waitFor(drawerWs, m => m.t === 'choices')
+  check('the drawer is offered three words', choices?.words?.length === 3, JSON.stringify(choices?.words))
+  check('the watcher is offered nothing', !watcherWs.inbox.some(m => m.t === 'choices'))
+  check('no word is set while choosing', choosing?.state?.hint === '', choosing?.state?.hint)
+
+  send(watcherWs, { t: 'choose', index: 0 })
+  check('only the drawer can choose', !(await waitFor(watcherWs, m => m.t === 'turn', 500)))
+
+  send(drawerWs, { t: 'choose', index: 1 })
   const turnA = await waitFor(a, m => m.t === 'turn')
   const turnB = await waitFor(b, m => m.t === 'turn')
   check('a turn starts for both', Boolean(turnA && turnB))
-
-  const drawer = turnA?.drawerId
-  const drawerWs = drawer === 'player-a' ? a : b
-  const watcherWs = drawer === 'player-a' ? b : a
   const drawerTurn = drawer === 'player-a' ? turnA : turnB
   const watcherTurn = drawer === 'player-a' ? turnB : turnA
 
   check('drawer receives the word', typeof drawerTurn?.word === 'string' && drawerTurn.word.length > 0)
+  check('the word is the one chosen', drawerTurn?.word === choices?.words?.[1], drawerTurn?.word)
   check('watcher receives NO word', watcherTurn?.word === undefined, JSON.stringify(watcherTurn?.word))
   check('watcher gets a masked hint', /^_+$/.test((watcherTurn?.hint ?? '').replace(/ /g, '')), watcherTurn?.hint)
   check(
@@ -205,6 +216,9 @@ async function main() {
   send(b, { t: 'pause', want: true })
   const twoVotes = await waitFor(c, m => m.t === 'state' && m.state.pauseVotes.length === 2)
   check('votes are tallied in the state', Boolean(twoVotes))
+  const asked = c.inbox.find(m => m.t === 'log' && m.key === 'pauseRequested')
+  check('the chat hears who asked for a pause', asked?.params?.votes === 1 && asked?.params?.needed === 3,
+    JSON.stringify(asked?.params))
   check('two of three votes do not pause', twoVotes?.state?.paused === false)
 
   send(c, { t: 'pause', want: true })
@@ -231,6 +245,7 @@ async function main() {
   send(a, { t: 'pause', want: true })
   const oneResume = await waitFor(a, m => m.t === 'state' && m.state.pauseVotes.length === 1)
   check('one of three votes does not resume', oneResume?.state?.paused === true)
+  check('the chat hears who asked to resume', a.inbox.some(m => m.t === 'log' && m.key === 'resumeRequested'))
   send(b, { t: 'pause', want: true })
   const resumed = await waitFor(a, m => m.t === 'state' && !m.state.paused)
   check('a majority resumes the game', Boolean(resumed))

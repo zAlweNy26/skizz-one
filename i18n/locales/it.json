@@ -91,7 +91,10 @@
     "wordWas": "La parola era \"{word}\"",
     "paused": "Hanno votato tutti — la partita è in pausa",
     "resumed": "La maggioranza ha votato — la partita riprende",
-    "guessOnHold": "La partita è in pausa — le risposte contano di nuovo alla ripresa"
+    "guessOnHold": "La partita è in pausa — le risposte contano di nuovo alla ripresa",
+    "choosing": "{name} sta scegliendo una parola…",
+    "pauseRequested": "{name} vuole mettere in pausa ({votes}/{needed})",
+    "resumeRequested": "{name} vuole riprendere ({votes}/{needed})"
   },
   "home": {
     "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",
@@ -120,5 +123,14 @@
   "seo": {
     "title": "SkizzOne – Gioco online di disegno e indovinelli",
     "description": "Gioco multigiocatore gratuito di disegno e indovinelli. Crea una stanza, condividi il link e fai a turno a disegnare e indovinare con gli amici. Senza registrazione, senza download."
+  },
+  "choose": {
+    "title": "Scegli una parola da disegnare",
+    "waiting": "{name} sta scegliendo una parola…"
+  },
+  "finished": {
+    "title": "Partita finita — un'altra?",
+    "winner": "Vince {name}!",
+    "youWin": "Hai vinto!"
   }
 }

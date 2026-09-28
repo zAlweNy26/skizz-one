@@ -91,7 +91,10 @@
     "wordWas": "The word was \"{word}\"",
     "paused": "Everyone voted — the game is paused",
     "resumed": "The majority voted — the game resumes",
-    "guessOnHold": "The game is paused — guesses count again once it resumes"
+    "guessOnHold": "The game is paused — guesses count again once it resumes",
+    "choosing": "{name} is choosing a word…",
+    "pauseRequested": "{name} wants to pause ({votes}/{needed})",
+    "resumeRequested": "{name} wants to resume ({votes}/{needed})"
   },
   "home": {
     "tagline": "Draw, guess, laugh. Pick a name and jump in.",
@@ -120,5 +123,14 @@
   "seo": {
     "title": "SkizzOne – Online drawing and guessing game",
     "description": "Free multiplayer drawing and guessing game. Create a room, share the link and take turns drawing and guessing with friends. No sign-up, no download."
+  },
+  "choose": {
+    "title": "Pick a word to draw",
+    "waiting": "{name} is choosing a word…"
+  },
+  "finished": {
+    "title": "Game over — ready for another?",
+    "winner": "{name} wins!",
+    "youWin": "You win!"
   }
 }

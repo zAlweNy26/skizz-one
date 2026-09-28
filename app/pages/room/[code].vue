@@ -32,13 +32,17 @@ const { undo, redo, clear, canUndo, canRedo, brush } = drauu
 const game = useGameSocket(gameId)
 const {
   state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you,
-  hasGuessed, paused, votedPause, customWords,
+  hasGuessed, paused, votedPause, customWords, choices,
 } = game
 
 const sync = useDrawingSync(drauu, {
   send: game.send,
   onMessage: game.onMessage,
   isDrawer,
+})
+
+watch(isDrawer, (drawing) => {
+  if (drawing && document.activeElement instanceof HTMLElement) document.activeElement.blur()
 })
 
 watch(paused, (now, was) => {
@@ -54,6 +58,9 @@ const secondsLeft = computed(() => {
 
 const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
+
+const drawerName = computed(() => state.value?.players.find(p => p.id === state.value?.drawerId)?.name ?? '')
+const winner = computed(() => (phase.value === 'finished' ? leaderboard.value[0] : undefined))
 
 const canVotePause = computed(() => phase.value === 'drawing' || phase.value === 'intermission')
 const pauseTally = computed(() => {
@@ -113,7 +120,7 @@ async function shareGame() {
 const wakeLock = useWakeLock()
 watch(phase, (now) => {
   if (!wakeLock.isSupported.value) return
-  if (now === 'drawing' || now === 'intermission')
+  if (now === 'choosing' || now === 'drawing' || now === 'intermission')
     wakeLock.request('screen').catch(() => {})
   else
     wakeLock.release().catch(() => {})
@@ -267,7 +274,7 @@ defineShortcuts({
       class="lg:hidden group-has-[input:focus]/room:hidden" />
 
     <SketchFrame
-      v-if="phase === 'lobby'" :radius="20" :strokeWidth="3"
+      v-if="phase === 'lobby' || phase === 'finished'" :radius="20" :strokeWidth="3"
       class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 lg:gap-y-4 lg:px-6 lg:py-5">
       <SketchFrame
         shape="circle" fill="var(--color-tangerine-200)"
@@ -276,7 +283,7 @@ defineShortcuts({
       </SketchFrame>
       <div class="grow basis-64">
         <h2 class="font-display font-bold text-xl lg:text-2xl">
-          {{ $t('lobby.title') }}
+          {{ phase === 'finished' ? $t('finished.title') : $t('lobby.title') }}
         </h2>
         <p class="text-muted">
           {{ isHost ? $t('lobby.host') : $t('lobby.guest') }}
@@ -305,7 +312,7 @@ defineShortcuts({
         class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1" />
 
       <div class="flex flex-col gap-2 shrink-0 lg:gap-4 lg:order-2">
-        <div v-if="phase !== 'lobby'" class="flex items-center justify-center gap-3 lg:gap-4">
+        <div v-if="phase !== 'lobby' && phase !== 'finished'" class="flex items-center justify-center gap-3 lg:gap-4">
           <SketchFrame
             :key="turnKey" :radius="18" :strokeWidth="3"
             class="pop-in flex items-center gap-3 px-4 py-1.5 min-h-12 min-w-0 lg:px-6 lg:py-2 lg:min-h-16">
@@ -342,15 +349,10 @@ defineShortcuts({
           :radius="16" :strokeWidth="3.5" :roughness="1.4"
           class="p-1.5 w-full mx-auto lg:p-2.5 lg:max-w-[calc((100dvh-21rem)*16/9)]">
           <div class="relative aspect-video rounded-sm overflow-hidden" :style="{ backgroundColor: currentBg }">
-            <div
-              v-if="paused"
-              class="absolute inset-0 z-10 grid place-content-center justify-items-center gap-2
-                bg-default/80 backdrop-blur-sm">
-              <UIcon name="i-lucide-pause" class="size-12 text-warning" />
-              <p class="font-display font-bold text-2xl">
-                {{ $t('pause.overlay') }}
-              </p>
-            </div>
+            <CanvasOverlay
+              :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices"
+              :drawerName="drawerName" :winner="winner" :you="you"
+              @choose="game.send({ t: 'choose', index: $event })" />
             <svg
               ref="sketch"
               class="size-full"

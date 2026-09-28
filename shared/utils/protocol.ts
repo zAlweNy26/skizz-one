@@ -103,7 +103,10 @@ export function splitCustomWords(text: string) {
   return cleanCustomWords(text.split(/[,\n]/))
 }
 
-export type RoundPhase = 'lobby' | 'drawing' | 'intermission' | 'finished'
+export type RoundPhase = 'lobby' | 'choosing' | 'drawing' | 'intermission' | 'finished'
+
+/** Words the drawer picks from at the start of a turn. */
+export const WORD_CHOICES = 3
 
 /** Phases whose countdown players can vote to pause. */
 export const PAUSABLE_PHASES: readonly RoundPhase[] = ['drawing', 'intermission']
@@ -153,7 +156,7 @@ export type LogKey
   = | 'joined' | 'reconnected' | 'disconnected' | 'hostLeft' | 'drawerDropped'
     | 'drawerGone' | 'languageChanged' | 'waitingForPlayers' | 'drawing'
     | 'close' | 'guessed' | 'timeUp' | 'winner' | 'gameOver'
-    | 'paused' | 'resumed' | 'guessOnHold'
+    | 'paused' | 'resumed' | 'guessOnHold' | 'choosing' | 'pauseRequested' | 'resumeRequested'
 
 /** Values interpolated into a log message, e.g. `{ name: 'Bob' }`. */
 export type LogParams = Record<string, string | number>
@@ -174,6 +177,7 @@ export type ClientMessage
     | { t: 'start' }
     | { t: 'settings', settings: Partial<RoomSettings> }
     | { t: 'pause', want: boolean }
+    | { t: 'choose', index: number }
     | { t: 'ping' }
 
 export type ServerMessage
@@ -186,6 +190,8 @@ export type ServerMessage
     | { t: 'log', level: LogLevel, key: LogKey, params?: LogParams }
     | { t: 'chat', sender: string, text: string, private?: boolean }
     | { t: 'customWords', words: string[] }
+  /** Sent only to the drawer while they pick the turn's word. */
+    | { t: 'choices', words: string[] }
     | { t: 'pong' }
 
 const DRAWING_MESSAGES = new Set(['strokeStart', 'draw', 'preview', 'commit', 'canvas'])

@@ -351,6 +351,12 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     }
   }
 
+  watch(game.isDrawer, () => {
+    endStroke()
+    clearPreviews()
+    load(dump() ?? '')
+  })
+
   game.onMessage((msg) => {
     if (game.isDrawer.value && msg.t !== 'canvas' && msg.t !== 'roundEnd') return
     applyRemote(msg)

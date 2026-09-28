@@ -32,17 +32,21 @@ import {
   PAUSABLE_PHASES,
   ROUNDS,
   votesNeeded,
+  WORD_CHOICES,
 } from '../../shared/utils/protocol'
 import { drawerShare, guessPoints } from './scoring'
-import { pickWord } from './words'
+import { pickWords } from './words'
 
 /** Pause between the word reveal and the next turn. */
-const INTERMISSION_MS = 6_000
+const INTERMISSION_MS = 3_000
+
+/** How long the drawer has to pick a word before one is picked for them. */
+const CHOOSE_MS = 15_000
 
 /** Edit distance at which a guess earns a private "you're close" nudge. */
 const NEAR_MISS_DISTANCE = 2
 
-type AlarmKind = 'round' | 'intermission' | 'grace'
+type AlarmKind = 'choose' | 'round' | 'intermission' | 'grace'
 
 interface StoredPlayer {
   id: string
@@ -65,6 +69,8 @@ interface RoomState {
   drawerId: string | null
   endsAt: number | null
   word: string | null
+  /** Words offered to the drawer while choosing. */
+  choices: string[]
   /** Indices of the word's letters that hints have revealed this turn. */
   revealed: number[]
   usedWords: string[]
@@ -98,6 +104,7 @@ function initialState(): RoomState {
     drawerId: null,
     endsAt: null,
     word: null,
+    choices: [],
     revealed: [],
     usedWords: [],
     order: [],
@@ -268,6 +275,9 @@ export class GameRoom extends Server<Env> {
       })
     }
 
+    if (s.drawerId === playerId && s.phase === 'choosing')
+      this.#send(connection, { t: 'choices', words: s.choices })
+
     this.#broadcastState()
   }
 
@@ -348,6 +358,9 @@ export class GameRoom extends Server<Env> {
         break
       case 'pause':
         await this.#votePause(playerId, msg.want)
+        break
+      case 'choose':
+        await this.#chooseWord(playerId, msg.index)
         break
       case 'guess':
         await this.#handleGuess(connection, playerId, msg.text)
@@ -485,7 +498,16 @@ export class GameRoom extends Server<Env> {
     else if (want === false && has) s.pauseVotes = s.pauseVotes.filter(id => id !== playerId)
     else return
 
+    const wasPaused = s.pause !== null
     await this.#checkPauseVotes()
+    if (want === true && (s.pause !== null) === wasPaused) {
+      const connected = s.order.filter(id => s.players[id]?.connected).length
+      this.#log('warning', wasPaused ? 'resumeRequested' : 'pauseRequested', {
+        name: s.players[playerId]?.name ?? '',
+        votes: this.#pauseVoters().length,
+        needed: votesNeeded(connected, wasPaused),
+      })
+    }
     await this.#save()
     this.#broadcastState()
   }
@@ -513,7 +535,7 @@ export class GameRoom extends Server<Env> {
     s.endsAt = null
     s.alarmKind = null
     await this.ctx.storage.deleteAlarm()
-    this.#log('info', 'paused')
+    this.#log('warning', 'paused')
   }
 
   async #resumeCountdown() {
@@ -521,7 +543,7 @@ export class GameRoom extends Server<Env> {
     const pause = s.pause
     if (!pause) return
     s.pause = null
-    this.#log('info', 'resumed')
+    this.#log('warning', 'resumed')
 
     const drawer = s.drawerId ? s.players[s.drawerId] : null
     if (s.phase === 'drawing' && drawer && !drawer.connected) {
@@ -606,6 +628,7 @@ export class GameRoom extends Server<Env> {
       s.phase = 'lobby'
       s.drawerId = null
       s.word = null
+      s.choices = []
       s.endsAt = null
       s.alarmKind = null
       s.pauseVotes = []
@@ -618,31 +641,59 @@ export class GameRoom extends Server<Env> {
     const next = this.#nextDrawerIndex()
     if (next === null) return
 
-    if (next <= s.turnIndex || s.turnIndex === -1) s.round += 1
-
-    if (s.round > s.totalRounds) {
+    const round = next <= s.turnIndex || s.turnIndex === -1 ? s.round + 1 : s.round
+    if (round > s.totalRounds) {
       await this.#finishGame()
       return
     }
 
+    s.round = round
     s.turnIndex = next
     s.drawerId = s.order[next]!
-    s.phase = 'drawing'
-    s.word = pickWord(s.language, s.usedWords, s.customWords)
+    s.phase = 'choosing'
+    s.word = null
+    s.choices = pickWords(s.language, WORD_CHOICES, s.usedWords, s.customWords)
     s.revealed = []
-    s.usedWords.push(s.word)
     this.#canvas = ''
     this.#saveCanvas()
     s.pausedMs = null
-    s.endsAt = Date.now() + this.#drawMs()
+    s.endsAt = Date.now() + CHOOSE_MS
 
     for (const p of Object.values(s.players)) p.guessed = false
+
+    await this.#setAlarm('choose', CHOOSE_MS)
+    await this.#save()
+
+    this.#broadcast({ t: 'canvas', svg: '' })
+    for (const conn of this.#connectionsOf(s.drawerId))
+      this.#send(conn, { t: 'choices', words: s.choices })
+
+    this.#log('info', 'choosing', { name: s.players[s.drawerId]?.name ?? '' })
+    this.#broadcastState()
+  }
+
+  async #chooseWord(playerId: string, index: unknown) {
+    const s = this.#state
+    if (s.phase !== 'choosing' || playerId !== s.drawerId || typeof index !== 'number') return
+    const word = s.choices[index]
+    if (word) await this.#beginDrawing(word)
+  }
+
+  async #beginDrawing(word: string) {
+    const s = this.#state
+    if (!s.drawerId) return
+
+    s.phase = 'drawing'
+    s.word = word
+    s.choices = []
+    s.revealed = []
+    s.usedWords.push(word)
+    s.endsAt = Date.now() + this.#drawMs()
 
     await this.#armRound()
     await this.#save()
 
-    const hint = maskWord(s.word)
-    this.#broadcast({ t: 'canvas', svg: '' })
+    const hint = maskWord(word)
     this.#broadcast(
       { t: 'turn', drawerId: s.drawerId, round: s.round, endsAt: s.endsAt, hint },
       this.#connectionsOf(s.drawerId).map(c => c.id),
@@ -654,7 +705,7 @@ export class GameRoom extends Server<Env> {
         round: s.round,
         endsAt: s.endsAt,
         hint,
-        word: s.word,
+        word,
       })
     }
 
@@ -696,6 +747,7 @@ export class GameRoom extends Server<Env> {
     s.phase = 'finished'
     s.drawerId = null
     s.word = null
+    s.choices = []
     s.endsAt = null
     s.alarmKind = null
     s.pauseVotes = []
@@ -718,6 +770,16 @@ export class GameRoom extends Server<Env> {
     s.alarmKind = null
 
     switch (kind) {
+      case 'choose': {
+        const drawer = s.drawerId ? s.players[s.drawerId] : null
+        if (drawer?.connected && s.choices.length) {
+          await this.#beginDrawing(s.choices[Math.floor(Math.random() * s.choices.length)]!)
+          break
+        }
+        this.#log('warning', 'drawerGone')
+        await this.#startTurn()
+        break
+      }
       case 'round':
         if (s.endsAt && s.endsAt > Date.now()) {
           const revealed = this.#revealDueHints()

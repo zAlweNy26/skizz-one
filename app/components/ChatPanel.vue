@@ -44,14 +44,10 @@ const shown = computed(() => {
 })
 
 const log = useTemplateRef<HTMLElement>('log')
-watch(() => props.entries.length, async () => {
-  const el = log.value
-  if (!el) return
-  const atNewest = isDesktop.value
-    ? el.scrollHeight - el.scrollTop - el.clientHeight < 48
-    : el.scrollTop < 48
+watch([() => props.entries.length, isDesktop], async () => {
   await nextTick()
-  if (atNewest) el.scrollTop = isDesktop.value ? el.scrollHeight : 0
+  const el = log.value
+  if (el) el.scrollTop = isDesktop.value ? el.scrollHeight : 0
 })
 
 function submit(event: KeyboardEvent) {
