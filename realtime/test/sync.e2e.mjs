@@ -70,6 +70,19 @@ async function main() {
   const rosterA = await waitFor(a, m => m.t === 'state' && m.state.players.length === 2)
   check('roster reaches two players', Boolean(rosterA), `${rosterA?.state?.players?.length ?? 0}`)
 
+  // --- word language -----------------------------------------------------
+  check('room starts in English', welcomeA?.state?.language === 'en', welcomeA?.state?.language)
+
+  a.inbox.length = 0
+  send(b, { t: 'language', language: 'it' })
+  send(a, { t: 'language', language: 'xx' })
+  const ignored = await waitFor(a, m => m.t === 'state', 800)
+  check('only a known language from the host is accepted', ignored === null, ignored?.state?.language)
+
+  send(a, { t: 'language', language: 'it' })
+  const switched = await waitFor(b, m => m.t === 'state' && m.state.language === 'it')
+  check('host switches the room to Italian', Boolean(switched))
+
   // --- the word must never be broadcast ---------------------------------
   a.inbox.length = 0
   b.inbox.length = 0

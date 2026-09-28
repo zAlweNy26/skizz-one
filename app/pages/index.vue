@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import type { Language } from '#shared/utils/protocol'
 import { useDrauu } from '@vueuse/integrations/useDrauu'
 import { randomUUID } from 'uncrypto'
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '#shared/utils/protocol'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_LANGUAGE, LANGUAGES } from '#shared/utils/protocol'
 
 const paletteColors = [
   '#FFFFFF', '#c1c1c1', '#ef130b', '#ff7100', '#ffe400', '#00cc00', '#00ff91', '#00b2ff', '#231fd3', '#a300ba', '#df69a7', '#ffac8e', '#a0522d',
@@ -51,6 +52,14 @@ const wordDisplay = computed(() => {
   if (word.value) return word.value
   return hint.value || '—'
 })
+
+const languageItems = (Object.keys(LANGUAGES) as Language[]).map(value => ({ value, label: LANGUAGES[value] }))
+const language = computed(() => state.value?.language ?? DEFAULT_LANGUAGE)
+
+/** No optimistic update: the room confirms it by broadcasting its state. */
+function setLanguage(value: Language) {
+  game.send({ t: 'language', language: value })
+}
 
 const { copy } = useClipboard()
 
@@ -148,9 +157,17 @@ defineShortcuts({
       v-if="phase === 'lobby'"
       icon="i-lucide-users"
       title="Waiting to start"
-      :description="isHost ? 'You are the host. Start when everyone has joined.' : 'Waiting for the host to start the game.'"
-      class="w-full"
-      :actions="isHost ? [{ label: 'Start game', onClick: () => game.send({ t: 'start' }) }] : []" />
+      :description="isHost
+        ? 'You are the host. Pick the word language and start when everyone has joined.'
+        : `Waiting for the host to start the game. Words will be in ${LANGUAGES[language]}.`"
+      class="w-full">
+      <template v-if="isHost" #actions>
+        <USelect
+          :model-value="language" :items="languageItems" icon="i-lucide-languages"
+          class="w-40" aria-label="Word language" @update:model-value="setLanguage" />
+        <UButton label="Start game" @click="game.send({ t: 'start' })" />
+      </template>
+    </UAlert>
 
     <section class="grid grid-cols-1 lg:grid-cols-[minmax(min-content,1fr)_minmax(min-content,42rem)_minmax(16rem,1fr)] w-full gap-4">
       <PlayerList :players="leaderboard" :drawer-id="state?.drawerId" :you="you" />

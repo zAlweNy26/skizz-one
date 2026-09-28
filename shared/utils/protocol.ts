@@ -60,6 +60,25 @@ export function isOpaque(mode: DrawingMode) {
  */
 export const POINT_STRIDE = 3
 
+/**
+ * Word-list languages, keyed by the tag a room stores.
+ *
+ * Only the names live here: the lists themselves stay in the realtime worker
+ * so the client bundle never ships the words.
+ */
+export const LANGUAGES = {
+  en: 'English',
+  it: 'Italiano',
+} as const
+
+export type Language = keyof typeof LANGUAGES
+
+export const DEFAULT_LANGUAGE: Language = 'en'
+
+export function isLanguage(value: unknown): value is Language {
+  return typeof value === 'string' && Object.hasOwn(LANGUAGES, value)
+}
+
 export type RoundPhase = 'lobby' | 'drawing' | 'intermission' | 'finished'
 
 export interface GamePlayer {
@@ -76,6 +95,8 @@ export interface GameState {
   phase: RoundPhase
   round: number
   totalRounds: number
+  /** Which word list the room draws from. Only the host can change it. */
+  language: Language
   hostId: string | null
   drawerId: string | null
   /** Epoch ms the current phase ends, or null when untimed. */
@@ -106,6 +127,7 @@ export type ClientMessage
     | { t: 'guess', text: string }
     | { t: 'chat', text: string }
     | { t: 'start' }
+    | { t: 'language', language: Language }
     | { t: 'ping' }
 
 /** Server -> client. */

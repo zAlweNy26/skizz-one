@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pickWord, pickWords } from '../../realtime/src/words'
+import { pickWord, pickWords, WORDS } from '../../realtime/src/words'
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -7,7 +7,9 @@ import {
   editDistance,
   isDrawingMessage,
   isFreehand,
+  isLanguage,
   isOpaque,
+  LANGUAGES,
   maskWord,
   normalizeGuess,
   POINT_STRIDE,
@@ -120,20 +122,49 @@ describe('word selection', () => {
   it('never repeats a word still in the used list', () => {
     const used: string[] = []
     for (let i = 0; i < 40; i++) {
-      const word = pickWord(used)
+      const word = pickWord('en', used)
       expect(used).not.toContain(word)
       used.push(word)
     }
   })
 
   it('returns distinct words in one draw', () => {
-    const words = pickWords(3)
+    const words = pickWords('en', 3)
     expect(new Set(words).size).toBe(3)
   })
 
   it('still yields a word once the list is exhausted', () => {
     // A long game must not stall for want of an unused word.
-    const everything = pickWords(500)
-    expect(pickWord(everything)).toBeTruthy()
+    const everything = pickWords('en', 500)
+    expect(pickWord('en', everything)).toBeTruthy()
+  })
+})
+
+describe('word lists', () => {
+  it('has a list for every language the client can pick', () => {
+    expect(Object.keys(WORDS).sort()).toEqual(Object.keys(LANGUAGES).sort())
+  })
+
+  it.each(Object.entries(WORDS))('keeps %s guessable', (_, words) => {
+    expect(words.length).toBeGreaterThan(50)
+    expect(new Set(words).size).toBe(words.length)
+    for (const word of words) {
+      // The hint masks every non-space character, so a hyphen or apostrophe
+      // would be invisible to guessers yet still required by the answer.
+      expect(word).toMatch(/^\p{Ll}+(?: \p{Ll}+)*$/u)
+    }
+  })
+
+  it('draws only from the requested language', () => {
+    expect(WORDS.it).toContain(pickWord('it'))
+  })
+})
+
+describe('isLanguage', () => {
+  it('accepts known tags and rejects anything else', () => {
+    expect(isLanguage('it')).toBe(true)
+    expect(isLanguage('xx')).toBe(false)
+    expect(isLanguage('toString')).toBe(false)
+    expect(isLanguage(undefined)).toBe(false)
   })
 })

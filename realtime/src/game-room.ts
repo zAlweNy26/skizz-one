@@ -4,15 +4,19 @@ import type {
   DrawingMessage,
   GamePlayer,
   GameState,
+  Language,
   LogLevel,
   RoundPhase,
   ServerMessage,
 } from '../../shared/utils/protocol'
 import { Server } from 'partyserver'
 import {
+  DEFAULT_LANGUAGE,
   DRAWER_GRACE_MS,
   editDistance,
   isDrawingMessage,
+  isLanguage,
+  LANGUAGES,
   maskWord,
   normalizeGuess,
 } from '../../shared/utils/protocol'
@@ -50,6 +54,7 @@ interface RoomState {
   phase: RoundPhase
   round: number
   totalRounds: number
+  language: Language
   hostId: string | null
   drawerId: string | null
   endsAt: number | null
@@ -74,6 +79,7 @@ function initialState(): RoomState {
     phase: 'lobby',
     round: 0,
     totalRounds: TOTAL_ROUNDS,
+    language: DEFAULT_LANGUAGE,
     hostId: null,
     drawerId: null,
     endsAt: null,
@@ -113,7 +119,9 @@ export class GameRoom extends Server<Env> {
     // hibernation, where the constructor runs again on a fresh isolate.
     ctx.blockConcurrencyWhile(async () => {
       const stored = await ctx.storage.get<RoomState | string>(['state', 'canvas'])
-      this.#state = (stored.get('state') as RoomState | undefined) ?? initialState()
+      // Spread over the defaults so a room saved before a field existed
+      // (e.g. `language`) still wakes up with every field set.
+      this.#state = { ...initialState(), ...(stored.get('state') as RoomState | undefined) }
       this.#canvas = (stored.get('canvas') as string | undefined) ?? ''
     })
   }
@@ -170,6 +178,7 @@ export class GameRoom extends Server<Env> {
       phase: s.phase,
       round: s.round,
       totalRounds: s.totalRounds,
+      language: s.language,
       hostId: s.hostId,
       drawerId: s.drawerId,
       endsAt: s.endsAt,
@@ -330,9 +339,11 @@ export class GameRoom extends Server<Env> {
 
     switch (msg.t) {
       case 'start':
-        if (playerId === s.hostId && (s.phase === 'lobby' || s.phase === 'finished'))
-          await this.#startGame()
+        if (this.#canConfigure(playerId)) await this.#startGame()
 
+        break
+      case 'language':
+        await this.#setLanguage(playerId, msg.language)
         break
       case 'guess':
         await this.#handleGuess(connection, playerId, msg.text)
@@ -353,6 +364,23 @@ export class GameRoom extends Server<Env> {
     else if (msg.t === 'canvas') this.#canvas = msg.svg
     else return
     this.#saveCanvas()
+  }
+
+  /** Only the host sets the game up, and only between games. */
+  #canConfigure(playerId: string) {
+    const s = this.#state
+    return playerId === s.hostId && (s.phase === 'lobby' || s.phase === 'finished')
+  }
+
+  /** Not mid-game: the next word would come from a different list. */
+  async #setLanguage(playerId: string, language: unknown) {
+    const s = this.#state
+    if (!this.#canConfigure(playerId) || !isLanguage(language) || language === s.language) return
+
+    s.language = language
+    await this.#save()
+    this.#log('info', `Words are now in ${LANGUAGES[language]}`)
+    this.#broadcastState()
   }
 
   async #handleGuess(connection: Connection, playerId: string, rawText: string) {
@@ -489,7 +517,7 @@ export class GameRoom extends Server<Env> {
     s.turnIndex = next
     s.drawerId = s.order[next]!
     s.phase = 'drawing'
-    s.word = pickWord(s.usedWords)
+    s.word = pickWord(s.language, s.usedWords)
     s.usedWords.push(s.word)
     this.#canvas = ''
     this.#saveCanvas()
