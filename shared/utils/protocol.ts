@@ -82,6 +82,58 @@ export function isLanguage(value: unknown): value is Language {
   return typeof value === 'string' && Object.hasOwn(LANGUAGES, value)
 }
 
+/** Seconds a drawer gets per turn. */
+export const DRAW_TIME = { min: 10, max: 240, default: 80 } as const
+
+/** Rounds per game; in each one everybody draws once. */
+export const ROUNDS = { min: 2, max: 10, default: 3 } as const
+
+/** Letters revealed to guessers over a turn. */
+export const HINTS = { min: 0, max: 5, default: 2 } as const
+
+/** Keeps a room's stored state, and the host's paste, reasonably small. */
+export const MAX_CUSTOM_WORDS = 200
+export const MAX_CUSTOM_WORD_LENGTH = 30
+
+/** How a room plays. Only the host changes it, and only between games. */
+export interface RoomSettings {
+  language: Language
+  /** Seconds per turn. */
+  drawTime: number
+  totalRounds: number
+  hints: number
+  /** Added to the word list, and a little likelier to come up. */
+  customWords: string[]
+}
+
+/** Round `value` into `[min, max]`, or null if it isn't a number at all. */
+export function clampSetting(value: unknown, range: { min: number, max: number }) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return Math.min(range.max, Math.max(range.min, Math.round(value)))
+}
+
+/**
+ * Tidy a host's custom words: lowercase, single spaces, letters only, no
+ * duplicates. Apostrophes and hyphens are dropped along with the word, like
+ * in the built-in lists, because the masked hint can't show them.
+ */
+export function cleanCustomWords(words: unknown): string[] {
+  if (!Array.isArray(words)) return []
+  const clean = new Set<string>()
+  for (const raw of words) {
+    if (typeof raw !== 'string') continue
+    const word = raw.trim().toLowerCase().replace(/\s+/g, ' ')
+    if (word && word.length <= MAX_CUSTOM_WORD_LENGTH && /^[\p{L}\p{M} ]+$/u.test(word)) clean.add(word)
+    if (clean.size >= MAX_CUSTOM_WORDS) break
+  }
+  return [...clean]
+}
+
+/** Split what the host typed, one word or phrase per comma or line. */
+export function splitCustomWords(text: string) {
+  return cleanCustomWords(text.split(/[,\n]/))
+}
+
 export type RoundPhase = 'lobby' | 'drawing' | 'intermission' | 'finished'
 
 /** Phases whose countdown players can vote to pause. */
@@ -114,6 +166,15 @@ export interface GameState {
   totalRounds: number
   /** Which word list the room draws from. Only the host can change it. */
   language: Language
+  /** Seconds per turn. */
+  drawTime: number
+  /** Most letters revealed over a turn; short words get fewer. */
+  hints: number
+  /**
+   * How many custom words the host added. The words themselves go to the
+   * host only, in a `customWords` message: guessers could read them here.
+   */
+  customWordCount: number
   hostId: string | null
   drawerId: string | null
   /** Epoch ms the current phase ends, or null when untimed. */
@@ -168,7 +229,8 @@ export type ClientMessage
     | { t: 'guess', text: string }
     | { t: 'chat', text: string }
     | { t: 'start' }
-    | { t: 'language', language: Language }
+  /** Host only, between games. Fields left out stay as they are. */
+    | { t: 'settings', settings: Partial<RoomSettings> }
   /** Cast (`want: true`) or withdraw a vote to pause or resume. */
     | { t: 'pause', want: boolean }
     | { t: 'ping' }
@@ -183,6 +245,8 @@ export type ServerMessage
     | { t: 'roundEnd', word: string, state: GameState }
     | { t: 'log', level: LogLevel, key: LogKey, params?: LogParams }
     | { t: 'chat', sender: string, text: string, private?: boolean }
+  /** Sent to the host only, whenever the list changes or the host does. */
+    | { t: 'customWords', words: string[] }
     | { t: 'pong' }
 
 /** Messages only the current drawer is allowed to send. */
@@ -206,9 +270,31 @@ export function dequantize(n: number) {
   return n / 10
 }
 
-/** Mask a word for guessers: letters become underscores, spaces survive. */
-export function maskWord(word: string) {
-  return word.replace(/\S/g, '_')
+/**
+ * Mask a word for guessers: letters become underscores, spaces survive, and
+ * so do the letters at the `revealed` indices, which hints have given away.
+ */
+export function maskWord(word: string, revealed: readonly number[] = []) {
+  const shown = new Set(revealed)
+  return [...word].map((c, i) => (/\s/.test(c) || shown.has(i) ? c : '_')).join('')
+}
+
+/**
+ * Letters a turn actually reveals: the room's setting, but never more than
+ * half the word, so a hint can't simply hand over a short one.
+ */
+export function hintBudget(word: string, hints: number) {
+  const letters = [...word].filter(c => !/\s/.test(c)).length
+  return Math.max(0, Math.min(hints, Math.floor(letters / 2)))
+}
+
+/**
+ * Ms into a turn at which hint `n` (1-based) is revealed. The hints split
+ * the turn evenly, so the last one still leaves time to use it. Whole ms, so
+ * the alarm that fires at this time is sure to find the hint due.
+ */
+export function hintRevealAt(n: number, drawMs: number, budget: number) {
+  return Math.ceil(drawMs * n / (budget + 1))
 }
 
 /**

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Language } from '#shared/utils/protocol'
+import type { RoomSettings } from '#shared/utils/protocol'
 import { useDrauu } from '@vueuse/integrations/useDrauu'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_LANGUAGE, LANGUAGES, votesNeeded, wordLengths } from '#shared/utils/protocol'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, LANGUAGES, votesNeeded, wordLengths } from '#shared/utils/protocol'
 
 definePageMeta({ middleware: 'nickname' })
 
@@ -33,7 +33,7 @@ const { undo, redo, clear, canUndo, canRedo, brush } = drauu
 const game = useGameSocket(gameId)
 const {
   state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you,
-  hasGuessed, paused, votedPause,
+  hasGuessed, paused, votedPause, customWords,
 } = game
 
 const sync = useDrawingSync(drauu, {
@@ -82,12 +82,23 @@ const wordDisplay = computed(() => {
 /** Letters per word, so a long run of blanks doesn't have to be counted. */
 const lengths = computed(() => wordLengths(word.value ?? hint.value))
 
-const languageItems = (Object.keys(LANGUAGES) as Language[]).map(value => ({ value, label: LANGUAGES[value] }))
-const language = computed(() => state.value?.language ?? DEFAULT_LANGUAGE)
+/** How the next game plays, shown to everyone in the lobby. */
+const settingsSummary = computed(() => {
+  const s = state.value
+  if (!s) return []
+  return [
+    { icon: 'i-lucide-languages', label: LANGUAGES[s.language] },
+    { icon: 'i-lucide-timer', label: t('settings.seconds', { n: s.drawTime }) },
+    { icon: 'i-lucide-repeat', label: t('settings.roundCount', s.totalRounds) },
+    { icon: 'i-lucide-lightbulb', label: t('settings.hintCount', s.hints) },
+    ...(s.customWordCount
+      ? [{ icon: 'i-lucide-list-plus', label: t('settings.customWordTotal', s.customWordCount) }]
+      : []),
+  ]
+})
 
-/** No optimistic update: the room confirms it by broadcasting its state. */
-function setLanguage(value: Language) {
-  game.send({ t: 'language', language: value })
+function saveSettings(settings: RoomSettings) {
+  game.send({ t: 'settings', settings })
 }
 
 const { copy } = useClipboard()
@@ -305,13 +316,16 @@ defineShortcuts({
           {{ $t('lobby.title') }}
         </h2>
         <p class="text-muted">
-          {{ isHost ? $t('lobby.host') : $t('lobby.guest', { language: LANGUAGES[language] }) }}
+          {{ isHost ? $t('lobby.host') : $t('lobby.guest') }}
         </p>
+        <ul class="mt-2 flex flex-wrap gap-1.5" :aria-label="$t('settings.title')">
+          <li v-for="item in settingsSummary" :key="item.icon">
+            <UBadge color="neutral" variant="soft" size="lg" :icon="item.icon" :label="item.label" />
+          </li>
+        </ul>
       </div>
-      <div v-if="isHost" class="flex flex-wrap items-center gap-3">
-        <USelect
-          :modelValue="language" :items="languageItems" icon="i-lucide-languages" size="lg"
-          class="w-44 min-h-11" :aria-label="$t('lobby.wordLanguage')" @update:modelValue="setLanguage" />
+      <div v-if="isHost && state" class="flex flex-wrap items-center gap-3">
+        <GameSettings :state="state" :customWords="customWords" @save="saveSettings" />
         <UButton
           color="secondary" size="xl" icon="i-lucide-rocket" class="text-lg min-h-11"
           :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />

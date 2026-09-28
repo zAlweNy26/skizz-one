@@ -69,18 +69,42 @@ async function main() {
   const rosterA = await waitFor(a, m => m.t === 'state' && m.state.players.length === 2)
   check('roster reaches two players', Boolean(rosterA), `${rosterA?.state?.players?.length ?? 0}`)
 
-  // --- word language -----------------------------------------------------
+  // --- settings ---------------------------------------------------------
   check('room starts in English', welcomeA?.state?.language === 'en', welcomeA?.state?.language)
+  check('room starts on the default draw time', welcomeA?.state?.drawTime === 80, welcomeA?.state?.drawTime)
 
   a.inbox.length = 0
-  send(b, { t: 'language', language: 'it' })
-  send(a, { t: 'language', language: 'xx' })
+  send(b, { t: 'settings', settings: { language: 'it' } })
   const ignored = await waitFor(a, m => m.t === 'state', 800)
-  check('only a known language from the host is accepted', ignored === null, ignored?.state?.language)
+  check('only the host can change the settings', ignored === null, ignored?.state?.language)
 
-  send(a, { t: 'language', language: 'it' })
+  b.inbox.length = 0
+  send(a, {
+    t: 'settings',
+    settings: {
+      language: 'it',
+      drawTime: 9999,
+      totalRounds: 1,
+      hints: 'lots',
+      customWords: ['Zeppelin', 'rock-n-roll', 'zeppelin'],
+    },
+  })
   const switched = await waitFor(b, m => m.t === 'state' && m.state.language === 'it')
   check('host switches the room to Italian', Boolean(switched))
+  check('draw time is clamped to 240 s', switched?.state?.drawTime === 240, switched?.state?.drawTime)
+  check('rounds are clamped to 2', switched?.state?.totalRounds === 2, switched?.state?.totalRounds)
+  check('a malformed hint count is ignored', switched?.state?.hints === 2, switched?.state?.hints)
+  check('custom words are counted, cleaned', switched?.state?.customWordCount === 1, switched?.state?.customWordCount)
+
+  const hostWords = await waitFor(a, m => m.t === 'customWords')
+  check('the host gets the custom words back', JSON.stringify(hostWords?.words) === '["zeppelin"]',
+    JSON.stringify(hostWords?.words))
+  const guestWords = b.inbox.find(m => m.t === 'customWords')
+  const leakedWord = b.inbox.some(m => JSON.stringify(m).includes('zeppelin'))
+  check('other players never see the custom words', !guestWords && !leakedWord)
+
+  send(a, { t: 'settings', settings: { drawTime: 80 } })
+  await waitFor(b, m => m.t === 'state' && m.state.drawTime === 80)
 
   // --- the word must never be broadcast ---------------------------------
   a.inbox.length = 0

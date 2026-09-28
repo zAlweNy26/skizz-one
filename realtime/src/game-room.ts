@@ -8,14 +8,21 @@ import type {
   LogKey,
   LogLevel,
   LogParams,
+  RoomSettings,
   RoundPhase,
   ServerMessage,
 } from '../../shared/utils/protocol'
 import { Server } from 'partyserver'
 import {
+  clampSetting,
+  cleanCustomWords,
   DEFAULT_LANGUAGE,
+  DRAW_TIME,
   DRAWER_GRACE_MS,
   editDistance,
+  hintBudget,
+  hintRevealAt,
+  HINTS,
   isDrawingMessage,
   isLanguage,
   LANGUAGES,
@@ -23,17 +30,13 @@ import {
   MAX_NAME_LENGTH,
   normalizeGuess,
   PAUSABLE_PHASES,
+  ROUNDS,
   votesNeeded,
 } from '../../shared/utils/protocol'
 import { pickWord } from './words'
 
-/** How long a drawer gets to draw. */
-const ROUND_MS = 80_000
-
 /** Pause between the word reveal and the next turn. */
 const INTERMISSION_MS = 6_000
-
-const TOTAL_ROUNDS = 3
 
 /** Guessing fast is worth more; guessing at all is worth something. */
 const BASE_GUESS_POINTS = 50
@@ -60,11 +63,17 @@ interface RoomState {
   round: number
   totalRounds: number
   language: Language
+  /** Seconds per turn. */
+  drawTime: number
+  hints: number
+  customWords: string[]
   hostId: string | null
   drawerId: string | null
   endsAt: number | null
   /** The secret. Never leaves this object except to the drawer. */
   word: string | null
+  /** Indices of the word's letters that hints have revealed this turn. */
+  revealed: number[]
   usedWords: string[]
   /** Turn order, in join order. */
   order: string[]
@@ -90,12 +99,16 @@ function initialState(): RoomState {
   return {
     phase: 'lobby',
     round: 0,
-    totalRounds: TOTAL_ROUNDS,
+    totalRounds: ROUNDS.default,
     language: DEFAULT_LANGUAGE,
+    drawTime: DRAW_TIME.default,
+    hints: HINTS.default,
+    customWords: [],
     hostId: null,
     drawerId: null,
     endsAt: null,
     word: null,
+    revealed: [],
     usedWords: [],
     order: [],
     turnIndex: -1,
@@ -193,10 +206,13 @@ export class GameRoom extends Server<Env> {
       round: s.round,
       totalRounds: s.totalRounds,
       language: s.language,
+      drawTime: s.drawTime,
+      hints: s.hints,
+      customWordCount: s.customWords.length,
       hostId: s.hostId,
       drawerId: s.drawerId,
       endsAt: s.endsAt,
-      hint: s.word ? maskWord(s.word) : '',
+      hint: s.word ? maskWord(s.word, s.revealed) : '',
       players: s.order
         .map(id => s.players[id])
         .filter((p): p is StoredPlayer => Boolean(p))
@@ -215,6 +231,18 @@ export class GameRoom extends Server<Env> {
 
   #broadcastState() {
     this.#broadcast({ t: 'state', state: this.#publicState() })
+  }
+
+  /** The custom words are the host's to edit and nobody else's to read. */
+  #sendCustomWords() {
+    const s = this.#state
+    if (!s.hostId) return
+    for (const conn of this.#connectionsOf(s.hostId))
+      this.#send(conn, { t: 'customWords', words: s.customWords })
+  }
+
+  #drawMs() {
+    return this.#state.drawTime * 1000
   }
 
   // --- connection lifecycle ----------------------------------------------
@@ -258,10 +286,10 @@ export class GameRoom extends Server<Env> {
     s.hostId ??= playerId
 
     if (existing && s.drawerId === playerId && s.alarmKind === 'grace') {
-      const remaining = s.pausedMs ?? ROUND_MS
+      const remaining = s.pausedMs ?? this.#drawMs()
       s.pausedMs = null
       s.endsAt = Date.now() + remaining
-      await this.#setAlarm('round', remaining)
+      await this.#armRound()
       this.#log('success', 'reconnected', { name })
     }
 
@@ -269,6 +297,7 @@ export class GameRoom extends Server<Env> {
 
     this.#send(connection, { t: 'welcome', you: playerId, state: this.#publicState() })
     if (this.#canvas) this.#send(connection, { t: 'canvas', svg: this.#canvas })
+    if (s.hostId === playerId) this.#send(connection, { t: 'customWords', words: s.customWords })
 
     if (s.drawerId === playerId && s.word && s.phase === 'drawing') {
       this.#send(connection, {
@@ -276,7 +305,7 @@ export class GameRoom extends Server<Env> {
         drawerId: playerId,
         round: s.round,
         endsAt: s.endsAt ?? Date.now(),
-        hint: maskWord(s.word),
+        hint: maskWord(s.word, s.revealed),
         word: s.word,
       })
     }
@@ -304,8 +333,10 @@ export class GameRoom extends Server<Env> {
     if (s.hostId === playerId) {
       const nextHost = s.order.find(id => s.players[id]?.connected)
       s.hostId = nextHost ?? null
-      if (nextHost)
+      if (nextHost) {
         this.#log('warning', 'hostLeft', { name: player.name, host: s.players[nextHost]!.name })
+        this.#sendCustomWords()
+      }
     } else
       this.#log('info', 'disconnected', { name: player.name })
 
@@ -359,8 +390,8 @@ export class GameRoom extends Server<Env> {
         if (this.#canConfigure(playerId)) await this.#startGame()
 
         break
-      case 'language':
-        await this.#setLanguage(playerId, msg.language)
+      case 'settings':
+        await this.#configure(playerId, msg.settings)
         break
       case 'pause':
         await this.#votePause(playerId, msg.want)
@@ -392,15 +423,28 @@ export class GameRoom extends Server<Env> {
     return playerId === s.hostId && (s.phase === 'lobby' || s.phase === 'finished')
   }
 
-  /** Not mid-game: the next word would come from a different list. */
-  async #setLanguage(playerId: string, language: unknown) {
+  /**
+   * Apply the host's settings. Not mid-game: turns already scored against
+   * one draw time or word list would be unfair against the next.
+   *
+   * Each field is checked on its own and anything malformed is ignored, so a
+   * bad value can't knock out the good ones sent with it.
+   */
+  async #configure(playerId: string, settings: Partial<RoomSettings> | undefined) {
     const s = this.#state
-    if (!this.#canConfigure(playerId) || !isLanguage(language) || language === s.language) return
+    if (!this.#canConfigure(playerId) || typeof settings !== 'object' || settings === null) return
 
-    s.language = language
+    const languageChanged = isLanguage(settings.language) && settings.language !== s.language
+    if (languageChanged) s.language = settings.language!
+    s.drawTime = clampSetting(settings.drawTime, DRAW_TIME) ?? s.drawTime
+    s.totalRounds = clampSetting(settings.totalRounds, ROUNDS) ?? s.totalRounds
+    s.hints = clampSetting(settings.hints, HINTS) ?? s.hints
+    if (Array.isArray(settings.customWords)) s.customWords = cleanCustomWords(settings.customWords)
+
     await this.#save()
-    this.#log('info', 'languageChanged', { language: LANGUAGES[language] })
+    if (languageChanged) this.#log('info', 'languageChanged', { language: LANGUAGES[s.language] })
     this.#broadcastState()
+    this.#sendCustomWords()
   }
 
   async #handleGuess(connection: Connection, playerId: string, rawText: string) {
@@ -438,7 +482,7 @@ export class GameRoom extends Server<Env> {
     player.guessed = true
 
     const remaining = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
-    player.points += BASE_GUESS_POINTS + Math.round(SPEED_GUESS_POINTS * (remaining / ROUND_MS))
+    player.points += BASE_GUESS_POINTS + Math.round(SPEED_GUESS_POINTS * Math.min(1, remaining / this.#drawMs()))
 
     const drawer = s.drawerId ? s.players[s.drawerId] : null
     if (drawer) drawer.points += DRAWER_POINTS_PER_GUESS
@@ -555,7 +599,8 @@ export class GameRoom extends Server<Env> {
     }
 
     s.endsAt = Date.now() + pause.remainingMs
-    await this.#setAlarm(pause.kind, pause.remainingMs)
+    if (pause.kind === 'round') await this.#armRound()
+    else await this.#setAlarm(pause.kind, pause.remainingMs)
 
     // Guessers may have left while frozen, leaving only players who got it.
     if (s.phase === 'drawing') await this.#endRoundIfEveryoneGuessed()
@@ -566,6 +611,42 @@ export class GameRoom extends Server<Env> {
   async #setAlarm(kind: AlarmKind, ms: number) {
     this.#state.alarmKind = kind
     await this.ctx.storage.setAlarm(Date.now() + ms)
+  }
+
+  /**
+   * Arm the drawing countdown for whichever comes first: the next hint or
+   * the end of the turn. A Durable Object has one alarm, so hints ride on
+   * the round's rather than getting their own.
+   */
+  async #armRound() {
+    const s = this.#state
+    const drawMs = this.#drawMs()
+    const remaining = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
+    const budget = s.word ? hintBudget(s.word, s.hints) : 0
+
+    let wait = remaining
+    if (s.revealed.length < budget) {
+      const elapsed = drawMs - remaining
+      wait = Math.min(remaining, Math.max(0, hintRevealAt(s.revealed.length + 1, drawMs, budget) - elapsed))
+    }
+    await this.#setAlarm('round', wait)
+  }
+
+  /** Reveal a random hidden letter for every hint that has come due. */
+  #revealDueHints() {
+    const s = this.#state
+    if (!s.word) return false
+    const drawMs = this.#drawMs()
+    const elapsed = drawMs - Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
+    const budget = hintBudget(s.word, s.hints)
+
+    let revealedAny = false
+    while (s.revealed.length < budget && elapsed >= hintRevealAt(s.revealed.length + 1, drawMs, budget)) {
+      const hidden = [...s.word].flatMap((c, i) => (/\s/.test(c) || s.revealed.includes(i) ? [] : [i]))
+      s.revealed.push(hidden[Math.floor(Math.random() * hidden.length)]!)
+      revealedAny = true
+    }
+    return revealedAny
   }
 
   async #startGame() {
@@ -621,16 +702,17 @@ export class GameRoom extends Server<Env> {
     s.turnIndex = next
     s.drawerId = s.order[next]!
     s.phase = 'drawing'
-    s.word = pickWord(s.language, s.usedWords)
+    s.word = pickWord(s.language, s.usedWords, s.customWords)
+    s.revealed = []
     s.usedWords.push(s.word)
     this.#canvas = ''
     this.#saveCanvas()
     s.pausedMs = null
-    s.endsAt = Date.now() + ROUND_MS
+    s.endsAt = Date.now() + this.#drawMs()
 
     for (const p of Object.values(s.players)) p.guessed = false
 
-    await this.#setAlarm('round', ROUND_MS)
+    await this.#armRound()
     await this.#save()
 
     // Everyone gets the masked hint; only the drawer gets the word itself.
@@ -674,6 +756,7 @@ export class GameRoom extends Server<Env> {
     s.phase = 'intermission'
     s.endsAt = Date.now() + INTERMISSION_MS
     s.word = null
+    s.revealed = []
     s.drawerId = null
     s.pausedMs = null
 
@@ -711,6 +794,14 @@ export class GameRoom extends Server<Env> {
 
     switch (kind) {
       case 'round':
+        // Woken early for a hint: the turn goes on.
+        if (s.endsAt && s.endsAt > Date.now()) {
+          const revealed = this.#revealDueHints()
+          await this.#armRound()
+          await this.#save()
+          if (revealed) this.#broadcastState()
+          break
+        }
         this.#log('warning', 'timeUp')
         await this.#endRound()
         break

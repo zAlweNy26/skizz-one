@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { pickWord, pickWords, WORDS } from '../../realtime/src/words'
+import { CUSTOM_WORD_WEIGHT, pickWord, pickWords, WORDS } from '../../realtime/src/words'
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
+  clampSetting,
+  cleanCustomWords,
   dequantize,
+  DRAW_TIME,
   editDistance,
+  hintBudget,
+  hintRevealAt,
   isDrawingMessage,
   isFreehand,
   isLanguage,
@@ -135,6 +140,25 @@ describe('word selection', () => {
     expect(new Set(words).size).toBe(3)
   })
 
+  it('includes custom words, a little more often than built-in ones', () => {
+    const custom = ['zeppelin', 'grandma']
+    const counts = new Map<string, number>()
+    for (let i = 0; i < 20_000; i++) {
+      const word = pickWord('en', [], custom)
+      counts.set(word, (counts.get(word) ?? 0) + 1)
+    }
+    const perCustom = ((counts.get('zeppelin') ?? 0) + (counts.get('grandma') ?? 0)) / 2
+    const perBuiltIn = [...counts].filter(([w]) => !custom.includes(w)).reduce((n, [, c]) => n + c, 0)
+      / WORDS.en.length
+    expect(perCustom / perBuiltIn).toBeGreaterThan(CUSTOM_WORD_WEIGHT * 0.7)
+    expect(perCustom / perBuiltIn).toBeLessThan(CUSTOM_WORD_WEIGHT * 1.3)
+  })
+
+  it('never repeats a used custom word', () => {
+    const custom = ['zeppelin']
+    for (let i = 0; i < 200; i++) expect(pickWord('en', custom, custom)).not.toBe('zeppelin')
+  })
+
   it('still yields a word once the list is exhausted', () => {
     const everything = pickWords('en', 500)
     expect(pickWord('en', everything)).toBeTruthy()
@@ -158,6 +182,40 @@ describe('word lists', () => {
 
   it('draws only from the requested language', () => {
     expect(WORDS.it).toContain(pickWord('it'))
+  })
+})
+
+describe('hints', () => {
+  it('reveals the given letters and keeps spaces', () => {
+    expect(maskWord('ice cream', [0, 6])).toBe('i__ __e__')
+  })
+
+  it('never reveals more than half of a word', () => {
+    expect(hintBudget('cat', 5)).toBe(1)
+    expect(hintBudget('ice cream', 5)).toBe(4)
+    expect(hintBudget('octopus', 2)).toBe(2)
+    expect(hintBudget('octopus', 0)).toBe(0)
+  })
+
+  it('spreads the reveals evenly over the turn', () => {
+    expect([1, 2, 3].map(n => hintRevealAt(n, 80_000, 3))).toEqual([20_000, 40_000, 60_000])
+    expect(hintRevealAt(1, 10_000, 2)).toBe(3334)
+  })
+})
+
+describe('room settings', () => {
+  it('clamps numbers into range and rejects anything else', () => {
+    expect(clampSetting(5, DRAW_TIME)).toBe(10)
+    expect(clampSetting(999, DRAW_TIME)).toBe(240)
+    expect(clampSetting(62.4, DRAW_TIME)).toBe(62)
+    expect(clampSetting('80', DRAW_TIME)).toBeNull()
+    expect(clampSetting(Number.NaN, DRAW_TIME)).toBeNull()
+  })
+
+  it('tidies custom words and drops the unguessable ones', () => {
+    expect(cleanCustomWords(['  Pizza ', 'ice   cream', 'pizza', 'rock-n-roll', 'l\'ape', 'caffè', 42, '']))
+      .toEqual(['pizza', 'ice cream', 'caffè'])
+    expect(cleanCustomWords('pizza')).toEqual([])
   })
 })
 

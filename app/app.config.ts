@@ -40,6 +40,26 @@ export default defineAppConfig({
         },
       },
     },
+    textarea: {
+      slots: {
+        base: 'rounded-sketch sketch-field',
+      },
+      variants: {
+        variant: {
+          outline: 'text-highlighted bg-default ring-2 ring-inset ring-(--ink)/35',
+        },
+      },
+    },
+    inputNumber: {
+      slots: {
+        base: 'rounded-sketch sketch-field',
+      },
+      variants: {
+        variant: {
+          outline: 'text-highlighted bg-default ring-2 ring-inset ring-(--ink)/35',
+        },
+      },
+    },
     card: {
       slots: {
         header: 'p-2 sm:px-2 md:p-4',

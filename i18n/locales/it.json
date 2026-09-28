@@ -20,10 +20,27 @@
   },
   "lobby": {
     "title": "In attesa di iniziare",
-    "host": "Sei l'host. Scegli la lingua delle parole e inizia quando sono entrati tutti.",
-    "guest": "In attesa che l'host avvii la partita. Le parole saranno in {language}.",
+    "host": "Sei l'host. Configura la partita e avviala quando sono entrati tutti.",
+    "guest": "In attesa che l'host avvii la partita.",
     "start": "Inizia partita",
     "wordLanguage": "Lingua delle parole"
+  },
+  "settings": {
+    "title": "Impostazioni partita",
+    "open": "Impostazioni",
+    "drawTime": "Tempo per disegnare",
+    "seconds": "{n} s",
+    "rounds": "Round",
+    "hints": "Indizi",
+    "customWords": "Parole personalizzate",
+    "customWordsHelp": "Separale con virgole o a capo. Solo lettere e spazi. Escono un po' più spesso delle altre.",
+    "customWordsPlaceholder": "pizza, razzo, pupazzo di neve",
+    "customWordCount": "{n}/{max}",
+    "customWordTotal": "{n} parola personalizzata | {n} parole personalizzate",
+    "roundCount": "{n} round | {n} round",
+    "hintCount": "nessun indizio | {n} indizio | {n} indizi",
+    "save": "Salva",
+    "cancel": "Annulla"
   },
   "canvas": {
     "color": "Colore {color}",

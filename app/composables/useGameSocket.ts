@@ -43,6 +43,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const word = ref<string | null>(null)
   const hint = ref('')
   const endsAt = ref<number | null>(null)
+  /** Only the host is sent these; everyone else just sees a count. */
+  const customWords = ref<string[]>([])
 
   /** Raw stream, consumed by the drawing bridge. */
   const messageHook = createEventHook<ServerMessage>()
@@ -72,12 +74,19 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
         you.value = msg.you
         state.value = msg.state
         endsAt.value = msg.state.endsAt
+        if (msg.state.phase === 'drawing') hint.value = msg.state.hint
         break
       case 'state':
         state.value = msg.state
         // A pause freezes the countdown and a resume moves it, both without
         // a new turn, so the state is what keeps the timer honest.
         endsAt.value = msg.state.endsAt
+        // Hints reveal letters mid-turn. Outside a turn the state's hint is
+        // empty, and the revealed answer from `roundEnd` must stay up.
+        if (msg.state.phase === 'drawing') hint.value = msg.state.hint
+        break
+      case 'customWords':
+        customWords.value = msg.words
         break
       case 'turn':
         // `word` is present only in the drawer's copy.
@@ -167,6 +176,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     word,
     hint,
     endsAt,
+    customWords,
     players,
     leaderboard,
     isDrawer,

@@ -20,10 +20,27 @@
   },
   "lobby": {
     "title": "Waiting to start",
-    "host": "You are the host. Pick the word language and start when everyone has joined.",
-    "guest": "Waiting for the host to start the game. Words will be in {language}.",
+    "host": "You are the host. Set the game up and start when everyone has joined.",
+    "guest": "Waiting for the host to start the game.",
     "start": "Start game",
     "wordLanguage": "Word language"
+  },
+  "settings": {
+    "title": "Game settings",
+    "open": "Settings",
+    "drawTime": "Drawing time",
+    "seconds": "{n} s",
+    "rounds": "Rounds",
+    "hints": "Hints",
+    "customWords": "Custom words",
+    "customWordsHelp": "Separate them with commas or new lines. Letters and spaces only. They come up a little more often than the others.",
+    "customWordsPlaceholder": "pizza, rocket, snowman",
+    "customWordCount": "{n}/{max}",
+    "customWordTotal": "{n} custom word | {n} custom words",
+    "roundCount": "{n} round | {n} rounds",
+    "hintCount": "no hints | {n} hint | {n} hints",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "canvas": {
     "color": "Colour {color}",
