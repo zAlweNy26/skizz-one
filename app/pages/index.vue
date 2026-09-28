@@ -81,14 +81,30 @@ function localClear() {
   sync.syncCanvas()
 }
 
-function submitGuess(event: KeyboardEvent) {
-  const input = event.target as HTMLInputElement
-  const text = input.value.trim()
-  if (!text) return
+const modeTools = [
+  { key: 'B', mode: 'draw', icon: 'i-lucide-paintbrush' },
+  { key: 'F', mode: 'bucket', icon: 'i-lucide-paint-bucket' },
+  { key: 'E', mode: 'eraseLine', icon: 'i-lucide-eraser' },
+] as const
+
+const actionTools = computed(() => [
+  { key: 'U', icon: 'i-lucide-undo-2', color: 'neutral', disabled: !canUndo.value, run: localUndo },
+  { key: 'R', icon: 'i-lucide-redo-2', color: 'neutral', disabled: !canRedo.value, run: localRedo },
+  { key: 'D', icon: 'i-lucide-trash-2', color: 'error', disabled: false, run: localClear },
+] as const)
+
+/** Shortcut-key badge on each tool button. */
+const toolChipUi = { base: 'bg-trasparent ring-0 top-1 left-1 text-default' }
+
+function selectMode(mode: typeof modeTools[number]['mode']) {
+  brush.value.mode = mode
+  if (mode === 'eraseLine') brush.value.eraseMode = 'partial'
+}
+
+function submitGuess(text: string) {
   // No optimistic echo: the server decides whether this is a guess worth
   // showing, and a correct one is deliberately never broadcast.
   game.send({ t: 'guess', text })
-  input.value = ''
 }
 
 useHead({
@@ -137,28 +153,7 @@ defineShortcuts({
       :actions="isHost ? [{ label: 'Start game', onClick: () => game.send({ t: 'start' }) }] : []" />
 
     <section class="grid grid-cols-1 lg:grid-cols-[minmax(min-content,1fr)_minmax(min-content,42rem)_minmax(16rem,1fr)] w-full gap-4">
-      <aside v-auto-animate class="flex flex-col gap-2">
-        <div
-          v-for="(player, index) in leaderboard" :key="player.id"
-          class="inline-flex items-center h-fit w-full gap-2 rounded-lg p-2 bg-elevated"
-          :class="{ 'opacity-50': !player.connected }">
-          <p class="font-bold">
-            #{{ index + 1 }}
-          </p>
-          <UAvatar :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`" size="xl" />
-          <div>
-            <p class="text-sm font-semibold">
-              {{ player.name }}
-            </p>
-            <p class="text-xs font-medium">
-              {{ player.points }} points
-            </p>
-          </div>
-          <UIcon v-if="state?.drawerId === player.id" name="i-lucide-paintbrush" class="ms-auto size-4" />
-          <UIcon v-else-if="player.guessed" name="i-lucide-check" class="ms-auto size-4 text-success" />
-          <UBadge v-if="you === player.id" class="ms-auto" size="sm" variant="soft" label="You" />
-        </div>
-      </aside>
+      <PlayerList :players="leaderboard" :drawer-id="state?.drawerId" :you="you" />
 
       <div class="flex flex-col gap-2">
         <div class="aspect-video rounded-md shadow-lg overflow-hidden" :style="{ backgroundColor: currentBg }">
@@ -195,32 +190,15 @@ defineShortcuts({
             </template>
           </UPopover>
           <div class="flex flex-wrap gap-2">
-            <UChip inset position="top-left" size="3xl" text="B" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" :color="brush.mode === 'draw' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-paintbrush" @click="brush.mode = 'draw'" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="F" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" :color="brush.mode === 'bucket' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-paint-bucket" @click="brush.mode = 'bucket'" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="E" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" :color="brush.mode === 'eraseLine' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-eraser"
-                       @click="brush.mode = 'eraseLine'; brush.eraseMode = 'partial'" />
+            <UChip v-for="tool in modeTools" :key="tool.key" inset position="top-left" size="3xl" :text="tool.key" :ui="toolChipUi">
+              <UButton size="xl" variant="soft" :color="brush.mode === tool.mode ? 'primary' : 'neutral'"
+                       class="size-12 grid place-content-center" square :icon="tool.icon" @click="selectMode(tool.mode)" />
             </UChip>
           </div>
           <div class="flex flex-wrap gap-2">
-            <UChip inset position="top-left" size="3xl" text="U" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" color="neutral" class="size-12 grid place-content-center" square icon="i-lucide-undo-2"
-                       :disabled="!canUndo" @click="localUndo()" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="R" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" color="neutral" class="size-12 grid place-content-center" square icon="i-lucide-redo-2"
-                       :disabled="!canRedo" @click="localRedo()" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="D" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" color="error" class="size-12 grid place-content-center" square icon="i-lucide-trash-2"
-                       @click="localClear()" />
+            <UChip v-for="tool in actionTools" :key="tool.key" inset position="top-left" size="3xl" :text="tool.key" :ui="toolChipUi">
+              <UButton size="xl" variant="soft" :color="tool.color" class="size-12 grid place-content-center" square :icon="tool.icon"
+                       :disabled="tool.disabled" @click="tool.run()" />
             </UChip>
           </div>
         </div>
@@ -229,24 +207,7 @@ defineShortcuts({
         </p>
       </div>
 
-      <aside class="overflow-hidden flex flex-col gap-2">
-        <div class="overflow-y-auto rounded-md grow bg-elevated h-112 flex flex-col gap-1 text-sm shadow-lg">
-          <div v-for="(entry, index) in chat" :key="index" class="flex items-center gap-2 p-1 odd:bg-accented">
-            <UBadge
-              v-if="!entry.system"
-              :color="entry.private ? 'success' : 'neutral'" class="font-semibold"
-              :label="entry.sender" size="sm" />
-            <span :class="{ 'font-semibold': entry.system, 'text-success': entry.level === 'success', 'text-warning': entry.level === 'warning' }">
-              {{ entry.text }}
-            </span>
-          </div>
-        </div>
-        <UInput
-          class="w-full mt-auto sticky bottom-0"
-          :placeholder="isDrawer ? 'You are drawing — no guessing!' : 'Type your guess here...'"
-          :disabled="isDrawer"
-          @keyup.enter="submitGuess" />
-      </aside>
+      <ChatPanel :entries="chat" :is-drawer="isDrawer" @guess="submitGuess" />
     </section>
   </main>
 </template>

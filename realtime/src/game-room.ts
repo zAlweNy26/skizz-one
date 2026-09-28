@@ -1,6 +1,7 @@
 import type { Connection, ConnectionContext, WSMessage } from 'partyserver'
 import type {
   ClientMessage,
+  DrawingMessage,
   GamePlayer,
   GameState,
   LogLevel,
@@ -342,9 +343,9 @@ export class GameRoom extends Server<Env> {
     }
   }
 
-  #handleDrawing(connection: Connection, msg: ClientMessage) {
+  #handleDrawing(connection: Connection, msg: DrawingMessage) {
     // Relay verbatim — the server never parses stroke geometry.
-    this.#broadcast(msg as ServerMessage, [connection.id])
+    this.#broadcast(msg, [connection.id])
 
     // Keep a snapshot so anyone joining late sees the drawing so far. Only
     // the settled states are persisted, never the in-flight points.

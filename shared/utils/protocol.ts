@@ -87,8 +87,8 @@ export interface GameState {
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'
 
-/** Client -> server. */
-export type ClientMessage
+/** Sent by the drawer and relayed verbatim to everyone else. */
+export type DrawingMessage
   = | { t: 'strokeStart', id: string, brush: WireBrush }
   /** `pts` is flat, `POINT_STRIDE` numbers per point. */
     | { t: 'draw', id: string, pts: number[] }
@@ -99,6 +99,10 @@ export type ClientMessage
     | { t: 'preview', id: string, svg: string }
     | { t: 'commit', id: string, svg: string }
     | { t: 'canvas', svg: string }
+
+/** Client -> server. */
+export type ClientMessage
+  = | DrawingMessage
     | { t: 'guess', text: string }
     | { t: 'chat', text: string }
     | { t: 'start' }
@@ -106,13 +110,9 @@ export type ClientMessage
 
 /** Server -> client. */
 export type ServerMessage
-  = | { t: 'welcome', you: string, state: GameState }
+  = | DrawingMessage
+    | { t: 'welcome', you: string, state: GameState }
     | { t: 'state', state: GameState }
-    | { t: 'canvas', svg: string }
-    | { t: 'strokeStart', id: string, brush: WireBrush }
-    | { t: 'draw', id: string, pts: number[] }
-    | { t: 'preview', id: string, svg: string }
-    | { t: 'commit', id: string, svg: string }
   /** `word` is present only in the copy sent to the drawer. */
     | { t: 'turn', drawerId: string, round: number, endsAt: number, hint: string, word?: string }
     | { t: 'roundEnd', word: string, state: GameState }
@@ -123,7 +123,7 @@ export type ServerMessage
 /** Messages only the current drawer is allowed to send. */
 const DRAWING_MESSAGES = new Set(['strokeStart', 'draw', 'preview', 'commit', 'canvas'])
 
-export function isDrawingMessage(msg: ClientMessage) {
+export function isDrawingMessage(msg: ClientMessage): msg is DrawingMessage {
   return DRAWING_MESSAGES.has(msg.t)
 }
 

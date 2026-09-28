@@ -320,74 +320,77 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     raf ??= requestAnimationFrame(tick)
   }
 
+  function startRemoteStroke(msg: Extract<ServerMessage, { t: 'strokeStart' }>) {
+    const freehand = isFreehand(msg.brush.mode)
+    strokes.set(msg.id, {
+      brush: msg.brush,
+      node: null,
+      playback: freehand ? new StrokePlayback() : null,
+      path: freehand
+        // Chunks restart the dash pattern, so dashed strokes stay whole.
+        ? new ChunkedDrawPath(msg.brush.dasharray ? Infinity : undefined)
+        : null,
+      live: null,
+      commit: null,
+    })
+    delay = Math.max(PLAYBACK_DELAY_MS, delay * 0.9)
+  }
+
+  function queueRemotePoints(msg: Extract<ServerMessage, { t: 'draw' }>) {
+    const stroke = strokes.get(msg.id)
+    if (!stroke?.playback) return
+    const batch: TimedPoint[] = []
+    for (let i = 0; i + POINT_STRIDE - 1 < msg.pts.length; i += POINT_STRIDE) {
+      batch.push({
+        x: dequantize(msg.pts[i]!),
+        y: dequantize(msg.pts[i + 1]!),
+        t: msg.pts[i + 2]!,
+      })
+    }
+    const late = stroke.playback.push(batch, performance.now(), delay)
+    delay = Math.min(MAX_PLAYBACK_DELAY_MS, delay + late)
+    schedule()
+  }
+
+  function showRemotePreview(msg: Extract<ServerMessage, { t: 'preview' }>) {
+    const node = parseSvgElement(msg.svg)
+    const stroke = strokes.get(msg.id)
+    if (!node || !stroke) return
+    node.setAttribute(SYNC_ATTR, msg.id)
+    if (stroke.node) stroke.node.replaceWith(node)
+    else canvasEl()?.appendChild(node)
+    stroke.node = node
+  }
+
+  function commitRemoteStroke(msg: Extract<ServerMessage, { t: 'commit' }>) {
+    const stroke = strokes.get(msg.id)
+    if (!stroke) {
+      // No preview to replace, e.g. we joined mid-stroke.
+      const node = parseSvgElement(msg.svg)
+      if (node) canvasEl()?.appendChild(node)
+      return
+    }
+    stroke.commit = msg.svg
+    if (stroke.playback?.done ?? true) finishStroke(msg.id, stroke)
+    else schedule()
+  }
+
   function applyRemote(msg: ServerMessage) {
     if (!canvasEl()) return
 
     switch (msg.t) {
-      case 'strokeStart': {
-        const freehand = isFreehand(msg.brush.mode)
-        strokes.set(msg.id, {
-          brush: msg.brush,
-          node: null,
-          playback: freehand ? new StrokePlayback() : null,
-          path: freehand
-            // Chunks restart the dash pattern, so dashed strokes stay whole.
-            ? new ChunkedDrawPath(msg.brush.dasharray ? Infinity : undefined)
-            : null,
-          live: null,
-          commit: null,
-        })
-        delay = Math.max(PLAYBACK_DELAY_MS, delay * 0.9)
-        break
-      }
-
-      case 'draw': {
-        const stroke = strokes.get(msg.id)
-        if (!stroke?.playback) return
-        const batch: TimedPoint[] = []
-        for (let i = 0; i + POINT_STRIDE - 1 < msg.pts.length; i += POINT_STRIDE) {
-          batch.push({
-            x: dequantize(msg.pts[i]!),
-            y: dequantize(msg.pts[i + 1]!),
-            t: msg.pts[i + 2]!,
-          })
-        }
-        const late = stroke.playback.push(batch, performance.now(), delay)
-        delay = Math.min(MAX_PLAYBACK_DELAY_MS, delay + late)
-        schedule()
-        break
-      }
-
-      case 'preview': {
-        const node = parseSvgElement(msg.svg)
-        const stroke = strokes.get(msg.id)
-        if (!node || !stroke) return
-        node.setAttribute(SYNC_ATTR, msg.id)
-        if (stroke.node) stroke.node.replaceWith(node)
-        else canvasEl()?.appendChild(node)
-        stroke.node = node
-        break
-      }
-
-      case 'commit': {
-        const stroke = strokes.get(msg.id)
-        if (!stroke) {
-          // No preview to replace, e.g. we joined mid-stroke.
-          const node = parseSvgElement(msg.svg)
-          if (node) canvasEl()?.appendChild(node)
-          return
-        }
-        stroke.commit = msg.svg
-        if (stroke.playback?.done ?? true) finishStroke(msg.id, stroke)
-        else schedule()
-        break
-      }
-
+      case 'strokeStart':
+        return startRemoteStroke(msg)
+      case 'draw':
+        return queueRemotePoints(msg)
+      case 'preview':
+        return showRemotePreview(msg)
+      case 'commit':
+        return commitRemoteStroke(msg)
       case 'canvas':
         clearPreviews()
         load(msg.svg)
         break
-
       case 'roundEnd':
         clearPreviews()
         break

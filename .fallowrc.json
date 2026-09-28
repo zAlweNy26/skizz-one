@@ -9,6 +9,11 @@
       "members": ["options", "getConnectionTags", "onConnect", "onMessage", "onClose", "onError", "onAlarm", "onRequest", "onStart"]
     }
   ],
-  // Peer dependencies of @nuxt/test-utils, never imported directly.
-  "ignoreDependencies": ["@vue/test-utils", "playwright-core"]
+  "ignoreDependencies": [
+    // Peer dependencies of @nuxt/test-utils, never imported directly.
+    "@vue/test-utils",
+    "playwright-core",
+    // Auto-imported by @vueuse/nuxt (useRouteQuery), so no import names it.
+    "@vueuse/router"
+  ]
 }
