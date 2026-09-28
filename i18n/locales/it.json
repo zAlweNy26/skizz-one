@@ -1,0 +1,53 @@
+{
+  "title": {
+    "drawing": "✏️ Stai disegnando",
+    "playing": "🎮 In gioco"
+  },
+  "header": {
+    "round": "Round {round} di {total}",
+    "connected": "Connesso",
+    "offline": "Offline",
+    "gameId": "ID partita: {id}",
+    "share": "Condividi il link della partita"
+  },
+  "share": {
+    "title": "Link della partita copiato",
+    "description": "Condividi questo link con i tuoi amici per farli entrare!"
+  },
+  "lobby": {
+    "title": "In attesa di iniziare",
+    "host": "Sei l'host. Scegli la lingua delle parole e inizia quando sono entrati tutti.",
+    "guest": "In attesa che l'host avvii la partita. Le parole saranno in {language}.",
+    "start": "Inizia partita",
+    "wordLanguage": "Lingua delle parole"
+  },
+  "canvas": {
+    "guess": "Indovina cosa viene disegnato!",
+    "waitingForDrawer": "In attesa di chi disegna…"
+  },
+  "chat": {
+    "guessPlaceholder": "Scrivi qui la tua risposta...",
+    "drawingPlaceholder": "Stai disegnando — niente risposte!"
+  },
+  "players": {
+    "points": "{n} punto | {n} punti",
+    "you": "Tu"
+  },
+  "log": {
+    "joined": "{name} è entrato in partita",
+    "reconnected": "{name} si è riconnesso — il round continua",
+    "disconnected": "{name} si è disconnesso",
+    "hostLeft": "{name} è uscito — ora l'host è {host}",
+    "drawerDropped": "{name} è caduto — lo aspettiamo un momento",
+    "drawerGone": "Chi disegnava non è tornato",
+    "languageChanged": "Le parole ora sono in {language}",
+    "waitingForPlayers": "In attesa di altri giocatori…",
+    "drawing": "{name} sta disegnando!",
+    "close": "\"{text}\" ci sei quasi!",
+    "guessed": "{name} ha indovinato la parola!",
+    "timeUp": "Tempo scaduto!",
+    "winner": "{name} vince con {points} punti!",
+    "gameOver": "Partita finita",
+    "wordWas": "La parola era \"{word}\""
+  }
+}

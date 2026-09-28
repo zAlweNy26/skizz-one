@@ -1,119 +1,133 @@
 <script setup lang="ts">
-import type { GameLog, GameState } from '#shared/utils/interfaces'
+import type { Language } from '#shared/utils/protocol'
 import { useDrauu } from '@vueuse/integrations/useDrauu'
-import { pascalCase } from 'scule'
 import { randomUUID } from 'uncrypto'
-import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_LANGUAGE, LANGUAGES } from '#shared/utils/protocol'
 
 const paletteColors = [
   '#FFFFFF', '#c1c1c1', '#ef130b', '#ff7100', '#ffe400', '#00cc00', '#00ff91', '#00b2ff', '#231fd3', '#a300ba', '#df69a7', '#ffac8e', '#a0522d',
   '#000000', '#505050', '#740b07', '#c23800', '#e8a200', '#004619', '#00785d', '#00569e', '#0e0865', '#550069', '#873554', '#cc774d', '#63300d',
 ]
 
-const nickname = useLocalStorage('nickname', pascalCase(uniqueNamesGenerator({
-  dictionaries: [adjectives, colors, animals],
-  separator: '-',
-  length: 2,
-})))
-
 const toast = useToast()
+const { t } = useI18n()
 const gameId = useRouteQuery('code', '', { transform: String })
 const sketch = useTemplateRef<SVGSVGElement>('sketch')
-const currentBg = ref('#FFFFFF'), gameState = ref<GameState | null>(null)
-const logs = ref<GameLog[]>([])
+const currentBg = ref('#FFFFFF')
 
-const { undo, redo, clear, canUndo, canRedo, brush } = useDrauu(sketch, {
+if (!gameId.value) gameId.value = randomUUID().split('-')[0]!
+
+const drauu = useDrauu(sketch, {
   brush: {
+    // drauu defaults to `stylus`, whose perfect-freehand outline is rebuilt
+    // from every point on every move and has no incremental form.
+    mode: 'draw',
     color: '#000000',
-    size: 10,
+    // Brush size is in SVG user space, which the viewBox fixes at 1600 wide
+    // for every client. These are roughly 2.4x the old CSS-pixel values.
+    size: 16,
   },
 })
+const { undo, redo, clear, canUndo, canRedo, brush } = drauu
+
+const game = useGameSocket(gameId)
+const { state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you } = game
+
+const sync = useDrawingSync(drauu, {
+  send: game.send,
+  onMessage: game.onMessage,
+  isDrawer,
+})
+
+const now = useNow({ interval: 250 })
+const secondsLeft = computed(() => {
+  if (!endsAt.value) return null
+  return Math.max(0, Math.ceil((endsAt.value - now.value.getTime()) / 1000))
+})
+
+const phase = computed(() => state.value?.phase ?? 'lobby')
+const canDraw = computed(() => isDrawer.value && phase.value === 'drawing')
+
+/** What the word display shows: the answer to the drawer, blanks to guessers. */
+const wordDisplay = computed(() => {
+  if (word.value) return word.value
+  return hint.value || '—'
+})
+
+const languageItems = (Object.keys(LANGUAGES) as Language[]).map(value => ({ value, label: LANGUAGES[value] }))
+const language = computed(() => state.value?.language ?? DEFAULT_LANGUAGE)
+
+/** No optimistic update: the room confirms it by broadcasting its state. */
+function setLanguage(value: Language) {
+  game.send({ t: 'language', language: value })
+}
 
 const { copy } = useClipboard()
 
 function shareGame() {
   copy(window.location.href)
   toast.add({
-    title: 'Game link copied to clipboard',
-    description: 'Share this link with your friends to join the game!',
+    title: t('share.title'),
+    description: t('share.description'),
     icon: 'i-lucide-link',
   })
 }
 
-const { send, open } = useWebSocket(() => `/ws/game?id=${gameId.value}&name=${nickname.value}`, {
-  heartbeat: {
-    interval: 5000,
-    pongTimeout: 5000,
-    message: 'ping',
-    responseMessage: 'pong',
-  },
-  immediate: false,
-  onConnected() {
-    console.warn('WebSocket connected')
-  },
-  async onMessage(_ws, event) {
-    const data = event.data instanceof Blob ? await event.data.text() : event.data as string
-    let content: GameState | GameLog
-
-    try {
-      content = JSON.parse(data)
-    }
-    catch (error) {
-      console.error('Error parsing WebSocket data:', error)
-      return
-    }
-
-    if (assertLog(content)) {
-      logs.value.push(content)
-      return
-    }
-
-    gameState.value = content
-  },
-  onDisconnected(ws, e) {
-    console.warn('WebSocket disconnected:', e)
-    // navigateTo({ path: '/', query: {} }, { redirectCode: 302 })
-  },
-  onError(_ws, event) {
-    console.error('WebSocket error:', event)
-  },
-})
-
-function assertLog(data: Record<string, any>): data is GameLog {
-  return 'type' in data && 'message' in data && 'sender' in data
-    && typeof data.type === 'string' && typeof data.message === 'string' && typeof data.sender === 'string'
+/** Local edits still need pushing: drauu emits no event for these. */
+function localUndo() {
+  if (!canUndo.value) return
+  undo()
+  sync.syncCanvas()
 }
 
-const leaderboard = computed(() => gameState.value?.clients.toSorted((a, b) => b.points - a.points) ?? [])
+function localRedo() {
+  if (!canRedo.value) return
+  redo()
+  sync.syncCanvas()
+}
 
-onMounted(() => {
-  if (!gameId.value) gameId.value = randomUUID().split('-')[0]!
-  open()
-})
+function localClear() {
+  clear()
+  sync.syncCanvas()
+}
+
+const modeTools = [
+  { key: 'B', mode: 'draw', icon: 'i-lucide-paintbrush' },
+  { key: 'F', mode: 'bucket', icon: 'i-lucide-paint-bucket' },
+  { key: 'E', mode: 'eraseLine', icon: 'i-lucide-eraser' },
+] as const
+
+const actionTools = computed(() => [
+  { key: 'U', icon: 'i-lucide-undo-2', color: 'neutral', disabled: !canUndo.value, run: localUndo },
+  { key: 'R', icon: 'i-lucide-redo-2', color: 'neutral', disabled: !canRedo.value, run: localRedo },
+  { key: 'D', icon: 'i-lucide-trash-2', color: 'error', disabled: false, run: localClear },
+] as const)
+
+/** Shortcut-key badge on each tool button. */
+const toolChipUi = { base: 'bg-trasparent ring-0 top-1 left-1 text-default' }
+
+function selectMode(mode: typeof modeTools[number]['mode']) {
+  brush.value.mode = mode
+  if (mode === 'eraseLine') brush.value.eraseMode = 'partial'
+}
+
+function submitGuess(text: string) {
+  // No optimistic echo: the server decides whether this is a guess worth
+  // showing, and a correct one is deliberately never broadcast.
+  game.send({ t: 'guess', text })
+}
 
 useHead({
-  title: computed(() => `🎮 Playing`),
+  title: computed(() => (canDraw.value ? t('title.drawing') : t('title.playing'))),
 })
 
 defineShortcuts({
-  b: () => {
-    brush.value.mode = 'draw'
-  },
-  e: () => {
-    brush.value.mode = 'eraseLine'
-  },
-  f: () => {
-    brush.value.mode = 'rectangle'
-  },
-  u: () => {
-    if (canUndo.value) undo()
-  },
-  r: () => {
-    if (canRedo.value) redo()
-  },
-  d: () => {
-    clear()
-  },
+  b: () => { if (canDraw.value) brush.value.mode = 'draw' },
+  f: () => { if (canDraw.value) brush.value.mode = 'bucket' },
+  e: () => { if (canDraw.value) brush.value.mode = 'eraseLine' },
+  u: localUndo,
+  r: localRedo,
+  d: localClear,
 })
 </script>
 
@@ -123,39 +137,56 @@ defineShortcuts({
       SkizzOne
     </h1>
     <ThemeSwitch />
-    <UCard variant="soft" class="w-full" :ui="{ body: 'flex justify-between items-center gap-2' }">
+    <UCard variant="soft" class="w-full" :ui="{ body: 'flex flex-wrap justify-between items-center gap-2' }">
       <p class="font-bold">
-        Round {{ gameState?.round || 1 }} of {{ gameState?.totalRounds || 1 }}
+        {{ $t('header.round', { round: state?.round || 0, total: state?.totalRounds || 3 }) }}
       </p>
+      <p class="font-mono font-bold text-lg tracking-[0.3em]">
+        {{ wordDisplay }}
+      </p>
+      <UBadge v-if="secondsLeft !== null" :color="secondsLeft <= 10 ? 'error' : 'neutral'" variant="soft" size="lg">
+        {{ secondsLeft }}s
+      </UBadge>
+      <UBadge :color="connected ? 'success' : 'error'" variant="soft" :label="connected ? $t('header.connected') : $t('header.offline')" />
       <p class="text-sm font-semibold">
-        Game ID: {{ gameId }}
+        {{ $t('header.gameId', { id: gameId }) }}
       </p>
-      <UButton variant="soft" size="xl" icon="i-lucide-share-2" @click="shareGame()" />
+      <UButton variant="soft" size="xl" icon="i-lucide-share-2" :aria-label="$t('header.share')" @click="shareGame()" />
     </UCard>
+
+    <UAlert
+      v-if="phase === 'lobby'"
+      icon="i-lucide-users"
+      :title="$t('lobby.title')"
+      :description="isHost ? $t('lobby.host') : $t('lobby.guest', { language: LANGUAGES[language] })"
+      class="w-full">
+      <template v-if="isHost" #actions>
+        <USelect
+          :model-value="language" :items="languageItems" icon="i-lucide-languages"
+          class="w-40" :aria-label="$t('lobby.wordLanguage')" @update:model-value="setLanguage" />
+        <UButton :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
+      </template>
+    </UAlert>
+
     <section class="grid grid-cols-1 lg:grid-cols-[minmax(min-content,1fr)_minmax(min-content,42rem)_minmax(16rem,1fr)] w-full gap-4">
-      <aside v-auto-animate class="flex flex-col gap-2">
-        <div v-for="(player, index) in leaderboard" :key="index" class="inline-flex items-center h-fit w-full gap-2 rounded-lg p-2 bg-elevated">
-          <p class="font-bold">
-            #{{ index + 1 }}
-          </p>
-          <UAvatar :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`" size="xl" />
-          <div>
-            <p class="text-sm font-semibold">
-              {{ player.name }}
-            </p>
-            <p class="text-xs font-medium">
-              {{ player.points }} points
-            </p>
-          </div>
-          <UBadge v-if="nickname === player.name" class="ms-auto" size="sm" variant="soft" label="You" />
-        </div>
-      </aside>
+      <PlayerList :players="leaderboard" :drawer-id="state?.drawerId" :you="you" />
+
       <div class="flex flex-col gap-2">
-        <div class="aspect-video rounded-md shadow-lg" :style="{ backgroundColor: currentBg }">
-          <!-- eslint-disable-next-line vue/html-self-closing -->
-          <svg ref="sketch" class="size-full cursor-pencil"></svg>
+        <div class="aspect-video rounded-md shadow-lg overflow-hidden" :style="{ backgroundColor: currentBg }">
+          <!--
+            The viewBox is what keeps everyone in sync: drauu maps pointers
+            through getScreenCTM().inverse(), so a phone and a desktop both
+            produce coordinates in this same fixed 1600x900 space.
+          -->
+          <svg
+            ref="sketch"
+            class="size-full"
+            :class="canDraw ? 'cursor-pencil' : 'pointer-events-none'"
+            :viewBox="`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`"
+            preserveAspectRatio="xMidYMid meet" />
         </div>
-        <div class="flex flex-wrap justify-between gap-4">
+
+        <div v-if="canDraw" class="flex flex-wrap justify-between gap-4">
           <div
             class="size-12 rounded-md bg-linear-45 from-black from-50% to-50% to-white cursor-pointer"
             @click="currentBg = currentBg === '#FFFFFF' ? '#000000' : '#FFFFFF'" />
@@ -166,61 +197,33 @@ defineShortcuts({
           </div>
           <UPopover>
             <UButton variant="soft" size="xl" color="neutral" square class="size-12 grid place-content-center">
-              <div class="rounded-full transition-transform size-4" :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.1})` }" />
+              <div class="rounded-full transition-transform size-4" :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.04})` }" />
             </UButton>
             <template #content>
               <div class="w-48">
-                <USlider v-model="brush.size" size="sm" :min="5" :max="15" />
+                <USlider v-model="brush.size" size="sm" :min="8" :max="48" />
               </div>
             </template>
           </UPopover>
           <div class="flex flex-wrap gap-2">
-            <UChip inset position="top-left" size="3xl" text="B" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" :color="brush.mode === 'draw' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-paintbrush" @click="brush.mode = 'draw'" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="F" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" :color="brush.mode === 'bucket' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-paint-bucket" @click="brush.mode = 'bucket'" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="E" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" :color="brush.mode === 'eraseLine' ? 'primary' : 'neutral'"
-                       class="size-12 grid place-content-center" square icon="i-lucide-eraser"
-                       @click="brush.mode = 'eraseLine'; brush.eraseMode = 'partial'" />
+            <UChip v-for="tool in modeTools" :key="tool.key" inset position="top-left" size="3xl" :text="tool.key" :ui="toolChipUi">
+              <UButton size="xl" variant="soft" :color="brush.mode === tool.mode ? 'primary' : 'neutral'"
+                       class="size-12 grid place-content-center" square :icon="tool.icon" @click="selectMode(tool.mode)" />
             </UChip>
           </div>
           <div class="flex flex-wrap gap-2">
-            <UChip inset position="top-left" size="3xl" text="U" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" color="neutral" class="size-12 grid place-content-center" square icon="i-lucide-undo-2"
-                       :disabled="!canUndo" @click="undo()" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="R" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" color="neutral" class="size-12 grid place-content-center" square icon="i-lucide-redo-2"
-                       :disabled="!canRedo" @click="redo()" />
-            </UChip>
-            <UChip inset position="top-left" size="3xl" text="D" :ui="{ base: 'bg-trasparent ring-0 top-1 left-1 text-default' }">
-              <UButton size="xl" variant="soft" color="error" class="size-12 grid place-content-center" square icon="i-lucide-trash-2"
-                       @click="clear()" />
+            <UChip v-for="tool in actionTools" :key="tool.key" inset position="top-left" size="3xl" :text="tool.key" :ui="toolChipUi">
+              <UButton size="xl" variant="soft" :color="tool.color" class="size-12 grid place-content-center" square :icon="tool.icon"
+                       :disabled="tool.disabled" @click="tool.run()" />
             </UChip>
           </div>
         </div>
+        <p v-else class="text-sm text-muted text-center py-2">
+          {{ state?.drawerId ? $t('canvas.guess') : $t('canvas.waitingForDrawer') }}
+        </p>
       </div>
-      <aside class="overflow-hidden flex flex-col gap-2">
-        <div class="overflow-y-auto rounded-md grow bg-elevated h-112 flex flex-col gap-1 text-sm shadow-lg">
-          <div v-for="(log, index) in logs" :key="index" class="flex items-center gap-2 p-1 odd:bg-accented">
-            <UBadge :color="log.sender === nickname ? 'primary' : 'neutral'" class="font-semibold" :class="{ hidden: log.sender === 'system' }"
-                    :label="log.sender === nickname ? 'You' : log.sender" size="sm" />
-            <span :class="{ 'font-semibold': log.sender === 'system' }">{{ log.message }}</span>
-          </div>
-        </div>
-        <UInput class="w-full mt-auto sticky bottom-0" placeholder="Type your guess here..." @keyup.enter="(e: KeyboardEvent) => {
-          const input = e.target as HTMLInputElement
-          if (!input.value) return
-          logs.push({ sender: nickname, type: 'guess', message: input.value })
-          send(JSON.stringify({ sender: nickname, type: 'guess', message: input.value } satisfies GameLog))
-          input.value = ''
-        }" />
-      </aside>
+
+      <ChatPanel :entries="chat" :is-drawer="isDrawer" @guess="submitGuess" />
     </section>
   </main>
 </template>

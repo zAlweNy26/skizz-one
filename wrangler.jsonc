@@ -7,5 +7,19 @@
       "binding": "KV",
       "id": "ff91b50cf1de4e1a827fdc2f6f486f07"
     }
+  ],
+  // The realtime game rooms live in their own Worker so they can own Durable
+  // Objects. Websocket upgrades under /parties/ are forwarded here by
+  // preset/entry.ts — Nitro only force-overrides `main` and `assets`, so this
+  // binding survives into .output/server/wrangler.json.
+  //
+  // NOTE: `nuxthub deploy` does not upload this file, and @nuxthub/core 0.10.8
+  // has no `hub.bindings` option to declare it instead. Deploy with
+  // `wrangler deploy`, or verify the binding landed after a NuxtHub deploy.
+  "services": [
+    {
+      "binding": "REALTIME",
+      "service": "skizz-realtime"
+    }
   ]
 }
