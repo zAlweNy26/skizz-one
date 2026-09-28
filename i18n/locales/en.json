@@ -103,7 +103,9 @@
     "or": "or",
     "code": "Join a room",
     "codePlaceholder": "Room code or link",
-    "join": "Join"
+    "join": "Join",
+    "madeBy": "Made by {name}",
+    "sourceCode": "Source code on GitHub"
   },
   "pause": {
     "pause": "Pause",

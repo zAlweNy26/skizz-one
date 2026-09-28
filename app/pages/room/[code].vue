@@ -221,10 +221,8 @@ defineShortcuts({
     class="group/room flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
       overscroll-y-contain lg:gap-5 lg:h-auto lg:min-h-dvh lg:overflow-visible">
     <header class="flex items-center gap-x-3 lg:flex-wrap lg:gap-x-5 lg:gap-y-3">
-      <NuxtLink to="/" class="press inline-flex items-center min-h-11 -rotate-3 rounded-sketch">
-        <h1 class="font-display font-extrabold text-2xl lg:text-3xl text-(--on-stage)">
-          SkizzOne
-        </h1>
+      <NuxtLink to="/" class="press shrink-0 inline-flex items-center min-h-11 -rotate-6 rounded-sketch">
+        <img src="/favicon.svg" alt="SkizzOne" class="size-11 lg:size-12">
       </NuxtLink>
       <p class="font-display font-bold text-lg text-(--on-stage)">
         <span class="lg:hidden">{{ $t('header.roundShort', roundArgs) }}</span>

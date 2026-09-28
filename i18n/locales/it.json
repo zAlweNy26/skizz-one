@@ -103,7 +103,9 @@
     "or": "oppure",
     "code": "Entra in una stanza",
     "codePlaceholder": "Codice o link della stanza",
-    "join": "Entra"
+    "join": "Entra",
+    "madeBy": "Creato da {name}",
+    "sourceCode": "Codice sorgente su GitHub"
   },
   "pause": {
     "pause": "Pausa",
