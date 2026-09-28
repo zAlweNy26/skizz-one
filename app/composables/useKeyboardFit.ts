@@ -1,8 +1,6 @@
 import type { MaybeElementRef } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
-
-const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent)
-  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+import { isIOS } from '@vueuse/core'
 
 /** On iOS, pins `target` to the visible area above the keyboard while an input in it is focused. */
 export function useKeyboardFit(target: MaybeElementRef) {
@@ -17,9 +15,10 @@ export function useKeyboardFit(target: MaybeElementRef) {
   }
 
   useEventListener(() => window.visualViewport, ['resize', 'scroll'], measure, { passive: true })
+  const { start: measureAfterBlur } = useTimeoutFn(measure, 350, { immediate: false })
   watch(focused, (now) => {
     measure()
-    if (!now) setTimeout(measure, 350)
+    if (!now) measureAfterBlur()
   })
 
   return computed<CSSProperties | undefined>(() => {

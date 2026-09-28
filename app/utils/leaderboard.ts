@@ -7,14 +7,8 @@ export function leaderIds(players: readonly GamePlayer[]): Set<string> {
   return new Set(players.filter(p => p.points === top).map(p => p.id))
 }
 
-export interface PodiumPlace {
-  player: GamePlayer
-  /** 1-based; tied scores share a rank. */
-  rank: number
-}
-
-/** The top three of a best-first list. */
-export function podium(players: readonly GamePlayer[]): PodiumPlace[] {
+/** The top three of a best-first list; `rank` is 1-based and shared by tied scores. */
+export function podium(players: readonly GamePlayer[]) {
   return players.slice(0, 3).map(player => ({
     player,
     rank: players.findIndex(p => p.points === player.points) + 1,

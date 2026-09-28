@@ -1,6 +1,6 @@
 import type { UseDrauuReturn } from '@vueuse/integrations/useDrauu'
 import type { Brush, Point } from 'drauu'
-import type { ClientMessage, ServerMessage, WireBrush } from '#shared/utils/protocol'
+import type { ServerMessage, WireBrush } from '#shared/utils/protocol'
 import type { TimedPoint } from '~/utils/strokePlayback'
 import {
   dequantize,
@@ -22,12 +22,6 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 
 /** Marks nodes this composable manages. */
 const SYNC_ATTR = 'data-sync-id'
-
-interface GameBridge {
-  send: (msg: ClientMessage) => void
-  onMessage: (fn: (msg: ServerMessage) => void) => void
-  isDrawer: Ref<boolean>
-}
 
 function toWireBrush(brush: Brush): WireBrush {
   return {
@@ -68,14 +62,16 @@ function parseSvgElement(markup: string): SVGElement | null {
 }
 
 /** Streams the drawing between the drawer and everyone watching. */
-export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
+export function useDrawingSync(
+  drauu: UseDrauuReturn,
+  game: Pick<ReturnType<typeof useGameSocket>, 'send' | 'onMessage' | 'isDrawer'>,
+) {
   const { drauuInstance, brush, onStart, onChanged, onCommitted, onCanceled, dump, load } = drauu
 
   // --- drawer ------------------------------------------------------------
 
   let strokeId: string | null = null
   let strokeBrush: WireBrush | null = null
-  let flushTimer: number | null = null
   /** Wire-ready numbers not yet sent, `POINT_STRIDE` per point. */
   let pending: number[] = []
   let lastPoint: Point | null = null
@@ -88,10 +84,8 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     return (el?.lastElementChild as SVGElement | null) ?? null
   }
 
-  function stopFlushTimer() {
-    if (flushTimer != null) clearTimeout(flushTimer)
-    flushTimer = null
-  }
+  const { start: startFlushTimer, stop: stopFlushTimer, isPending: flushPending }
+    = useTimeoutFn(flush, DRAW_FLUSH_MS, { immediate: false })
 
   function flush() {
     stopFlushTimer()
@@ -125,7 +119,7 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
       flush()
       return
     }
-    flushTimer ??= window.setTimeout(flush, DRAW_FLUSH_MS)
+    if (!flushPending.value) startFlushTimer()
   }
 
   onStart(() => {

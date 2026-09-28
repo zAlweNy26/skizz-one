@@ -35,14 +35,11 @@ const {
   hasGuessed, paused, votedPause, customWords, choices,
 } = game
 
-const sync = useDrawingSync(drauu, {
-  send: game.send,
-  onMessage: game.onMessage,
-  isDrawer,
-})
+const sync = useDrawingSync(drauu, game)
 
+const activeElement = useActiveElement()
 watch(isDrawer, (drawing) => {
-  if (drawing && document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  if (drawing) activeElement.value?.blur()
 })
 
 watch(paused, (now, was) => {

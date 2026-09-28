@@ -1,5 +1,4 @@
-import type { EventHookOn } from '@vueuse/core'
-import type { GameState, ServerMessage } from '#shared/utils/protocol'
+import type { GameState } from '#shared/utils/protocol'
 import type { Sound } from '~/utils/soundCues'
 import { useEventListener, useLocalStorage } from '@vueuse/core'
 
@@ -7,14 +6,10 @@ const VOLUME = 0.5
 const TICK_VOLUME = 0.3
 const TICK_FROM_SECONDS = 5
 
-interface SoundOptions {
-  onMessage: EventHookOn<ServerMessage>
-  you: Ref<string>
-  state: Ref<GameState | null>
-  secondsLeft: Ref<number | null>
-}
-
-export function useSounds({ onMessage, you, state, secondsLeft }: SoundOptions) {
+export function useSounds({ onMessage, you, state, secondsLeft }: Pick<
+  ReturnType<typeof useGameSocket>,
+  'onMessage' | 'you' | 'state'
+> & { secondsLeft: Ref<number | null> }) {
   const muted = useLocalStorage('muted', false)
 
   let context: AudioContext | undefined

@@ -1,5 +1,5 @@
 import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessage } from '#shared/utils/protocol'
-import { createEventHook, useLocalStorage } from '@vueuse/core'
+import { createEventHook, useIntervalFn, useLocalStorage } from '@vueuse/core'
 import PartySocket from 'partysocket'
 import { randomUUID } from 'uncrypto'
 
@@ -105,7 +105,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
 
   const realtimeHost = useRuntimeConfig().public.realtimeHost as string
 
-  let pingTimer: ReturnType<typeof setInterval> | undefined
+  const ping = useIntervalFn(() => send({ t: 'ping' }), PING_INTERVAL_MS, { immediate: false })
 
   function open() {
     const room = toValue(roomId)
@@ -134,12 +134,11 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     })
 
     socket.value = ws
-    pingTimer = setInterval(send, PING_INTERVAL_MS, { t: 'ping' })
+    ping.resume()
   }
 
   function close() {
-    if (pingTimer) clearInterval(pingTimer)
-    pingTimer = undefined
+    ping.pause()
     socket.value?.close()
     socket.value = undefined
     connected.value = false

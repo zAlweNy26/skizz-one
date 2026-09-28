@@ -107,6 +107,10 @@ Client side of a room (`app/pages/room/[code].vue`):
   - 1TBS braces: `} else {` and `} catch {` on the closing-brace line.
   - Top-level functions are `function` declarations, not `const` arrows.
   - `interface` for object shapes, `type` for unions and aliases. No `any`.
+  - No interface for a shape used only once: let the function's inferred return
+    type carry it (derive it with `ReturnType<typeof fn>` / `Pick<…>` where needed).
+  - Use a VueUse composable whenever one covers the job (timers, listeners,
+    storage, media queries, focus, clipboard…) instead of hand-rolling it.
   - camelCase props and events in Vue templates (`:drawerId`, `@update:modelValue`).
   - Lines up to 120 chars. This is only a warning: max-len can't auto-fix, so wrap long template `class` lists by hand.
   Run `bun run lint:fix` rather than formatting by hand.
