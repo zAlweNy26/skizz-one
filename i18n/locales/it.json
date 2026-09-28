@@ -5,10 +5,10 @@
   },
   "header": {
     "round": "Round {round} di {total}",
-    "connected": "Connesso",
     "offline": "Offline",
     "gameId": "ID partita: {id}",
-    "share": "Condividi il link della partita"
+    "share": "Condividi il link della partita",
+    "wordLengths": "Lettere della parola | Lettere di ogni parola"
   },
   "share": {
     "title": "Link della partita copiato",
@@ -27,7 +27,10 @@
   },
   "chat": {
     "guessPlaceholder": "Scrivi qui la tua risposta...",
-    "drawingPlaceholder": "Stai disegnando — niente risposte!"
+    "publicPlaceholder": "Scrivi qualcosa...",
+    "privatePlaceholder": "Lo vedono solo chi disegna e chi ha indovinato",
+    "pausedPlaceholder": "Partita in pausa — risposte sospese",
+    "private": "Messaggio privato"
   },
   "players": {
     "points": "{n} punto | {n} punti",
@@ -48,6 +51,29 @@
     "timeUp": "Tempo scaduto!",
     "winner": "{name} vince con {points} punti!",
     "gameOver": "Partita finita",
-    "wordWas": "La parola era \"{word}\""
+    "wordWas": "La parola era \"{word}\"",
+    "paused": "Hanno votato tutti — la partita è in pausa",
+    "resumed": "La maggioranza ha votato — la partita riprende",
+    "guessOnHold": "La partita è in pausa — risposte sospese"
+  },
+  "home": {
+    "title": "Home",
+    "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",
+    "name": "Il tuo nome",
+    "nameRequired": "Scegli prima un nome",
+    "randomName": "Nome casuale",
+    "create": "Crea una stanza",
+    "or": "oppure",
+    "code": "Entra in una stanza",
+    "codePlaceholder": "Codice o link della stanza",
+    "join": "Entra"
+  },
+  "pause": {
+    "pause": "Pausa",
+    "resume": "Riprendi",
+    "pauseHint": "La partita va in pausa quando votano tutti ({votes}/{needed})",
+    "resumeHint": "La partita riprende quando vota la maggioranza ({votes}/{needed})",
+    "overlay": "Partita in pausa",
+    "drawer": "In pausa: potrai continuare a disegnare quando la partita riprende."
   }
 }

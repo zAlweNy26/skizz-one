@@ -14,6 +14,8 @@ import {
   normalizeGuess,
   POINT_STRIDE,
   quantize,
+  votesNeeded,
+  wordLengths,
 } from '../../shared/utils/protocol'
 
 describe('coordinate quantisation', () => {
@@ -166,5 +168,34 @@ describe('isLanguage', () => {
     expect(isLanguage('xx')).toBe(false)
     expect(isLanguage('toString')).toBe(false)
     expect(isLanguage(undefined)).toBe(false)
+  })
+})
+
+describe('votesNeeded', () => {
+  it('takes everyone to pause', () => {
+    expect(votesNeeded(1, false)).toBe(1)
+    expect(votesNeeded(4, false)).toBe(4)
+  })
+
+  it('takes a strict majority to resume', () => {
+    expect(votesNeeded(2, true)).toBe(2)
+    expect(votesNeeded(3, true)).toBe(2)
+    expect(votesNeeded(4, true)).toBe(3)
+    expect(votesNeeded(5, true)).toBe(3)
+  })
+})
+
+describe('wordLengths', () => {
+  it('counts the letters of each word', () => {
+    expect(wordLengths('cat')).toEqual([3])
+    expect(wordLengths('ice cream')).toEqual([3, 5])
+  })
+
+  it('gives guessers the same counts from the masked hint', () => {
+    expect(wordLengths(maskWord('città di notte'))).toEqual(wordLengths('città di notte'))
+  })
+
+  it('is empty when there is no word', () => {
+    expect(wordLengths('')).toEqual([])
   })
 })

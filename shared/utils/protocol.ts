@@ -23,6 +23,9 @@ export const DRAW_FLUSH_POINTS = 50
 /** How long a disconnected drawer keeps the turn before the round is ended. */
 export const DRAWER_GRACE_MS = 10_000
 
+/** Longest nickname the room accepts. The client form enforces the same. */
+export const MAX_NAME_LENGTH = 24
+
 export type DrawingMode
   = | 'draw' | 'stylus' | 'line' | 'rectangle'
     | 'ellipse' | 'eraseLine' | 'highlighter' | 'bucket'
@@ -81,6 +84,20 @@ export function isLanguage(value: unknown): value is Language {
 
 export type RoundPhase = 'lobby' | 'drawing' | 'intermission' | 'finished'
 
+/** Phases whose countdown players can vote to pause. */
+export const PAUSABLE_PHASES: readonly RoundPhase[] = ['drawing', 'intermission']
+
+/**
+ * Votes a pause or resume needs to pass, out of the connected players.
+ *
+ * Pausing takes everyone, so nobody is frozen out of a round against their
+ * will; resuming takes a strict majority, so one absent-minded player can't
+ * hold the room hostage.
+ */
+export function votesNeeded(connected: number, paused: boolean) {
+  return paused ? Math.floor(connected / 2) + 1 : connected
+}
+
 export interface GamePlayer {
   id: string
   name: string
@@ -104,6 +121,15 @@ export interface GameState {
   /** Masked word shown to guessers, e.g. `____`. Never the word itself. */
   hint: string
   players: GamePlayer[]
+  /** Is the countdown frozen by a vote? */
+  paused: boolean
+  /**
+   * Connected players voting to flip `paused`: to pause while running, to
+   * resume while paused.
+   */
+  pauseVotes: string[]
+  /** Time left on the frozen countdown, or null when not paused. */
+  remainingMs: number | null
 }
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'
@@ -118,6 +144,7 @@ export type LogKey
   = | 'joined' | 'reconnected' | 'disconnected' | 'hostLeft' | 'drawerDropped'
     | 'drawerGone' | 'languageChanged' | 'waitingForPlayers' | 'drawing'
     | 'close' | 'guessed' | 'timeUp' | 'winner' | 'gameOver'
+    | 'paused' | 'resumed' | 'guessOnHold'
 
 /** Values interpolated into a log message, e.g. `{ name: 'Bob' }`. */
 export type LogParams = Record<string, string | number>
@@ -142,6 +169,8 @@ export type ClientMessage
     | { t: 'chat', text: string }
     | { t: 'start' }
     | { t: 'language', language: Language }
+  /** Cast (`want: true`) or withdraw a vote to pause or resume. */
+    | { t: 'pause', want: boolean }
     | { t: 'ping' }
 
 /** Server -> client. */
@@ -180,6 +209,16 @@ export function dequantize(n: number) {
 /** Mask a word for guessers: letters become underscores, spaces survive. */
 export function maskWord(word: string) {
   return word.replace(/\S/g, '_')
+}
+
+/**
+ * Characters in each word of an answer, e.g. `ice cream` -> `[3, 5]`.
+ *
+ * Works on the masked hint just as well, since masking keeps the spaces, so
+ * guessers get the counts without ever seeing the word.
+ */
+export function wordLengths(text: string) {
+  return text.split(/\s+/).filter(Boolean).map(w => [...w].length)
 }
 
 /** Normalise a guess for comparison: case, accents and spacing are ignored. */

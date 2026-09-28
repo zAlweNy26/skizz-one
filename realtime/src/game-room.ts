@@ -20,7 +20,10 @@ import {
   isLanguage,
   LANGUAGES,
   maskWord,
+  MAX_NAME_LENGTH,
   normalizeGuess,
+  PAUSABLE_PHASES,
+  votesNeeded,
 } from '../../shared/utils/protocol'
 import { pickWord } from './words'
 
@@ -70,6 +73,13 @@ interface RoomState {
   alarmKind: AlarmKind | null
   /** Time left in the round while it is paused for a disconnected drawer. */
   pausedMs: number | null
+  /** Players voting to pause, or to resume once paused. */
+  pauseVotes: string[]
+  /**
+   * The countdown frozen by a vote: which alarm to re-arm, and with how
+   * long. Separate from `pausedMs`, which the drawer's grace window owns.
+   */
+  pause: { kind: AlarmKind, remainingMs: number } | null
 }
 
 interface ConnState {
@@ -92,6 +102,8 @@ function initialState(): RoomState {
     players: {},
     alarmKind: null,
     pausedMs: null,
+    pauseVotes: [],
+    pause: null,
   }
 }
 
@@ -195,6 +207,9 @@ export class GameRoom extends Server<Env> {
           connected: p.connected,
           guessed: p.guessed,
         })),
+      paused: s.pause !== null,
+      pauseVotes: this.#pauseVoters(),
+      remainingMs: s.pause?.remainingMs ?? null,
     }
   }
 
@@ -213,7 +228,7 @@ export class GameRoom extends Server<Env> {
   async onConnect(connection: Connection, ctx: ConnectionContext) {
     const url = new URL(ctx.request.url)
     const playerId = url.searchParams.get('playerId')
-    const name = (url.searchParams.get('name') ?? '').slice(0, 24).trim()
+    const name = (url.searchParams.get('name') ?? '').trim().slice(0, MAX_NAME_LENGTH).trim()
 
     if (!playerId || !name) {
       connection.close(1008, 'playerId and name are required')
@@ -287,6 +302,8 @@ export class GameRoom extends Server<Env> {
     if (stillOpen) return
 
     player.connected = false
+    // A vote is cast by someone at the table: leaving withdraws it.
+    s.pauseVotes = s.pauseVotes.filter(id => id !== playerId)
 
     if (s.hostId === playerId) {
       const nextHost = s.order.find(id => s.players[id]?.connected)
@@ -297,7 +314,11 @@ export class GameRoom extends Server<Env> {
     else
       this.#log('info', 'disconnected', { name: player.name })
 
-    if (s.phase === 'drawing' && s.drawerId === playerId) {
+    if (s.pause) {
+      // A frozen countdown has nothing to run out. The grace window, or the
+      // "everyone guessed" check, waits for the resume.
+    }
+    else if (s.phase === 'drawing' && s.drawerId === playerId) {
       // Hold the round briefly: a locked phone or a refresh shouldn't end it.
       s.pausedMs = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
       s.endsAt = null
@@ -306,6 +327,9 @@ export class GameRoom extends Server<Env> {
     }
     else if (s.phase === 'drawing')
       await this.#endRoundIfEveryoneGuessed()
+
+    // The one holdout leaving can make the rest unanimous.
+    await this.#checkPauseVotes()
 
     await this.#save()
     this.#broadcastState()
@@ -334,7 +358,7 @@ export class GameRoom extends Server<Env> {
 
     // Only the current drawer may touch the canvas.
     if (isDrawingMessage(msg)) {
-      if (playerId !== s.drawerId || s.phase !== 'drawing') return
+      if (playerId !== s.drawerId || s.phase !== 'drawing' || s.pause) return
       this.#handleDrawing(connection, msg)
       return
     }
@@ -346,6 +370,9 @@ export class GameRoom extends Server<Env> {
         break
       case 'language':
         await this.#setLanguage(playerId, msg.language)
+        break
+      case 'pause':
+        await this.#votePause(playerId, msg.want)
         break
       case 'guess':
         await this.#handleGuess(connection, playerId, msg.text)
@@ -396,6 +423,12 @@ export class GameRoom extends Server<Env> {
     // The drawer, and anyone who already got it, are just chatting.
     if (s.phase !== 'drawing' || playerId === s.drawerId || player.guessed) {
       this.#handleChat(playerId, text)
+      return
+    }
+
+    // The drawing is frozen too: studying it for free isn't fair play.
+    if (s.pause) {
+      this.#send(connection, { t: 'log', level: 'warning', key: 'guessOnHold' })
       return
     }
 
@@ -462,6 +495,83 @@ export class GameRoom extends Server<Env> {
     }
   }
 
+  // --- pausing -----------------------------------------------------------
+
+  /** Voters still at the table, in a stable order. */
+  #pauseVoters() {
+    const s = this.#state
+    return s.pauseVotes.filter(id => s.players[id]?.connected)
+  }
+
+  /**
+   * Cast or withdraw a vote.
+   *
+   * Not while the drawer's grace window runs: that timer already holds the
+   * round, and two freezes over one countdown would fight over it.
+   */
+  async #votePause(playerId: string, want: unknown) {
+    const s = this.#state
+    if (!PAUSABLE_PHASES.includes(s.phase) || s.alarmKind === 'grace') return
+
+    const has = s.pauseVotes.includes(playerId)
+    if (want === true && !has) s.pauseVotes.push(playerId)
+    else if (want === false && has) s.pauseVotes = s.pauseVotes.filter(id => id !== playerId)
+    else return
+
+    await this.#checkPauseVotes()
+    await this.#save()
+    this.#broadcastState()
+  }
+
+  /** Flip the pause if the votes are there. The caller saves and broadcasts. */
+  async #checkPauseVotes() {
+    const s = this.#state
+    const connected = s.order.filter(id => s.players[id]?.connected).length
+    const votes = this.#pauseVoters().length
+    if (votes === 0 || votes < votesNeeded(connected, s.pause !== null)) return
+
+    s.pauseVotes = []
+    if (s.pause) await this.#resumeCountdown()
+    else await this.#pauseCountdown()
+  }
+
+  async #pauseCountdown() {
+    const s = this.#state
+    if (!s.alarmKind || !PAUSABLE_PHASES.includes(s.phase)) return
+
+    s.pause = {
+      kind: s.alarmKind,
+      remainingMs: Math.max(0, (s.endsAt ?? Date.now()) - Date.now()),
+    }
+    s.endsAt = null
+    s.alarmKind = null
+    await this.ctx.storage.deleteAlarm()
+    this.#log('info', 'paused')
+  }
+
+  async #resumeCountdown() {
+    const s = this.#state
+    const pause = s.pause
+    if (!pause) return
+    s.pause = null
+    this.#log('info', 'resumed')
+
+    // The drawer left while the room was frozen: now their grace window runs.
+    const drawer = s.drawerId ? s.players[s.drawerId] : null
+    if (s.phase === 'drawing' && drawer && !drawer.connected) {
+      s.pausedMs = pause.remainingMs
+      await this.#setAlarm('grace', DRAWER_GRACE_MS)
+      this.#log('warning', 'drawerDropped', { name: drawer.name })
+      return
+    }
+
+    s.endsAt = Date.now() + pause.remainingMs
+    await this.#setAlarm(pause.kind, pause.remainingMs)
+
+    // Guessers may have left while frozen, leaving only players who got it.
+    if (s.phase === 'drawing') await this.#endRoundIfEveryoneGuessed()
+  }
+
   // --- round flow --------------------------------------------------------
 
   async #setAlarm(kind: AlarmKind, ms: number) {
@@ -474,6 +584,8 @@ export class GameRoom extends Server<Env> {
     s.round = 0
     s.turnIndex = -1
     s.usedWords = []
+    s.pauseVotes = []
+    s.pause = null
     for (const p of Object.values(s.players)) p.points = 0
     await this.#startTurn()
   }
@@ -499,6 +611,7 @@ export class GameRoom extends Server<Env> {
       s.word = null
       s.endsAt = null
       s.alarmKind = null
+      s.pauseVotes = []
       await this.#save()
       this.#log('info', 'waitingForPlayers')
       this.#broadcastState()
@@ -588,6 +701,7 @@ export class GameRoom extends Server<Env> {
     s.word = null
     s.endsAt = null
     s.alarmKind = null
+    s.pauseVotes = []
     await this.ctx.storage.deleteAlarm()
     await this.#save()
 

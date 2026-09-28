@@ -5,10 +5,10 @@
   },
   "header": {
     "round": "Round {round} of {total}",
-    "connected": "Connected",
     "offline": "Offline",
     "gameId": "Game ID: {id}",
-    "share": "Share game link"
+    "share": "Share game link",
+    "wordLengths": "Letters in the word | Letters in each word"
   },
   "share": {
     "title": "Game link copied to clipboard",
@@ -27,7 +27,10 @@
   },
   "chat": {
     "guessPlaceholder": "Type your guess here...",
-    "drawingPlaceholder": "You are drawing — no guessing!"
+    "publicPlaceholder": "Say something...",
+    "privatePlaceholder": "Only the drawer and players who guessed can see this",
+    "pausedPlaceholder": "Game paused — guessing is on hold",
+    "private": "Private message"
   },
   "players": {
     "points": "{n} point | {n} points",
@@ -48,6 +51,29 @@
     "timeUp": "Time is up!",
     "winner": "{name} wins with {points} points!",
     "gameOver": "Game over",
-    "wordWas": "The word was \"{word}\""
+    "wordWas": "The word was \"{word}\"",
+    "paused": "Everyone voted — the game is paused",
+    "resumed": "The majority voted — the game resumes",
+    "guessOnHold": "The game is paused — guessing is on hold"
+  },
+  "home": {
+    "title": "Home",
+    "tagline": "Draw, guess, laugh. Pick a name and jump in.",
+    "name": "Your name",
+    "nameRequired": "Pick a name first",
+    "randomName": "Random name",
+    "create": "Create a room",
+    "or": "or",
+    "code": "Join a room",
+    "codePlaceholder": "Room code or link",
+    "join": "Join"
+  },
+  "pause": {
+    "pause": "Pause",
+    "resume": "Resume",
+    "pauseHint": "The game pauses when everyone votes ({votes}/{needed})",
+    "resumeHint": "The game resumes when the majority votes ({votes}/{needed})",
+    "overlay": "Game paused",
+    "drawer": "Paused: your drawing picks up when the room resumes."
   }
 }
