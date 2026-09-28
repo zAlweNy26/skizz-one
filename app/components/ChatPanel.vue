@@ -71,6 +71,66 @@ watch(() => props.entries.length, async () => {
   if (atNewest) el.scrollTop = isDesktop.value ? el.scrollHeight : 0
 })
 
+/**
+ * iPhone Safari lays the keyboard over the page instead of resizing it, and
+ * focusing an input shifts the whole visual viewport up to reveal it. A page
+ * that doesn't overflow can't be scrolled back (`scrollTo` is a no-op there),
+ * so the canvas slides off the top. Following React Aria's `usePreventScroll`:
+ *
+ * 1. Stop the shift: the first tap focuses the input with `preventScroll`, so
+ *    Safari opens the keyboard without moving the page.
+ * 2. Lock the page while the keyboard is up: only the chat log may scroll, or
+ *    the covered page would.
+ * 3. Float just the input bar above the keyboard, by the height it covers.
+ *
+ * iOS only: Android and desktop resize the layout with the keyboard, which
+ * already puts it right under the input. Once Safari ships
+ * `interactive-widget=resizes-content` (nuxt.config.ts), the covered height
+ * drops to zero there too and none of this kicks in.
+ */
+const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+
+/** First tap only: once focused, taps must reach the input to move the caret. */
+function focusWithoutShift(event: TouchEvent) {
+  const input = event.target
+  if (!isIOS || !(input instanceof HTMLInputElement) || input.disabled || input === document.activeElement) return
+  event.preventDefault()
+  input.focus({ preventScroll: true })
+}
+
+const focused = ref(false)
+const keyboardInset = ref(0)
+
+function measureKeyboard() {
+  const view = window.visualViewport
+  keyboardInset.value = isIOS && focused.value && view
+    ? Math.max(0, Math.round(window.innerHeight - view.height - view.offsetTop))
+    : 0
+}
+
+// `resize` only: tracking `scroll` too reflows on every frame of the keyboard animation.
+useEventListener(() => window.visualViewport, 'resize', measureKeyboard)
+watch(focused, (now) => {
+  nextTick(measureKeyboard)
+  // iOS 26 sometimes reports a stale viewport right after the keyboard closes.
+  if (!now) setTimeout(measureKeyboard, 350)
+})
+
+/** A real on-screen keyboard is far taller than a rounding error or a toolbar. */
+const floating = computed(() => keyboardInset.value > 80)
+
+watch(floating, (on) => {
+  document.documentElement.style.overflow = on ? 'hidden' : ''
+})
+useEventListener(document, 'touchmove', (event: TouchEvent) => {
+  // Pinch-zoom stays allowed; so does scrolling a chat log that has something to scroll.
+  if (!floating.value || event.touches.length > 1) return
+  const el = log.value
+  const inLog = el && event.target instanceof Node && el.contains(event.target) && el.scrollHeight > el.clientHeight
+  if (!inLog) event.preventDefault()
+}, { passive: false, capture: true })
+
 function submit(event: KeyboardEvent) {
   const input = event.target as HTMLInputElement
   const text = input.value.trim()
@@ -84,18 +144,32 @@ function submit(event: KeyboardEvent) {
   <SketchFrame
     as="aside" :strokeWidth="2.5" :radius="18" class="flex flex-col gap-3 p-3"
     :aria-label="$t('chat.title')">
-    <!-- First on a phone, right under the canvas; last on desktop. -->
-    <!-- Autocorrect off: a phone "fixing" moose into mouse would cost the guess. -->
-    <UInput
-      class="w-full lg:order-last" size="lg" :ui="{ base: 'min-h-11' }"
-      autocomplete="off" autocorrect="off" autocapitalize="off" :spellcheck="false" enterkeyhint="send"
-      :placeholder="$t(placeholder)"
-      :disabled="channel === 'onHold'"
-      :color="channel === 'private' ? 'success' : 'primary'"
-      :highlight="channel === 'private'"
-      :icon="channelIcon"
-      @keyup.enter="submit" />
-    <div ref="log" class="overflow-y-auto grow min-h-0 flex flex-col gap-1.5 text-sm pe-1" role="log">
+    <!--
+      First on a phone, right under the canvas; last on desktop. The outer box
+      keeps the input's slot while the inner bar floats above an iPhone's
+      keyboard, so nothing else in the room moves.
+    -->
+    <div class="w-full min-h-11 lg:order-last" @touchend="focusWithoutShift">
+      <div
+        :class="floating
+          ? `fixed inset-x-0 bottom-0 z-40 px-safe py-2 bg-(--stage) translate-y-(--keyboard-lift)
+            motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out-quart`
+          : ''"
+        :style="floating ? { '--keyboard-lift': `-${keyboardInset}px` } : undefined">
+        <UInput
+          class="w-full" size="lg" :ui="{ base: 'min-h-11' }"
+          autocomplete="off" enterkeyhint="send"
+          :placeholder="$t(placeholder)"
+          :disabled="channel === 'onHold'"
+          :color="channel === 'private' ? 'success' : 'primary'"
+          :highlight="channel === 'private'"
+          :icon="channelIcon"
+          @keyup.enter="submit" @focus="focused = true" @blur="focused = false" />
+      </div>
+    </div>
+    <div
+      ref="log" class="overflow-y-auto overscroll-contain grow min-h-0 flex flex-col gap-1.5 text-sm pe-1"
+      role="log">
       <div
         v-for="{ entry, index } in shown" :key="index" class="flex items-start gap-2 px-2 py-1 rounded-sketch"
         :class="!entry.system && entry.private ? 'bg-success/12' : ''">

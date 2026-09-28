@@ -40,6 +40,10 @@ bun run dev:realtime --port 8799   # terminal 1
 bun run test:realtime              # terminal 2
 ```
 
+`realtime/.dev.vars` overrides `ALLOWED_ORIGINS` for `wrangler dev` so the
+local app on :3000 can connect; `realtime/wrangler.jsonc` only allows
+`https://skizz.app`, which is what deploys.
+
 The realtime dev port is pinned to 8787 in `realtime/wrangler.jsonc` because the
 app's dev `realtimeHost` points there; if the port is busy, wrangler would
 silently move and the page would talk to a stale worker.
@@ -129,6 +133,12 @@ Client side of a room (`app/pages/room/[code].vue`):
     bottom sheet, and the chat filling the rest. From `lg` up it's the
     three-column grid. Keep tap targets ≥44px (`size-11`/`min-h-11`) and check
     changes at 390×844.
+  - iPhone keyboard: Safari overlays the keyboard and shifts the page to reveal
+    a focused input. `ChatPanel.vue` (iOS only, after React Aria's
+    `usePreventScroll`) focuses the guess input with `preventScroll`, locks page
+    scrolling while the keyboard is up, and floats the input bar above it via
+    `visualViewport` (resize events only). Android resizes the layout itself, so
+    none of it runs there.
 - **fallow:** entries or class members only reached by frameworks (e.g. new
   `partyserver` lifecycle hooks, `preset/entry.ts`) must be listed in
   `.fallowrc.json`, or they're reported as unused.

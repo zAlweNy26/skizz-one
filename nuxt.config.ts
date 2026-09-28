@@ -72,6 +72,14 @@ export default defineNuxtConfig({
   },
 
   $development: {
+    vite: {
+      server: {
+        // Lets a Cloudflare quick tunnel (`cloudflared tunnel --url
+        // http://localhost:3000`) reach the dev server, to play from a phone.
+        // Vite otherwise rejects unknown Host headers with a 403.
+        allowedHosts: ['.trycloudflare.com'],
+      },
+    },
     runtimeConfig: {
       public: {
         // `nuxt dev` cannot proxy the upgrade: the entry below is production
