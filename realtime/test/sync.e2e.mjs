@@ -157,8 +157,8 @@ async function main() {
   watcherWs.inbox.length = 0
   drawerWs.inbox.length = 0
   send(watcherWs, { t: 'guess', text: drawerTurn.word })
-  const announce = await waitFor(drawerWs, m => m.t === 'log' && /guessed the word/.test(m.message ?? ''))
-  check('a correct guess announces the guesser', Boolean(announce), announce?.message)
+  const announce = await waitFor(drawerWs, m => m.t === 'log' && m.key === 'guessed')
+  check('a correct guess announces the guesser', announce?.params?.name === 'Bob', JSON.stringify(announce?.params))
 
   const leaked = drawerWs.inbox.find(m => m.t === 'chat' && m.text === drawerTurn.word)
   check('the winning guess is NEVER echoed', !leaked, leaked ? JSON.stringify(leaked) : '')

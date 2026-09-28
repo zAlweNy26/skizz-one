@@ -1,0 +1,53 @@
+{
+  "title": {
+    "drawing": "✏️ Drawing",
+    "playing": "🎮 Playing"
+  },
+  "header": {
+    "round": "Round {round} of {total}",
+    "connected": "Connected",
+    "offline": "Offline",
+    "gameId": "Game ID: {id}",
+    "share": "Share game link"
+  },
+  "share": {
+    "title": "Game link copied to clipboard",
+    "description": "Share this link with your friends to join the game!"
+  },
+  "lobby": {
+    "title": "Waiting to start",
+    "host": "You are the host. Pick the word language and start when everyone has joined.",
+    "guest": "Waiting for the host to start the game. Words will be in {language}.",
+    "start": "Start game",
+    "wordLanguage": "Word language"
+  },
+  "canvas": {
+    "guess": "Guess what is being drawn!",
+    "waitingForDrawer": "Waiting for a drawer…"
+  },
+  "chat": {
+    "guessPlaceholder": "Type your guess here...",
+    "drawingPlaceholder": "You are drawing — no guessing!"
+  },
+  "players": {
+    "points": "{n} point | {n} points",
+    "you": "You"
+  },
+  "log": {
+    "joined": "{name} joined the game",
+    "reconnected": "{name} reconnected — the round continues",
+    "disconnected": "{name} disconnected",
+    "hostLeft": "{name} left — {host} is now the host",
+    "drawerDropped": "{name} dropped out — waiting a moment for them",
+    "drawerGone": "The drawer did not return",
+    "languageChanged": "Words are now in {language}",
+    "waitingForPlayers": "Waiting for more players…",
+    "drawing": "{name} is drawing!",
+    "close": "\"{text}\" is close!",
+    "guessed": "{name} guessed the word!",
+    "timeUp": "Time is up!",
+    "winner": "{name} wins with {points} points!",
+    "gameOver": "Game over",
+    "wordWas": "The word was \"{word}\""
+  }
+}

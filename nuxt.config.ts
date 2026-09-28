@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     '@nuxt/test-utils',
     '@vueuse/nuxt',
     '@nuxthub/core',
+    '@nuxtjs/i18n',
   ],
 
   ssr: false,
@@ -68,6 +69,25 @@ export default defineNuxtConfig({
       // set globally it is compiled into the dev worker too, which then never
       // initialises and leaves the dev server reporting a missing entry.
       entry: fileURLToPath(new URL('./preset/entry.ts', import.meta.url)),
+    },
+  },
+
+  // The UI language is each player's own. It is unrelated to a room's word
+  // language, which the host picks and every player shares.
+  i18n: {
+    // One route, no SSR: nothing to gain from /it/ style URLs.
+    strategy: 'no_prefix',
+    defaultLocale: 'en',
+    locales: [
+      { code: 'en', language: 'en-US', name: 'English', file: 'en.json' },
+      { code: 'it', language: 'it-IT', name: 'Italiano', file: 'it.json' },
+    ],
+    detectBrowserLanguage: {
+      // Detected once, then remembered. A future settings toggle only needs
+      // to call setLocale(), which overwrites this cookie.
+      useCookie: true,
+      cookieKey: 'locale',
+      fallbackLocale: 'en',
     },
   },
 

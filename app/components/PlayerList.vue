@@ -24,12 +24,12 @@ defineProps<{
           {{ player.name }}
         </p>
         <p class="text-xs font-medium">
-          {{ player.points }} points
+          {{ $t('players.points', player.points) }}
         </p>
       </div>
       <UIcon v-if="drawerId === player.id" name="i-lucide-paintbrush" class="ms-auto size-4" />
       <UIcon v-else-if="player.guessed" name="i-lucide-check" class="ms-auto size-4 text-success" />
-      <UBadge v-if="you === player.id" class="ms-auto" size="sm" variant="soft" label="You" />
+      <UBadge v-if="you === player.id" class="ms-auto" size="sm" variant="soft" :label="$t('players.you')" />
     </div>
   </aside>
 </template>

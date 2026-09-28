@@ -108,6 +108,20 @@ export interface GameState {
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'
 
+/**
+ * Announcements the room makes in chat.
+ *
+ * Sent as a key, never as text: players share a room but not a UI language,
+ * so each client renders `log.<key>` from its own locale file.
+ */
+export type LogKey
+  = | 'joined' | 'reconnected' | 'disconnected' | 'hostLeft' | 'drawerDropped'
+    | 'drawerGone' | 'languageChanged' | 'waitingForPlayers' | 'drawing'
+    | 'close' | 'guessed' | 'timeUp' | 'winner' | 'gameOver'
+
+/** Values interpolated into a log message, e.g. `{ name: 'Bob' }`. */
+export type LogParams = Record<string, string | number>
+
 /** Sent by the drawer and relayed verbatim to everyone else. */
 export type DrawingMessage
   = | { t: 'strokeStart', id: string, brush: WireBrush }
@@ -138,7 +152,7 @@ export type ServerMessage
   /** `word` is present only in the copy sent to the drawer. */
     | { t: 'turn', drawerId: string, round: number, endsAt: number, hint: string, word?: string }
     | { t: 'roundEnd', word: string, state: GameState }
-    | { t: 'log', level: LogLevel, message: string }
+    | { t: 'log', level: LogLevel, key: LogKey, params?: LogParams }
     | { t: 'chat', sender: string, text: string, private?: boolean }
     | { t: 'pong' }
 

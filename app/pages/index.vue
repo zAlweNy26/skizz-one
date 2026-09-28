@@ -10,6 +10,7 @@ const paletteColors = [
 ]
 
 const toast = useToast()
+const { t } = useI18n()
 const gameId = useRouteQuery('code', '', { transform: String })
 const sketch = useTemplateRef<SVGSVGElement>('sketch')
 const currentBg = ref('#FFFFFF')
@@ -66,8 +67,8 @@ const { copy } = useClipboard()
 function shareGame() {
   copy(window.location.href)
   toast.add({
-    title: 'Game link copied to clipboard',
-    description: 'Share this link with your friends to join the game!',
+    title: t('share.title'),
+    description: t('share.description'),
     icon: 'i-lucide-link',
   })
 }
@@ -117,7 +118,7 @@ function submitGuess(text: string) {
 }
 
 useHead({
-  title: computed(() => (canDraw.value ? '✏️ Drawing' : '🎮 Playing')),
+  title: computed(() => (canDraw.value ? t('title.drawing') : t('title.playing'))),
 })
 
 defineShortcuts({
@@ -138,7 +139,7 @@ defineShortcuts({
     <ThemeSwitch />
     <UCard variant="soft" class="w-full" :ui="{ body: 'flex flex-wrap justify-between items-center gap-2' }">
       <p class="font-bold">
-        Round {{ state?.round || 0 }} of {{ state?.totalRounds || 3 }}
+        {{ $t('header.round', { round: state?.round || 0, total: state?.totalRounds || 3 }) }}
       </p>
       <p class="font-mono font-bold text-lg tracking-[0.3em]">
         {{ wordDisplay }}
@@ -146,26 +147,24 @@ defineShortcuts({
       <UBadge v-if="secondsLeft !== null" :color="secondsLeft <= 10 ? 'error' : 'neutral'" variant="soft" size="lg">
         {{ secondsLeft }}s
       </UBadge>
-      <UBadge :color="connected ? 'success' : 'error'" variant="soft" :label="connected ? 'Connected' : 'Offline'" />
+      <UBadge :color="connected ? 'success' : 'error'" variant="soft" :label="connected ? $t('header.connected') : $t('header.offline')" />
       <p class="text-sm font-semibold">
-        Game ID: {{ gameId }}
+        {{ $t('header.gameId', { id: gameId }) }}
       </p>
-      <UButton variant="soft" size="xl" icon="i-lucide-share-2" @click="shareGame()" />
+      <UButton variant="soft" size="xl" icon="i-lucide-share-2" :aria-label="$t('header.share')" @click="shareGame()" />
     </UCard>
 
     <UAlert
       v-if="phase === 'lobby'"
       icon="i-lucide-users"
-      title="Waiting to start"
-      :description="isHost
-        ? 'You are the host. Pick the word language and start when everyone has joined.'
-        : `Waiting for the host to start the game. Words will be in ${LANGUAGES[language]}.`"
+      :title="$t('lobby.title')"
+      :description="isHost ? $t('lobby.host') : $t('lobby.guest', { language: LANGUAGES[language] })"
       class="w-full">
       <template v-if="isHost" #actions>
         <USelect
           :model-value="language" :items="languageItems" icon="i-lucide-languages"
-          class="w-40" aria-label="Word language" @update:model-value="setLanguage" />
-        <UButton label="Start game" @click="game.send({ t: 'start' })" />
+          class="w-40" :aria-label="$t('lobby.wordLanguage')" @update:model-value="setLanguage" />
+        <UButton :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
       </template>
     </UAlert>
 
@@ -220,7 +219,7 @@ defineShortcuts({
           </div>
         </div>
         <p v-else class="text-sm text-muted text-center py-2">
-          {{ state?.drawerId ? 'Guess what is being drawn!' : 'Waiting for a drawer…' }}
+          {{ state?.drawerId ? $t('canvas.guess') : $t('canvas.waitingForDrawer') }}
         </p>
       </div>
 

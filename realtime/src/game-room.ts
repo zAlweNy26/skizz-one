@@ -5,7 +5,9 @@ import type {
   GamePlayer,
   GameState,
   Language,
+  LogKey,
   LogLevel,
+  LogParams,
   RoundPhase,
   ServerMessage,
 } from '../../shared/utils/protocol'
@@ -152,8 +154,8 @@ export class GameRoom extends Server<Env> {
     this.broadcast(JSON.stringify(msg), without)
   }
 
-  #log(level: LogLevel, message: string) {
-    this.#broadcast({ t: 'log', level, message })
+  #log(level: LogLevel, key: LogKey, params?: LogParams) {
+    this.#broadcast({ t: 'log', level, key, params })
   }
 
   /** Every live connection belonging to a player. */
@@ -237,7 +239,7 @@ export class GameRoom extends Server<Env> {
         connected: true,
       }
       s.order.push(playerId)
-      this.#log('info', `${name} joined the game`)
+      this.#log('info', 'joined', { name })
     }
 
     s.hostId ??= playerId
@@ -248,7 +250,7 @@ export class GameRoom extends Server<Env> {
       s.pausedMs = null
       s.endsAt = Date.now() + remaining
       await this.#setAlarm('round', remaining)
-      this.#log('success', `${name} reconnected — the round continues`)
+      this.#log('success', 'reconnected', { name })
     }
 
     await this.#save()
@@ -290,17 +292,17 @@ export class GameRoom extends Server<Env> {
       const nextHost = s.order.find(id => s.players[id]?.connected)
       s.hostId = nextHost ?? null
       if (nextHost)
-        this.#log('warning', `${player.name} left — ${s.players[nextHost]!.name} is now the host`)
+        this.#log('warning', 'hostLeft', { name: player.name, host: s.players[nextHost]!.name })
     }
     else
-      this.#log('info', `${player.name} disconnected`)
+      this.#log('info', 'disconnected', { name: player.name })
 
     if (s.phase === 'drawing' && s.drawerId === playerId) {
       // Hold the round briefly: a locked phone or a refresh shouldn't end it.
       s.pausedMs = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
       s.endsAt = null
       await this.#setAlarm('grace', DRAWER_GRACE_MS)
-      this.#log('warning', `${player.name} dropped out — waiting a moment for them`)
+      this.#log('warning', 'drawerDropped', { name: player.name })
     }
     else if (s.phase === 'drawing')
       await this.#endRoundIfEveryoneGuessed()
@@ -379,7 +381,7 @@ export class GameRoom extends Server<Env> {
 
     s.language = language
     await this.#save()
-    this.#log('info', `Words are now in ${LANGUAGES[language]}`)
+    this.#log('info', 'languageChanged', { language: LANGUAGES[language] })
     this.#broadcastState()
   }
 
@@ -405,7 +407,7 @@ export class GameRoom extends Server<Env> {
       this.#broadcast({ t: 'chat', sender: player.name, text })
 
       if (answer && editDistance(guess, answer, NEAR_MISS_DISTANCE) <= NEAR_MISS_DISTANCE)
-        this.#send(connection, { t: 'log', level: 'warning', message: `"${text}" is close!` })
+        this.#send(connection, { t: 'log', level: 'warning', key: 'close', params: { text } })
 
       return
     }
@@ -419,7 +421,7 @@ export class GameRoom extends Server<Env> {
     const drawer = s.drawerId ? s.players[s.drawerId] : null
     if (drawer) drawer.points += DRAWER_POINTS_PER_GUESS
 
-    this.#log('success', `${player.name} guessed the word!`)
+    this.#log('success', 'guessed', { name: player.name })
     await this.#save()
     this.#broadcastState()
 
@@ -498,7 +500,7 @@ export class GameRoom extends Server<Env> {
       s.endsAt = null
       s.alarmKind = null
       await this.#save()
-      this.#log('info', 'Waiting for more players…')
+      this.#log('info', 'waitingForPlayers')
       this.#broadcastState()
       return
     }
@@ -547,7 +549,7 @@ export class GameRoom extends Server<Env> {
       })
     }
 
-    this.#log('info', `${s.players[s.drawerId]?.name} is drawing!`)
+    this.#log('info', 'drawing', { name: s.players[s.drawerId]?.name ?? '' })
     this.#broadcastState()
   }
 
@@ -594,7 +596,8 @@ export class GameRoom extends Server<Env> {
       .filter((p): p is StoredPlayer => Boolean(p))
       .sort((a, b) => b.points - a.points)[0]
 
-    this.#log('success', winner ? `${winner.name} wins with ${winner.points} points!` : 'Game over')
+    if (winner) this.#log('success', 'winner', { name: winner.name, points: winner.points })
+    else this.#log('success', 'gameOver')
     this.#broadcastState()
   }
 
@@ -605,12 +608,12 @@ export class GameRoom extends Server<Env> {
 
     switch (kind) {
       case 'round':
-        this.#log('warning', 'Time is up!')
+        this.#log('warning', 'timeUp')
         await this.#endRound()
         break
       case 'grace':
         // The drawer never came back.
-        this.#log('warning', 'The drawer did not return')
+        this.#log('warning', 'drawerGone')
         await this.#endRound()
         break
       case 'intermission':

@@ -1,17 +1,19 @@
-import type { ClientMessage, GameState, LogLevel, ServerMessage } from '#shared/utils/protocol'
+import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessage } from '#shared/utils/protocol'
 import { createEventHook, useLocalStorage } from '@vueuse/core'
 import PartySocket from 'partysocket'
 import { pascalCase } from 'scule'
 import { randomUUID } from 'uncrypto'
 import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator'
 
-export interface ChatEntry {
-  sender: string
-  text: string
-  level?: LogLevel
-  system: boolean
-  private: boolean
-}
+/**
+ * A line in the chat panel.
+ *
+ * System lines keep their key rather than text, so they render in the
+ * viewer's own UI language, and re-render if it changes.
+ */
+export type ChatEntry
+  = | { system: false, sender: string, text: string, private: boolean }
+    | { system: true, level: LogLevel, key: LogKey | 'wordWas', params?: LogParams }
 
 /** Keep the socket alive through idle proxies. */
 const PING_INTERVAL_MS = 25_000
@@ -62,8 +64,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     ws.send(JSON.stringify(msg))
   }
 
-  function pushSystem(level: LogLevel, text: string) {
-    chat.value.push({ sender: 'system', text, level, system: true, private: false })
+  function pushSystem(level: LogLevel, key: LogKey | 'wordWas', params?: LogParams) {
+    chat.value.push({ system: true, level, key, params })
   }
 
   function handle(msg: ServerMessage) {
@@ -86,10 +88,10 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
         word.value = null
         hint.value = msg.word
         endsAt.value = msg.state.endsAt
-        pushSystem('info', `The word was "${msg.word}"`)
+        pushSystem('info', 'wordWas', { word: msg.word })
         break
       case 'log':
-        pushSystem(msg.level, msg.message)
+        pushSystem(msg.level, msg.key, msg.params)
         break
       case 'chat':
         chat.value.push({
