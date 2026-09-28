@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  // Loaded by Nitro through `nitro.entry` in nuxt.config.ts, which no plugin sees.
+  "entry": ["preset/entry.ts"],
+  // partyserver invokes these lifecycle members on Server subclasses.
+  "usedClassMembers": [
+    {
+      "extends": "Server",
+      "members": ["options", "getConnectionTags", "onConnect", "onMessage", "onClose", "onError", "onAlarm", "onRequest", "onStart"]
+    }
+  ],
+  // Peer dependencies of @nuxt/test-utils, never imported directly.
+  "ignoreDependencies": ["@vue/test-utils", "playwright-core"]
+}
