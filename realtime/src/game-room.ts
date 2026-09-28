@@ -14,6 +14,7 @@ import type {
 } from '../../shared/utils/protocol'
 import { Server } from 'partyserver'
 import {
+  AWAY_GRACE_MS,
   clampSetting,
   cleanCustomWords,
   DEFAULT_LANGUAGE,
@@ -46,6 +47,8 @@ const CHOOSE_MS = 15_000
 /** Edit distance at which a guess earns a private "you're close" nudge. */
 const NEAR_MISS_DISTANCE = 2
 
+const IN_GAME_PHASES: readonly RoundPhase[] = ['choosing', 'drawing', 'intermission']
+
 type AlarmKind = 'choose' | 'round' | 'intermission' | 'grace'
 
 interface StoredPlayer {
@@ -54,6 +57,8 @@ interface StoredPlayer {
   points: number
   guessed: boolean
   connected: boolean
+  /** When the player's last connection dropped, while they still have a seat. */
+  awaySince?: number
 }
 
 interface RoomState {
@@ -79,6 +84,8 @@ interface RoomState {
   turnIndex: number
   players: Record<string, StoredPlayer>
   alarmKind: AlarmKind | null
+  /** When `alarmKind` is due; the storage alarm may fire earlier for an away deadline. */
+  alarmAt: number | null
   /** Time left in the round while it is paused for a disconnected drawer. */
   pausedMs: number | null
   /** Players voting to pause, or to resume once paused. */
@@ -111,6 +118,7 @@ function initialState(): RoomState {
     turnIndex: -1,
     players: {},
     alarmKind: null,
+    alarmAt: null,
     pausedMs: null,
     pauseVotes: [],
     pause: null,
@@ -188,6 +196,7 @@ export class GameRoom extends Server<Env> {
           name: p.name,
           points: p.points,
           connected: p.connected,
+          away: p.awaySince !== undefined,
           guessed: p.guessed,
         })),
       paused: s.pause !== null,
@@ -209,6 +218,21 @@ export class GameRoom extends Server<Env> {
 
   #drawMs() {
     return this.#state.drawTime * 1000
+  }
+
+  #isActive(player: StoredPlayer | null | undefined) {
+    return Boolean(player?.connected && player.awaySince === undefined)
+  }
+
+  /** Connected players, away ones included. */
+  #seated() {
+    const s = this.#state
+    return s.order.filter(id => s.players[id]?.connected)
+  }
+
+  #activeCount() {
+    const s = this.#state
+    return s.order.filter(id => this.#isActive(s.players[id])).length
   }
 
   // --- connection lifecycle ----------------------------------------------
@@ -236,6 +260,7 @@ export class GameRoom extends Server<Env> {
     if (existing) {
       existing.connected = true
       existing.name = name
+      delete existing.awaySince
     } else {
       s.players[playerId] = {
         id: playerId,
@@ -258,6 +283,7 @@ export class GameRoom extends Server<Env> {
       this.#log('success', 'reconnected', { name })
     }
 
+    await this.#scheduleAlarm()
     await this.#save()
 
     this.#send(connection, { t: 'welcome', you: playerId, state: this.#publicState() })
@@ -287,24 +313,14 @@ export class GameRoom extends Server<Env> {
 
     const s = this.#state
     const player = s.players[playerId]
-    if (!player) return
+    if (!player?.connected || player.awaySince !== undefined) return
 
     const stillOpen = this.#connectionsOf(playerId)
       .some(c => c !== connection && c.readyState === WebSocket.OPEN)
     if (stillOpen) return
 
-    player.connected = false
+    player.awaySince = Date.now()
     s.pauseVotes = s.pauseVotes.filter(id => id !== playerId)
-
-    if (s.hostId === playerId) {
-      const nextHost = s.order.find(id => s.players[id]?.connected)
-      s.hostId = nextHost ?? null
-      if (nextHost) {
-        this.#log('warning', 'hostLeft', { name: player.name, host: s.players[nextHost]!.name })
-        this.#sendCustomWords()
-      }
-    } else
-      this.#log('info', 'disconnected', { name: player.name })
 
     if (s.pause) {
       // Deferred until resume.
@@ -318,8 +334,33 @@ export class GameRoom extends Server<Env> {
 
     await this.#checkPauseVotes()
 
+    await this.#scheduleAlarm()
     await this.#save()
     this.#broadcastState()
+  }
+
+  /** An away player whose grace ran out: they give up their seat. The caller saves and broadcasts. */
+  async #leave(player: StoredPlayer) {
+    const s = this.#state
+    player.connected = false
+    delete player.awaySince
+
+    if (s.hostId === player.id) {
+      const nextHost = s.order.find(id => this.#isActive(s.players[id])) ?? this.#seated()[0]
+      s.hostId = nextHost ?? null
+      if (nextHost) {
+        this.#log('warning', 'hostLeft', { name: player.name, host: s.players[nextHost]!.name })
+        this.#sendCustomWords()
+      }
+    } else
+      this.#log('info', 'disconnected', { name: player.name })
+
+    if (IN_GAME_PHASES.includes(s.phase) && this.#seated().length < 2) {
+      await this.#finishGame()
+      return
+    }
+
+    await this.#checkPauseVotes()
   }
 
   // --- messages ----------------------------------------------------------
@@ -437,7 +478,7 @@ export class GameRoom extends Server<Env> {
 
     const others = Object.values(s.players).filter(p => p.id !== s.drawerId)
     const rank = others.filter(p => p.guessed).length
-    const guessers = others.filter(p => p.connected).length
+    const guessers = others.filter(p => this.#isActive(p)).length
     player.guessed = true
 
     const remaining = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
@@ -486,7 +527,7 @@ export class GameRoom extends Server<Env> {
 
   #pauseVoters() {
     const s = this.#state
-    return s.pauseVotes.filter(id => s.players[id]?.connected)
+    return s.pauseVotes.filter(id => this.#isActive(s.players[id]))
   }
 
   async #votePause(playerId: string, want: unknown) {
@@ -501,11 +542,10 @@ export class GameRoom extends Server<Env> {
     const wasPaused = s.pause !== null
     await this.#checkPauseVotes()
     if (want === true && (s.pause !== null) === wasPaused) {
-      const connected = s.order.filter(id => s.players[id]?.connected).length
       this.#log('warning', wasPaused ? 'resumeRequested' : 'pauseRequested', {
         name: s.players[playerId]?.name ?? '',
         votes: this.#pauseVoters().length,
-        needed: votesNeeded(connected, wasPaused),
+        needed: votesNeeded(this.#activeCount(), wasPaused),
       })
     }
     await this.#save()
@@ -515,9 +555,8 @@ export class GameRoom extends Server<Env> {
   /** Flip the pause if the votes are there. The caller saves and broadcasts. */
   async #checkPauseVotes() {
     const s = this.#state
-    const connected = s.order.filter(id => s.players[id]?.connected).length
     const votes = this.#pauseVoters().length
-    if (votes === 0 || votes < votesNeeded(connected, s.pause !== null)) return
+    if (votes === 0 || votes < votesNeeded(this.#activeCount(), s.pause !== null)) return
 
     s.pauseVotes = []
     if (s.pause) await this.#resumeCountdown()
@@ -533,8 +572,7 @@ export class GameRoom extends Server<Env> {
       remainingMs: Math.max(0, (s.endsAt ?? Date.now()) - Date.now()),
     }
     s.endsAt = null
-    s.alarmKind = null
-    await this.ctx.storage.deleteAlarm()
+    await this.#clearAlarm()
     this.#log('warning', 'paused')
   }
 
@@ -546,7 +584,7 @@ export class GameRoom extends Server<Env> {
     this.#log('warning', 'resumed')
 
     const drawer = s.drawerId ? s.players[s.drawerId] : null
-    if (s.phase === 'drawing' && drawer && !drawer.connected) {
+    if (s.phase === 'drawing' && drawer && !this.#isActive(drawer)) {
       s.pausedMs = pause.remainingMs
       await this.#setAlarm('grace', DRAWER_GRACE_MS)
       this.#log('warning', 'drawerDropped', { name: drawer.name })
@@ -564,7 +602,23 @@ export class GameRoom extends Server<Env> {
 
   async #setAlarm(kind: AlarmKind, ms: number) {
     this.#state.alarmKind = kind
-    await this.ctx.storage.setAlarm(Date.now() + ms)
+    this.#state.alarmAt = Date.now() + ms
+    await this.#scheduleAlarm()
+  }
+
+  async #clearAlarm() {
+    this.#state.alarmKind = null
+    this.#state.alarmAt = null
+    await this.#scheduleAlarm()
+  }
+
+  /** Point the storage alarm at whichever is due first: the game countdown or an away player's deadline. */
+  async #scheduleAlarm() {
+    const s = this.#state
+    const due = Object.values(s.players).flatMap(p => (p.awaySince === undefined ? [] : [p.awaySince + AWAY_GRACE_MS]))
+    if (s.alarmKind && s.alarmAt !== null) due.push(s.alarmAt)
+    if (due.length) await this.ctx.storage.setAlarm(Math.min(...due))
+    else await this.ctx.storage.deleteAlarm()
   }
 
   /** Arm the drawing countdown for whichever comes first: the next hint or the end of the turn. */
@@ -623,14 +677,13 @@ export class GameRoom extends Server<Env> {
   async #startTurn() {
     const s = this.#state
 
-    const connected = s.order.filter(id => s.players[id]?.connected)
-    if (connected.length < 2) {
+    if (this.#seated().length < 2) {
       s.phase = 'lobby'
       s.drawerId = null
       s.word = null
       s.choices = []
       s.endsAt = null
-      s.alarmKind = null
+      await this.#clearAlarm()
       s.pauseVotes = []
       await this.#save()
       this.#log('info', 'waitingForPlayers')
@@ -719,7 +772,7 @@ export class GameRoom extends Server<Env> {
 
     const guessers = s.order
       .map(id => s.players[id])
-      .filter(p => p && p.connected && p.id !== s.drawerId)
+      .filter(p => this.#isActive(p) && p!.id !== s.drawerId)
 
     if (guessers.length > 0 && guessers.every(p => p!.guessed))
       await this.#endRound()
@@ -749,9 +802,10 @@ export class GameRoom extends Server<Env> {
     s.word = null
     s.choices = []
     s.endsAt = null
-    s.alarmKind = null
     s.pauseVotes = []
-    await this.ctx.storage.deleteAlarm()
+    s.pause = null
+    s.pausedMs = null
+    await this.#clearAlarm()
     await this.#save()
 
     const winner = s.order
@@ -766,13 +820,28 @@ export class GameRoom extends Server<Env> {
 
   async onAlarm() {
     const s = this.#state
+    const now = Date.now()
+
+    const expired = Object.values(s.players)
+      .filter(p => p.awaySince !== undefined && now >= p.awaySince + AWAY_GRACE_MS)
+    for (const player of expired) await this.#leave(player)
+    if (expired.length) {
+      await this.#save()
+      this.#broadcastState()
+    }
+
+    if (!s.alarmKind || (s.alarmAt ?? 0) > now) {
+      await this.#scheduleAlarm()
+      return
+    }
     const kind = s.alarmKind
     s.alarmKind = null
+    s.alarmAt = null
 
     switch (kind) {
       case 'choose': {
         const drawer = s.drawerId ? s.players[s.drawerId] : null
-        if (drawer?.connected && s.choices.length) {
+        if (this.#isActive(drawer) && s.choices.length) {
           await this.#beginDrawing(s.choices[Math.floor(Math.random() * s.choices.length)]!)
           break
         }
@@ -801,5 +870,6 @@ export class GameRoom extends Server<Env> {
       default:
         await this.#save()
     }
+    await this.#scheduleAlarm()
   }
 }

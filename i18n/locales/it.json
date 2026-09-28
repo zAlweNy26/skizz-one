@@ -71,7 +71,8 @@
     "drawing": "Sta disegnando",
     "guessed": "Ha indovinato la parola",
     "leader": "In testa",
-    "showAll": "Mostra tutti i giocatori"
+    "showAll": "Mostra tutti i giocatori",
+    "away": "Assente per un momento"
   },
   "log": {
     "joined": "{name} è entrato in partita",

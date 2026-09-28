@@ -10,6 +10,9 @@ export const DRAW_FLUSH_POINTS = 50
 /** How long a disconnected drawer keeps the turn before the round is ended. */
 export const DRAWER_GRACE_MS = 10_000
 
+/** How long a dropped player keeps their seat before they count as gone. */
+export const AWAY_GRACE_MS = 60_000
+
 export const MAX_NAME_LENGTH = 24
 
 export type DrawingMode
@@ -121,6 +124,8 @@ export interface GamePlayer {
   name: string
   points: number
   connected: boolean
+  /** Dropped, but still inside `AWAY_GRACE_MS`. */
+  away: boolean
   guessed: boolean
 }
 

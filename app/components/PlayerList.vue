@@ -24,7 +24,7 @@ function fillOf(player: GamePlayer) {
       :fill="fillOf(player)" :strokeWidth="2" :roughness="1"
       class="flex items-center gap-2 py-1.5 ps-2 pe-3 transition-opacity"
       :class="{
-        'opacity-55': !player.connected,
+        'opacity-55': !player.connected || player.away,
         'text-(--ink-fixed)': player.id === drawerId || player.guessed,
       }">
       <span class="font-display font-extrabold text-lg w-5 text-center tabular-nums">
@@ -51,6 +51,9 @@ function fillOf(player: GamePlayer) {
           {{ $t('players.points', player.points) }}
         </p>
       </div>
+      <UTooltip v-if="player.away" :text="$t('players.away')">
+        <UIcon name="i-lucide-wifi-off" class="size-4 shrink-0" :aria-label="$t('players.away')" />
+      </UTooltip>
       <UTooltip v-if="drawerId === player.id" :text="$t('players.drawing')">
         <UIcon name="i-lucide-pencil-line" class="size-4 shrink-0" :aria-label="$t('players.drawing')" />
       </UTooltip>

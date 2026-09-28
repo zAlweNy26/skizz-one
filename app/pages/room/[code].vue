@@ -62,7 +62,7 @@ const drawerName = computed(() => state.value?.players.find(p => p.id === state.
 
 const canVotePause = computed(() => phase.value === 'drawing' || phase.value === 'intermission')
 const pauseTally = computed(() => {
-  const connectedCount = state.value?.players.filter(p => p.connected).length ?? 0
+  const connectedCount = state.value?.players.filter(p => p.connected && !p.away).length ?? 0
   return {
     votes: state.value?.pauseVotes.length ?? 0,
     needed: votesNeeded(connectedCount, paused.value),

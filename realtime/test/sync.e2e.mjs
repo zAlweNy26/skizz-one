@@ -9,6 +9,9 @@ const PORT = process.env.REALTIME_PORT ?? '8799'
 const ROOM = `test-${crypto.randomUUID().slice(0, 8)}`
 const BASE = `ws://127.0.0.1:${PORT}/parties/game-room/${ROOM}`
 
+/** Mirrors `AWAY_GRACE_MS` in the protocol. */
+const AWAY_GRACE_MS = 30_000
+
 let failures = 0
 
 function check(label, ok, detail = '') {
@@ -251,7 +254,35 @@ async function main() {
   check('a majority resumes the game', Boolean(resumed))
   check('the countdown runs again', typeof resumed?.state?.endsAt === 'number')
 
-  for (const ws of [a, b, c]) ws.close()
+  // --- a short absence keeps the seat -------------------------------------
+  a.inbox.length = 0
+  b.close()
+  const bobOf = m => m.state.players.find(p => p.id === 'player-b')
+  const away = await waitFor(a, m => m.t === 'state' && bobOf(m)?.away)
+  check('a dropped player is shown as away', Boolean(away))
+  check('an away player keeps their seat', bobOf(away ?? { state: { players: [] } })?.connected === true)
+  a.inbox.length = 0
+  const b2 = await connect('player-b', 'Bob')
+  const back = await waitFor(a, m => m.t === 'state' && bobOf(m)?.away === false)
+  check('coming back clears away', Boolean(back))
+  check('a short absence is not announced', !a.inbox.some(m => m.t === 'log' && m.key === 'disconnected'))
+
+  // --- the last player standing wins --------------------------------------
+  a.inbox.length = 0
+  b2.close()
+  await sleep(1000)
+  c.close()
+  const leaveWait = AWAY_GRACE_MS + 5000
+  const twoLeft = await waitFor(a, m => m.t === 'state' && bobOf(m)?.connected === false, leaveWait)
+  check('an away player leaves once the grace runs out', Boolean(twoLeft))
+  check('the game goes on with two players left', twoLeft && twoLeft.state.phase !== 'finished',
+    twoLeft?.state?.phase)
+  const finished = await waitFor(a, m => m.t === 'state' && m.state.phase === 'finished', leaveWait)
+  check('the game ends when one player is left', Boolean(finished))
+  check('the winner is announced', a.inbox.some(m => m.t === 'log' && m.key === 'winner'))
+  check('nothing is paused after the game ends', finished?.state?.paused === false)
+
+  a.close()
   await sleep(200)
 
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`)

@@ -71,7 +71,8 @@
     "drawing": "Drawing now",
     "guessed": "Guessed the word",
     "leader": "In the lead",
-    "showAll": "Show all players"
+    "showAll": "Show all players",
+    "away": "Away for a moment"
   },
   "log": {
     "joined": "{name} joined the game",

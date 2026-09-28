@@ -1,5 +1,5 @@
 import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessage } from '#shared/utils/protocol'
-import { createEventHook, useIntervalFn, useLocalStorage } from '@vueuse/core'
+import { createEventHook, useDocumentVisibility, useIntervalFn, useLocalStorage, useTimeoutFn } from '@vueuse/core'
 import PartySocket from 'partysocket'
 import { randomUUID } from 'uncrypto'
 
@@ -9,6 +9,9 @@ export type ChatEntry
     | { system: true, level: LogLevel, key: LogKey | 'wordWas', params?: LogParams }
 
 const PING_INTERVAL_MS = 25_000
+
+/** How long a socket that looks open gets to answer after the page comes back before it's replaced. */
+const WAKE_PROBE_MS = 3_000
 
 export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   /** A player id that outlives the connection. */
@@ -107,6 +110,19 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
 
   const ping = useIntervalFn(() => send({ t: 'ping' }), PING_INTERVAL_MS, { immediate: false })
 
+  const wakeProbe = useTimeoutFn(() => socket.value?.reconnect(), WAKE_PROBE_MS, { immediate: false })
+  const visibility = useDocumentVisibility()
+  watch(visibility, (now) => {
+    const ws = socket.value
+    if (now !== 'visible' || !ws) return
+    if (ws.readyState !== WebSocket.OPEN) {
+      ws.reconnect()
+      return
+    }
+    send({ t: 'ping' })
+    wakeProbe.start()
+  })
+
   function open() {
     const room = toValue(roomId)
     if (!room) return
@@ -126,6 +142,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       connected.value = false
     })
     ws.addEventListener('message', (event: MessageEvent) => {
+      wakeProbe.stop()
       try {
         handle(JSON.parse(event.data as string) as ServerMessage)
       } catch {
@@ -139,6 +156,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
 
   function close() {
     ping.pause()
+    wakeProbe.stop()
     socket.value?.close()
     socket.value = undefined
     connected.value = false

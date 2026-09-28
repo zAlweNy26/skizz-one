@@ -29,7 +29,7 @@ function ringOf(player: GamePlayer) {
           <span
             v-for="player in players" :key="player.id"
             class="relative shrink-0 flex flex-col items-center gap-0.5"
-            :class="{ 'opacity-55': !player.connected }">
+            :class="{ 'opacity-55': !player.connected || player.away }">
             <UAvatar
               :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
               :alt="player.name" size="md" class="bg-(--paper) ring-2" :class="ringOf(player)" />
