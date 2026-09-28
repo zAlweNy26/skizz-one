@@ -8,7 +8,8 @@
     "connected": "Connesso",
     "offline": "Offline",
     "gameId": "ID partita: {id}",
-    "share": "Condividi il link della partita"
+    "share": "Condividi il link della partita",
+    "wordLengths": "Lettere della parola | Lettere di ogni parola"
   },
   "share": {
     "title": "Link della partita copiato",

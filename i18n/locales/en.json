@@ -8,7 +8,8 @@
     "connected": "Connected",
     "offline": "Offline",
     "gameId": "Game ID: {id}",
-    "share": "Share game link"
+    "share": "Share game link",
+    "wordLengths": "Letters in the word | Letters in each word"
   },
   "share": {
     "title": "Game link copied to clipboard",

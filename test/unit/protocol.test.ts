@@ -15,6 +15,7 @@ import {
   POINT_STRIDE,
   quantize,
   votesNeeded,
+  wordLengths,
 } from '../../shared/utils/protocol'
 
 describe('coordinate quantisation', () => {
@@ -181,5 +182,20 @@ describe('votesNeeded', () => {
     expect(votesNeeded(3, true)).toBe(2)
     expect(votesNeeded(4, true)).toBe(3)
     expect(votesNeeded(5, true)).toBe(3)
+  })
+})
+
+describe('wordLengths', () => {
+  it('counts the letters of each word', () => {
+    expect(wordLengths('cat')).toEqual([3])
+    expect(wordLengths('ice cream')).toEqual([3, 5])
+  })
+
+  it('gives guessers the same counts from the masked hint', () => {
+    expect(wordLengths(maskWord('città di notte'))).toEqual(wordLengths('città di notte'))
+  })
+
+  it('is empty when there is no word', () => {
+    expect(wordLengths('')).toEqual([])
   })
 })

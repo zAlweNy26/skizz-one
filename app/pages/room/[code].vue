@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Language } from '#shared/utils/protocol'
 import { useDrauu } from '@vueuse/integrations/useDrauu'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_LANGUAGE, LANGUAGES, votesNeeded } from '#shared/utils/protocol'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_LANGUAGE, LANGUAGES, votesNeeded, wordLengths } from '#shared/utils/protocol'
 
 definePageMeta({ middleware: 'nickname' })
 
@@ -78,6 +78,9 @@ const wordDisplay = computed(() => {
   if (word.value) return word.value
   return hint.value || '—'
 })
+
+/** Letters per word, so a long run of blanks doesn't have to be counted. */
+const lengths = computed(() => wordLengths(word.value ?? hint.value))
 
 const languageItems = (Object.keys(LANGUAGES) as Language[]).map(value => ({ value, label: LANGUAGES[value] }))
 const language = computed(() => state.value?.language ?? DEFAULT_LANGUAGE)
@@ -173,9 +176,14 @@ defineShortcuts({
       <p class="font-bold">
         {{ $t('header.round', { round: state?.round || 0, total: state?.totalRounds || 3 }) }}
       </p>
-      <p class="font-mono font-bold text-lg tracking-[0.3em]">
-        {{ wordDisplay }}
-      </p>
+      <div class="flex items-center gap-2">
+        <p class="font-mono font-bold text-lg tracking-[0.3em]">
+          {{ wordDisplay }}
+        </p>
+        <UTooltip v-if="lengths.length" :text="$t('header.wordLengths', lengths.length)">
+          <UBadge color="neutral" variant="outline" class="font-mono" :label="lengths.join(' · ')" />
+        </UTooltip>
+      </div>
       <UBadge
         v-if="secondsLeft !== null" :color="paused ? 'warning' : secondsLeft <= 10 ? 'error' : 'neutral'"
         :icon="paused ? 'i-lucide-pause' : undefined" variant="soft" size="lg">

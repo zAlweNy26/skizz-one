@@ -211,6 +211,16 @@ export function maskWord(word: string) {
   return word.replace(/\S/g, '_')
 }
 
+/**
+ * Characters in each word of an answer, e.g. `ice cream` -> `[3, 5]`.
+ *
+ * Works on the masked hint just as well, since masking keeps the spaces, so
+ * guessers get the counts without ever seeing the word.
+ */
+export function wordLengths(text: string) {
+  return text.split(/\s+/).filter(Boolean).map(w => [...w].length)
+}
+
 /** Normalise a guess for comparison: case, accents and spacing are ignored. */
 export function normalizeGuess(text: string) {
   return text
