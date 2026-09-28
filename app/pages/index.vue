@@ -17,6 +17,9 @@ if (!gameId.value) gameId.value = randomUUID().split('-')[0]!
 
 const drauu = useDrauu(sketch, {
   brush: {
+    // drauu defaults to `stylus`, whose perfect-freehand outline is rebuilt
+    // from every point on every move and has no incremental form.
+    mode: 'draw',
     color: '#000000',
     // Brush size is in SVG user space, which the viewBox fixes at 1600 wide
     // for every client. These are roughly 2.4x the old CSS-pixel values.

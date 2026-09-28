@@ -10,8 +10,8 @@ import {
   isOpaque,
   maskWord,
   normalizeGuess,
+  POINT_STRIDE,
   quantize,
-  strideFor,
 } from '../../shared/utils/protocol'
 
 describe('coordinate quantisation', () => {
@@ -32,16 +32,17 @@ describe('coordinate quantisation', () => {
 })
 
 describe('stroke modes', () => {
-  it('sends pressure only for the stylus', () => {
-    expect(strideFor('stylus')).toBe(3)
-    expect(strideFor('draw')).toBe(2)
-    expect(strideFor('rectangle')).toBe(2)
+  it('sends a timestamp with every point', () => {
+    // x, y, and ms since the stroke began: watchers replay by the clock.
+    expect(POINT_STRIDE).toBe(3)
   })
 
   it('classifies which modes can be previewed from points', () => {
     expect(isFreehand('draw')).toBe(true)
     expect(isFreehand('highlighter')).toBe(true)
     expect(isFreehand('rectangle')).toBe(false)
+    // perfect-freehand has no incremental form; it previews as a shape.
+    expect(isFreehand('stylus')).toBe(false)
   })
 
   it('treats erase and bucket as whole-canvas operations', () => {

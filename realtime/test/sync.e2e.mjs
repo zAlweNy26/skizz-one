@@ -98,7 +98,9 @@ async function main() {
   watcherWs.inbox.length = 0
   const brush = { mode: 'draw', color: '#000000', size: 16 }
   send(drawerWs, { t: 'strokeStart', id: 'stroke-1', brush })
-  send(drawerWs, { t: 'draw', id: 'stroke-1', pts: [100, 200, 1500, 8000] })
+  // x, y, ms since the stroke began — POINT_STRIDE numbers per point.
+  const pts = [100, 200, 0, 1500, 8000, 16]
+  send(drawerWs, { t: 'draw', id: 'stroke-1', pts })
   send(drawerWs, { t: 'commit', id: 'stroke-1', svg: '<path d="M 10,20 L 150,800"/>' })
 
   const gotStart = await waitFor(watcherWs, m => m.t === 'strokeStart' && m.id === 'stroke-1')
@@ -106,7 +108,7 @@ async function main() {
   const gotCommit = await waitFor(watcherWs, m => m.t === 'commit' && m.id === 'stroke-1')
   check('watcher receives strokeStart', Boolean(gotStart))
   check('watcher receives the points', Boolean(gotDraw), JSON.stringify(gotDraw?.pts))
-  check('points survive the trip intact', JSON.stringify(gotDraw?.pts) === JSON.stringify([100, 200, 1500, 8000]))
+  check('points survive the trip intact', JSON.stringify(gotDraw?.pts) === JSON.stringify(pts))
   check('watcher receives the authoritative commit', gotCommit?.svg === '<path d="M 10,20 L 150,800"/>')
 
   // --- drawer enforcement -----------------------------------------------

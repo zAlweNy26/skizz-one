@@ -9,8 +9,13 @@
 export const CANVAS_WIDTH = 1600
 export const CANVAS_HEIGHT = 900
 
-/** Coalescing window for in-progress stroke points, in ms. */
-export const DRAW_FLUSH_MS = 50
+/**
+ * Coalescing window for in-progress stroke points, in ms.
+ *
+ * Watchers replay points at the pace they were drawn, so this sets latency,
+ * not smoothness. ~30 messages/s is 1.5 billed Durable Object requests/s.
+ */
+export const DRAW_FLUSH_MS = 33
 
 /** Cloudflare's guidance: flush on whichever of time or count comes first. */
 export const DRAW_FLUSH_POINTS = 50
@@ -35,7 +40,7 @@ export interface WireBrush {
 }
 
 /** Modes whose in-progress shape is cheap to preview from raw points. */
-export const FREEHAND_MODES = ['draw', 'stylus', 'highlighter'] as const
+export const FREEHAND_MODES = ['draw', 'highlighter'] as const
 
 /** Modes that mutate existing nodes, so they only sync on commit. */
 export const OPAQUE_MODES = ['eraseLine', 'bucket'] as const
@@ -48,10 +53,12 @@ export function isOpaque(mode: DrawingMode) {
   return (OPAQUE_MODES as readonly string[]).includes(mode)
 }
 
-/** Numbers per point on the wire. Stylus carries pressure, others don't. */
-export function strideFor(mode: DrawingMode) {
-  return mode === 'stylus' ? 3 : 2
-}
+/**
+ * Numbers per point on the wire: quantised x, quantised y, and ms since the
+ * stroke's first point on the drawer's clock, so watchers can replay it at
+ * the pace it was drawn rather than in network-sized jumps.
+ */
+export const POINT_STRIDE = 3
 
 export type RoundPhase = 'lobby' | 'drawing' | 'intermission' | 'finished'
 
@@ -83,6 +90,7 @@ export type LogLevel = 'info' | 'success' | 'warning' | 'error'
 /** Client -> server. */
 export type ClientMessage
   = | { t: 'strokeStart', id: string, brush: WireBrush }
+  /** `pts` is flat, `POINT_STRIDE` numbers per point. */
     | { t: 'draw', id: string, pts: number[] }
   /**
    * An in-progress shape, as SVG. Unlike `commit` this is transient: the

@@ -1,16 +1,22 @@
 import type { UseDrauuReturn } from '@vueuse/integrations/useDrauu'
 import type { Brush, Point } from 'drauu'
 import type { ClientMessage, ServerMessage, WireBrush } from '#shared/utils/protocol'
-import { DrawModel, StylusModel } from 'drauu'
+import type { TimedPoint } from '~/utils/strokePlayback'
 import {
   dequantize,
   DRAW_FLUSH_MS,
   DRAW_FLUSH_POINTS,
   isFreehand,
   isOpaque,
+  POINT_STRIDE,
   quantize,
-  strideFor,
 } from '#shared/utils/protocol'
+import {
+  ChunkedDrawPath,
+  MAX_PLAYBACK_DELAY_MS,
+  PLAYBACK_DELAY_MS,
+  StrokePlayback,
+} from '~/utils/strokePlayback'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
@@ -36,14 +42,25 @@ function toWireBrush(brush: Brush): WireBrush {
   }
 }
 
-/** Rebuild the element drauu would have made for this brush. */
-function createStrokeElement(brush: WireBrush): SVGPathElement {
-  const el = document.createElementNS(SVG_NS, 'path')
+/**
+ * A group styled the way drauu styles this brush's path.
+ *
+ * The preview is drawn as several path chunks, so the style lives on the
+ * group they inherit it from. Opacity on a group composites the chunks
+ * first, so a highlighter shows no darker dots where chunks meet.
+ */
+function createStrokeGroup(brush: WireBrush): SVGGElement {
+  const el = document.createElementNS(SVG_NS, 'g')
   el.setAttribute('fill', brush.fill ?? 'transparent')
   el.setAttribute('stroke', brush.color)
   el.setAttribute('stroke-width', String(brush.size))
   el.setAttribute('stroke-linecap', 'round')
-  if (brush.opacity != null && brush.opacity !== 1)
+  if (brush.mode === 'highlighter') {
+    el.setAttribute('stroke-linecap', 'butt')
+    el.setAttribute('stroke-linejoin', 'round')
+    el.setAttribute('opacity', String(brush.opacity ?? 0.4))
+  }
+  else if (brush.opacity != null && brush.opacity !== 1)
     el.setAttribute('opacity', String(brush.opacity))
 
   if (brush.dasharray) el.setAttribute('stroke-dasharray', brush.dasharray)
@@ -60,27 +77,25 @@ function parseSvgElement(markup: string): SVGElement | null {
 /**
  * Streams the drawing between the drawer and everyone watching.
  *
- * While a stroke is in flight the drawer sends only the points added since the
- * last frame, and watchers rebuild the path with drauu's own geometry — the
- * same code that produced it. When the stroke finishes, the drawer sends the
- * real node, which snaps every watcher to a byte-exact copy and heals any
- * drift the cheap preview introduced.
+ * While a stroke is in flight the drawer sends timestamped points in small
+ * batches, and watchers replay them at the pace they were drawn, rebuilding
+ * the path with drauu's own geometry. When the stroke finishes, the drawer
+ * sends the real node; once the replay reaches the end it replaces the
+ * preview, leaving every canvas a byte-exact copy of the drawer's.
  */
 export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
-  const { drauuInstance, brush, onStart, onChanged, onCommitted, dump, load } = drauu
+  const { drauuInstance, brush, onStart, onChanged, onCommitted, onCanceled, dump, load } = drauu
 
   // --- drawer ------------------------------------------------------------
 
   let strokeId: string | null = null
   let strokeBrush: WireBrush | null = null
-  let sentPoints = 0
-  let frame: number | null = null
-  let bufferedPoints = 0
-
-  function currentPoints(): Point[] | null {
-    const model = drauuInstance.value?.model as { points?: Point[] } | undefined
-    return model?.points ?? null
-  }
+  let flushTimer: number | null = null
+  /** Wire-ready numbers not yet sent, `POINT_STRIDE` per point. */
+  let pending: number[] = []
+  let lastPoint: Point | null = null
+  /** Event timestamp of the stroke's first point. */
+  let strokeT0: number | null = null
 
   /** The node drauu is currently building, i.e. the last one it appended. */
   function currentNode(): SVGElement | null {
@@ -88,25 +103,19 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
     return (el?.lastElementChild as SVGElement | null) ?? null
   }
 
+  function stopFlushTimer() {
+    if (flushTimer != null) clearTimeout(flushTimer)
+    flushTimer = null
+  }
+
   function flush() {
-    frame = null
-    bufferedPoints = 0
+    stopFlushTimer()
     if (!strokeId || !strokeBrush || !game.isDrawer.value) return
 
     if (isFreehand(strokeBrush.mode)) {
-      const points = currentPoints()
-      if (!points || points.length <= sentPoints) return
-
-      const stride = strideFor(strokeBrush.mode)
-      const pts: number[] = []
-      for (let i = sentPoints; i < points.length; i++) {
-        const p = points[i]!
-        pts.push(quantize(p.x), quantize(p.y))
-        // Pressure only matters to the stylus renderer.
-        if (stride === 3) pts.push(Math.round((p.pressure ?? 0.5) * 100))
-      }
-      sentPoints = points.length
-      game.send({ t: 'draw', id: strokeId, pts })
+      if (!pending.length) return
+      game.send({ t: 'draw', id: strokeId, pts: pending })
+      pending = []
       return
     }
 
@@ -117,20 +126,37 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
   }
 
   /**
+   * Record the point drauu just handled.
+   *
+   * This reads `model.point`, never `model.points`, so it doesn't depend on
+   * how a model stores its stroke. drauu's draw model used to replace that
+   * array with a simplified copy every few moves, and an index into it
+   * silently skipped and re-sent points.
+   */
+  function capturePoint() {
+    const model = drauuInstance.value?.model
+    const point = model?.point
+    // A modifier key re-runs the move with the same point; skip the repeat.
+    if (!point || point === lastPoint) return
+    lastPoint = point
+
+    const time = model.event?.timeStamp ?? performance.now()
+    strokeT0 ??= time
+    pending.push(quantize(point.x), quantize(point.y), Math.round(time - strokeT0))
+  }
+
+  /**
    * Coalesce pointer events.
    *
    * Cloudflare's guidance for high-frequency Durable Object traffic is to
    * flush on whichever of a time window or a message count comes first.
    */
   function scheduleFlush() {
-    bufferedPoints++
-    if (bufferedPoints >= DRAW_FLUSH_POINTS) {
-      if (frame != null) clearTimeout(frame)
+    if (pending.length / POINT_STRIDE >= DRAW_FLUSH_POINTS) {
       flush()
       return
     }
-    if (frame != null) return
-    frame = window.setTimeout(requestAnimationFrame, DRAW_FLUSH_MS, flush)
+    flushTimer ??= window.setTimeout(flush, DRAW_FLUSH_MS)
   }
 
   onStart(() => {
@@ -138,8 +164,9 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
 
     const wire = toWireBrush(brush.value)
     strokeBrush = wire
-    sentPoints = 0
-    bufferedPoints = 0
+    pending = []
+    lastPoint = null
+    strokeT0 = null
 
     // Erase and bucket rewrite existing nodes and masks rather than adding
     // one, so there is nothing meaningful to preview. They sync on commit.
@@ -155,42 +182,48 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
   // Fires on every pointer move. Buffer here and let the flush decide when
   // it is worth a message — one message per pointer event would be 120/s.
   onChanged(() => {
-    if (!game.isDrawer.value || !strokeId) return
+    if (!game.isDrawer.value || !strokeId || !strokeBrush) return
+    if (isFreehand(strokeBrush.mode)) capturePoint()
     scheduleFlush()
   })
 
   onCommitted(() => {
     if (!game.isDrawer.value) return
-    if (frame != null) {
-      clearTimeout(frame)
-      frame = null
-    }
 
     const wire = strokeBrush
-    strokeBrush = null
     const id = strokeId
-    strokeId = null
 
     // Whole-canvas resync: the cheapest correct answer for operations that
     // mutate nodes already on the canvas.
     if (!wire || isOpaque(wire.mode)) {
+      endStroke()
       syncCanvas()
       return
     }
 
-    // Send any points the last frame didn't carry, then the real node.
-    if (id && isFreehand(wire.mode)) {
-      sentPoints = 0
-      strokeId = id
-      strokeBrush = wire
-      flush()
-      strokeId = null
-      strokeBrush = null
-    }
+    // Send the points the last window didn't carry, so the watcher's replay
+    // reaches the end of the stroke before the real node replaces it.
+    if (isFreehand(wire.mode)) flush()
+    endStroke()
 
     const node = currentNode()
     if (id && node) game.send({ t: 'commit', id, svg: node.outerHTML })
   })
+
+  // drauu dropped the stroke without committing it. Nothing will ever
+  // replace the watchers' preview, so resync them to what is really there.
+  onCanceled(() => {
+    if (!game.isDrawer.value || !strokeId) return
+    endStroke()
+    syncCanvas()
+  })
+
+  function endStroke() {
+    stopFlushTimer()
+    strokeId = null
+    strokeBrush = null
+    pending = []
+  }
 
   /** Push the whole canvas. Used for undo, redo, clear, erase and bucket. */
   function syncCanvas() {
@@ -200,94 +233,153 @@ export function useDrawingSync(drauu: UseDrauuReturn, game: GameBridge) {
 
   // --- watcher -----------------------------------------------------------
 
-  const brushes = new Map<string, WireBrush>()
-  const points = new Map<string, Point[]>()
-  const nodes = new Map<string, SVGElement>()
+  interface RemoteStroke {
+    brush: WireBrush
+    /** The group the preview draws into, once it has something to show. */
+    node: SVGElement | null
+    /** Freehand strokes only; shapes arrive as whole previews instead. */
+    playback: StrokePlayback | null
+    path: ChunkedDrawPath | null
+    /** The live chunk, rewritten every frame. Sealed chunks sit before it. */
+    live: SVGPathElement | null
+    /** The authoritative node, held until the replay has caught up. */
+    commit: string | null
+  }
+
+  const strokes = new Map<string, RemoteStroke>()
+
+  /**
+   * How far behind the drawer the replay runs. Shared across strokes, it
+   * grows when batches arrive late and eases back down stroke by stroke.
+   */
+  let delay = PLAYBACK_DELAY_MS
+  let raf: number | null = null
 
   function canvasEl() {
     return drauuInstance.value?.el ?? null
   }
 
-  function dropPreview(id: string) {
-    nodes.get(id)?.remove()
-    nodes.delete(id)
-    points.delete(id)
-    brushes.delete(id)
-  }
-
   function clearPreviews() {
-    for (const id of [...nodes.keys()]) dropPreview(id)
+    for (const stroke of strokes.values()) stroke.node?.remove()
+    strokes.clear()
+    if (raf != null) cancelAnimationFrame(raf)
+    raf = null
   }
 
-  function renderPreview(id: string) {
-    const el = canvasEl()
-    const wire = brushes.get(id)
-    const pts = points.get(id)
-    if (!el || !wire || !pts?.length) return
+  function ensureNode(id: string, stroke: RemoteStroke) {
+    if (stroke.node) return stroke.node
+    const node = createStrokeGroup(stroke.brush)
+    node.setAttribute(SYNC_ATTR, id)
+    canvasEl()?.appendChild(node)
+    stroke.node = node
+    return node
+  }
 
-    let node = nodes.get(id)
-    if (!node) {
-      node = createStrokeElement(wire)
-      node.setAttribute(SYNC_ATTR, id)
-      el.appendChild(node)
-      nodes.set(id, node)
+  function renderStroke(id: string, stroke: RemoteStroke, now: number) {
+    if (!stroke.playback || !stroke.path) return
+    const { count, head } = stroke.playback.frame(now)
+    if (!count) return
+
+    const { sealed, live } = stroke.path.update(stroke.playback.points, count, head)
+    const group = ensureNode(id, stroke)
+    if (!stroke.live) {
+      stroke.live = document.createElementNS(SVG_NS, 'path')
+      group.appendChild(stroke.live)
     }
-
-    const d = wire.mode === 'stylus'
-      ? StylusModel.getSvgData(pts, wire as Brush)
-      : DrawModel.toSvgData(pts)
-    node.setAttribute('d', d)
-
-    // perfect-freehand returns a filled outline rather than a stroked line.
-    if (wire.mode === 'stylus') {
-      node.setAttribute('fill', wire.color)
-      node.setAttribute('stroke', 'none')
+    for (const d of sealed) {
+      const chunk = document.createElementNS(SVG_NS, 'path')
+      chunk.setAttribute('d', d)
+      stroke.live.before(chunk)
     }
+    stroke.live.setAttribute('d', live)
+  }
+
+  /** Swap the preview for the real node, keeping its place in the stack. */
+  function finishStroke(id: string, stroke: RemoteStroke) {
+    strokes.delete(id)
+    const node = stroke.commit != null ? parseSvgElement(stroke.commit) : null
+    if (stroke.node && node) stroke.node.replaceWith(node)
+    else if (node) canvasEl()?.appendChild(node)
+    else stroke.node?.remove()
+  }
+
+  function tick() {
+    raf = null
+    const now = performance.now()
+    let busy = false
+    for (const [id, stroke] of strokes) {
+      renderStroke(id, stroke, now)
+      const done = stroke.playback?.done ?? true
+      if (done && stroke.commit != null) finishStroke(id, stroke)
+      else if (!done) busy = true
+    }
+    if (busy) schedule()
+  }
+
+  function schedule() {
+    raf ??= requestAnimationFrame(tick)
   }
 
   function applyRemote(msg: ServerMessage) {
-    const el = canvasEl()
-    if (!el) return
+    if (!canvasEl()) return
 
     switch (msg.t) {
-      case 'strokeStart':
-        brushes.set(msg.id, msg.brush)
-        points.set(msg.id, [])
+      case 'strokeStart': {
+        const freehand = isFreehand(msg.brush.mode)
+        strokes.set(msg.id, {
+          brush: msg.brush,
+          node: null,
+          playback: freehand ? new StrokePlayback() : null,
+          path: freehand
+            // Chunks restart the dash pattern, so dashed strokes stay whole.
+            ? new ChunkedDrawPath(msg.brush.dasharray ? Infinity : undefined)
+            : null,
+          live: null,
+          commit: null,
+        })
+        delay = Math.max(PLAYBACK_DELAY_MS, delay * 0.9)
         break
+      }
 
       case 'draw': {
-        const wire = brushes.get(msg.id)
-        if (!wire) return
-        const stride = strideFor(wire.mode)
-        const list = points.get(msg.id) ?? []
-        for (let i = 0; i + stride - 1 < msg.pts.length; i += stride) {
-          list.push({
+        const stroke = strokes.get(msg.id)
+        if (!stroke?.playback) return
+        const batch: TimedPoint[] = []
+        for (let i = 0; i + POINT_STRIDE - 1 < msg.pts.length; i += POINT_STRIDE) {
+          batch.push({
             x: dequantize(msg.pts[i]!),
             y: dequantize(msg.pts[i + 1]!),
-            pressure: stride === 3 ? msg.pts[i + 2]! / 100 : 0.5,
+            t: msg.pts[i + 2]!,
           })
         }
-        points.set(msg.id, list)
-        renderPreview(msg.id)
+        const late = stroke.playback.push(batch, performance.now(), delay)
+        delay = Math.min(MAX_PLAYBACK_DELAY_MS, delay + late)
+        schedule()
         break
       }
 
       case 'preview': {
         const node = parseSvgElement(msg.svg)
-        if (!node) return
+        const stroke = strokes.get(msg.id)
+        if (!node || !stroke) return
         node.setAttribute(SYNC_ATTR, msg.id)
-        const existing = nodes.get(msg.id)
-        if (existing) existing.replaceWith(node)
-        else el.appendChild(node)
-        nodes.set(msg.id, node)
+        if (stroke.node) stroke.node.replaceWith(node)
+        else canvasEl()?.appendChild(node)
+        stroke.node = node
         break
       }
 
       case 'commit': {
-        // The authoritative node replaces whatever the preview guessed.
-        dropPreview(msg.id)
-        const node = parseSvgElement(msg.svg)
-        if (node) el.appendChild(node)
+        const stroke = strokes.get(msg.id)
+        if (!stroke) {
+          // No preview to replace, e.g. we joined mid-stroke.
+          const node = parseSvgElement(msg.svg)
+          if (node) canvasEl()?.appendChild(node)
+          return
+        }
+        stroke.commit = msg.svg
+        if (stroke.playback?.done ?? true) finishStroke(msg.id, stroke)
+        else schedule()
         break
       }
 

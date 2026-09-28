@@ -59,8 +59,6 @@ interface RoomState {
   order: string[]
   turnIndex: number
   players: Record<string, StoredPlayer>
-  /** Cached SVG innerHTML, so a late joiner sees the drawing immediately. */
-  canvas: string
   alarmKind: AlarmKind | null
   /** Time left in the round while it is paused for a disconnected drawer. */
   pausedMs: number | null
@@ -83,7 +81,6 @@ function initialState(): RoomState {
     order: [],
     turnIndex: -1,
     players: {},
-    canvas: '',
     alarmKind: null,
     pausedMs: null,
   }
@@ -101,17 +98,39 @@ export class GameRoom extends Server<Env> {
 
   #state: RoomState = initialState()
 
+  /**
+   * Cached SVG innerHTML, so a late joiner sees the drawing immediately.
+   *
+   * Kept out of `#state` so a guess or a join doesn't rewrite a canvas that
+   * can grow to hundreds of KB.
+   */
+  #canvas = ''
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
     // Hydrate before any handler runs. This also covers waking from
     // hibernation, where the constructor runs again on a fresh isolate.
     ctx.blockConcurrencyWhile(async () => {
-      this.#state = (await ctx.storage.get<RoomState>('state')) ?? initialState()
+      const stored = await ctx.storage.get<RoomState | string>(['state', 'canvas'])
+      this.#state = (stored.get('state') as RoomState | undefined) ?? initialState()
+      this.#canvas = (stored.get('canvas') as string | undefined) ?? ''
     })
   }
 
   #save() {
     return this.ctx.storage.put('state', this.#state)
+  }
+
+  /**
+   * Persist the canvas without holding back outgoing messages.
+   *
+   * A Durable Object's output gate delays every message sent while a write
+   * is pending, so a confirmed write here would stall the next stroke's
+   * points behind every commit. Losing the last stroke of a sketch if the
+   * object crashes mid-write is an acceptable price.
+   */
+  #saveCanvas() {
+    void this.ctx.storage.put('canvas', this.#canvas, { allowUnconfirmed: true })
   }
 
   // --- messaging helpers -------------------------------------------------
@@ -225,7 +244,7 @@ export class GameRoom extends Server<Env> {
     await this.#save()
 
     this.#send(connection, { t: 'welcome', you: playerId, state: this.#publicState() })
-    if (s.canvas) this.#send(connection, { t: 'canvas', svg: s.canvas })
+    if (this.#canvas) this.#send(connection, { t: 'canvas', svg: this.#canvas })
 
     // A returning drawer needs the word back.
     if (s.drawerId === playerId && s.word && s.phase === 'drawing') {
@@ -304,7 +323,7 @@ export class GameRoom extends Server<Env> {
     // Only the current drawer may touch the canvas.
     if (isDrawingMessage(msg)) {
       if (playerId !== s.drawerId || s.phase !== 'drawing') return
-      await this.#handleDrawing(connection, msg)
+      this.#handleDrawing(connection, msg)
       return
     }
 
@@ -323,18 +342,16 @@ export class GameRoom extends Server<Env> {
     }
   }
 
-  async #handleDrawing(connection: Connection, msg: ClientMessage) {
-    const s = this.#state
-
-    // Keep a snapshot so anyone joining late sees the drawing so far.
-    if (msg.t === 'commit') s.canvas += msg.svg
-    else if (msg.t === 'canvas') s.canvas = msg.svg
-
+  #handleDrawing(connection: Connection, msg: ClientMessage) {
     // Relay verbatim — the server never parses stroke geometry.
     this.#broadcast(msg as ServerMessage, [connection.id])
 
-    // Only persist on the settled states, not on every preview frame.
-    if (msg.t === 'commit' || msg.t === 'canvas') await this.#save()
+    // Keep a snapshot so anyone joining late sees the drawing so far. Only
+    // the settled states are persisted, never the in-flight points.
+    if (msg.t === 'commit') this.#canvas += msg.svg
+    else if (msg.t === 'canvas') this.#canvas = msg.svg
+    else return
+    this.#saveCanvas()
   }
 
   async #handleGuess(connection: Connection, playerId: string, rawText: string) {
@@ -473,7 +490,8 @@ export class GameRoom extends Server<Env> {
     s.phase = 'drawing'
     s.word = pickWord(s.usedWords)
     s.usedWords.push(s.word)
-    s.canvas = ''
+    this.#canvas = ''
+    this.#saveCanvas()
     s.pausedMs = null
     s.endsAt = Date.now() + ROUND_MS
 
