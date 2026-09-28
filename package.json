@@ -54,6 +54,7 @@
     "@nuxt/test-utils": "4.3.2",
     "@playwright/test": "^1.63.0",
     "@shadcn/lint": "^0.2.0",
+    "@vite-pwa/nuxt": "^1.1.1",
     "@vitest/coverage-v8": "^5.0.2",
     "@vue/test-utils": "^2.5.1",
     "eslint": "^10.11.0",

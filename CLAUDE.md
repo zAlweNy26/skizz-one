@@ -65,6 +65,11 @@ Two Workers, one shared protocol:
   persisted to DO storage and re-hydrated in the constructor. The secret word
   never leaves the DO except in the drawer's copy of the `turn` message.
   `ALLOWED_ORIGINS` is the only origin gate (no CORS preflight for WS upgrades).
+- **PWA** — `@vite-pwa/nuxt` (`pwa` in `nuxt.config.ts`, `autoUpdate`) owns the
+  manifest (`/manifest.webmanifest`) and the Workbox service worker, which is
+  only built in production. The SPA shell `/` is rendered by the Worker rather
+  than emitted to `public/`, so it's precached via `additionalManifestEntries`
+  with a per-build revision; `/parties/*` is excluded from the navigation fallback.
 - **`shared/utils/protocol.ts`** — the wire protocol (`ClientMessage` /
   `ServerMessage`), shared constants, and pure helpers (guess normalisation,
   masking, quantisation). The worker can't use Nuxt's `#shared` alias, so it

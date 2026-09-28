@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@nuxthub/core',
     '@nuxtjs/i18n',
+    '@vite-pwa/nuxt',
   ],
 
   ssr: false,
@@ -33,7 +34,7 @@ export default defineNuxtConfig({
         { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
         { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
-        { rel: 'manifest', href: '/site.webmanifest' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
@@ -94,6 +95,47 @@ export default defineNuxtConfig({
       useCookie: true,
       cookieKey: 'locale',
       fallbackLocale: 'en',
+    },
+  },
+
+  pwa: {
+    registerType: 'autoUpdate',
+    registerWebManifestInRouteRules: true,
+    manifest: {
+      name: 'SkizzOne',
+      short_name: 'SkizzOne',
+      start_url: '/',
+      display: 'standalone',
+      background_color: '#6e0b22',
+      theme_color: '#6e0b22',
+      icons: [
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ],
+    },
+    workbox: {
+      navigateFallback: '/',
+      additionalManifestEntries: [{ url: '/', revision: Date.now().toString() }],
+      navigateFallbackDenylist: [/^\/parties\//],
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      runtimeCaching: [
+        {
+          urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/,
+          handler: 'StaleWhileRevalidate',
+          options: { cacheName: 'google-fonts' },
+        },
+        {
+          urlPattern: /^https:\/\/api\.dicebear\.com\/.*/,
+          handler: 'CacheFirst',
+          options: { cacheName: 'avatars', expiration: { maxEntries: 200 }, cacheableResponse: { statuses: [0, 200] } },
+        },
+        {
+          urlPattern: /\/api\/_nuxt_icon\/.*/,
+          handler: 'StaleWhileRevalidate',
+          options: { cacheName: 'icons' },
+        },
+      ],
     },
   },
 
