@@ -460,14 +460,18 @@ export class GameRoom extends Server<Env> {
       return
     }
 
-    // The drawing is frozen too: studying it for free isn't fair play.
-    if (s.pause) {
-      this.#send(connection, { t: 'log', level: 'warning', key: 'guessOnHold' })
-      return
-    }
-
     const guess = normalizeGuess(text)
     const answer = normalizeGuess(s.word ?? '')
+
+    // The drawing is frozen too: studying it for free isn't fair play. Talk
+    // still flows, but the answer itself is held back so it can't leak.
+    if (s.pause) {
+      if (answer && guess === answer)
+        this.#send(connection, { t: 'log', level: 'warning', key: 'guessOnHold' })
+      else
+        this.#broadcast({ t: 'chat', sender: player.name, text })
+      return
+    }
 
     if (!answer || guess !== answer) {
       this.#broadcast({ t: 'chat', sender: player.name, text })

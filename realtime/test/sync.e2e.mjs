@@ -226,6 +226,10 @@ async function main() {
   send(c, { t: 'guess', text: drawerTurn.word })
   const onHold = await waitFor(c, m => m.t === 'log' && m.key === 'guessOnHold')
   check('guessing is on hold while paused', Boolean(onHold))
+  a.inbox.length = 0
+  send(c, { t: 'guess', text: 'still thinking' })
+  const pausedChat = await waitFor(a, m => m.t === 'chat' && m.text === 'still thinking')
+  check('players can still chat while paused', pausedChat && !pausedChat.private)
   const frozenStroke = watcherWs.inbox.find(m => m.id === 'frozen')
   check('the drawer cannot draw while paused', !frozenStroke)
 

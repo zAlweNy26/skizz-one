@@ -160,7 +160,6 @@ function submit(event: KeyboardEvent) {
           class="w-full" size="lg" :ui="{ base: 'min-h-11' }"
           autocomplete="off" enterkeyhint="send"
           :placeholder="$t(placeholder)"
-          :disabled="channel === 'onHold'"
           :color="channel === 'private' ? 'success' : 'primary'"
           :highlight="channel === 'private'"
           :icon="channelIcon"

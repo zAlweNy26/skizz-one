@@ -60,7 +60,7 @@
     "guessPlaceholder": "Scrivi qui la tua risposta...",
     "publicPlaceholder": "Scrivi qualcosa...",
     "privatePlaceholder": "Chat segreta per chi sa la parola",
-    "pausedPlaceholder": "Partita in pausa — risposte sospese",
+    "pausedPlaceholder": "Partita in pausa — chatta pure, le risposte aspettano",
     "private": "Messaggio privato",
     "title": "Chat"
   },
@@ -91,7 +91,7 @@
     "wordWas": "La parola era \"{word}\"",
     "paused": "Hanno votato tutti — la partita è in pausa",
     "resumed": "La maggioranza ha votato — la partita riprende",
-    "guessOnHold": "La partita è in pausa — risposte sospese"
+    "guessOnHold": "La partita è in pausa — le risposte contano di nuovo alla ripresa"
   },
   "home": {
     "title": "Home",

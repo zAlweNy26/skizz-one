@@ -60,7 +60,7 @@
     "guessPlaceholder": "Type your guess here...",
     "publicPlaceholder": "Say something...",
     "privatePlaceholder": "Secret chat for those in the know",
-    "pausedPlaceholder": "Game paused — guessing is on hold",
+    "pausedPlaceholder": "Game paused — chat away, guesses wait",
     "private": "Private message",
     "title": "Chat"
   },
@@ -91,7 +91,7 @@
     "wordWas": "The word was \"{word}\"",
     "paused": "Everyone voted — the game is paused",
     "resumed": "The majority voted — the game resumes",
-    "guessOnHold": "The game is paused — guessing is on hold"
+    "guessOnHold": "The game is paused — guesses count again once it resumes"
   },
   "home": {
     "title": "Home",
