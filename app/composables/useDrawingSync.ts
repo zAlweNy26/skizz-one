@@ -59,8 +59,7 @@ function createStrokeGroup(brush: WireBrush): SVGGElement {
     el.setAttribute('stroke-linecap', 'butt')
     el.setAttribute('stroke-linejoin', 'round')
     el.setAttribute('opacity', String(brush.opacity ?? 0.4))
-  }
-  else if (brush.opacity != null && brush.opacity !== 1)
+  } else if (brush.opacity != null && brush.opacity !== 1)
     el.setAttribute('opacity', String(brush.opacity))
 
   if (brush.dasharray) el.setAttribute('stroke-dasharray', brush.dasharray)

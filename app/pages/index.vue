@@ -22,8 +22,7 @@ const roomCode = computed(() => {
   try {
     const url = new URL(raw)
     return url.searchParams.get('code') ?? url.pathname.split('/').filter(Boolean).at(-1) ?? ''
-  }
-  catch {
+  } catch {
     return raw
   }
 })

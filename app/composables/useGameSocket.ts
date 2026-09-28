@@ -136,8 +136,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     ws.addEventListener('message', (event: MessageEvent) => {
       try {
         handle(JSON.parse(event.data as string) as ServerMessage)
-      }
-      catch {
+      } catch {
         // A frame we can't parse is not worth tearing the room down for.
       }
     })

@@ -244,8 +244,7 @@ export class GameRoom extends Server<Env> {
       // Reconnect: keep the score and the turn position.
       existing.connected = true
       existing.name = name
-    }
-    else {
+    } else {
       s.players[playerId] = {
         id: playerId,
         name,
@@ -310,22 +309,19 @@ export class GameRoom extends Server<Env> {
       s.hostId = nextHost ?? null
       if (nextHost)
         this.#log('warning', 'hostLeft', { name: player.name, host: s.players[nextHost]!.name })
-    }
-    else
+    } else
       this.#log('info', 'disconnected', { name: player.name })
 
     if (s.pause) {
       // A frozen countdown has nothing to run out. The grace window, or the
       // "everyone guessed" check, waits for the resume.
-    }
-    else if (s.phase === 'drawing' && s.drawerId === playerId) {
+    } else if (s.phase === 'drawing' && s.drawerId === playerId) {
       // Hold the round briefly: a locked phone or a refresh shouldn't end it.
       s.pausedMs = Math.max(0, (s.endsAt ?? Date.now()) - Date.now())
       s.endsAt = null
       await this.#setAlarm('grace', DRAWER_GRACE_MS)
       this.#log('warning', 'drawerDropped', { name: player.name })
-    }
-    else if (s.phase === 'drawing')
+    } else if (s.phase === 'drawing')
       await this.#endRoundIfEveryoneGuessed()
 
     // The one holdout leaving can make the rest unanimous.
@@ -344,8 +340,7 @@ export class GameRoom extends Server<Env> {
     let msg: ClientMessage
     try {
       msg = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message))
-    }
-    catch {
+    } catch {
       return
     }
 

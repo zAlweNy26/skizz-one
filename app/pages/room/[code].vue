@@ -215,14 +215,14 @@ defineShortcuts({
       class="w-full">
       <template v-if="isHost" #actions>
         <USelect
-          :model-value="language" :items="languageItems" icon="i-lucide-languages"
-          class="w-40" :aria-label="$t('lobby.wordLanguage')" @update:model-value="setLanguage" />
+          :modelValue="language" :items="languageItems" icon="i-lucide-languages"
+          class="w-40" :aria-label="$t('lobby.wordLanguage')" @update:modelValue="setLanguage" />
         <UButton :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
       </template>
     </UAlert>
 
     <section class="grid grid-cols-1 lg:grid-cols-[minmax(min-content,1fr)_minmax(min-content,42rem)_minmax(16rem,1fr)] w-full gap-4">
-      <PlayerList :players="leaderboard" :drawer-id="state?.drawerId" :you="you" />
+      <PlayerList :players="leaderboard" :drawerId="state?.drawerId" :you="you" />
 
       <div class="flex flex-col gap-2">
         <div class="relative aspect-video rounded-md shadow-lg overflow-hidden" :style="{ backgroundColor: currentBg }">
@@ -290,7 +290,7 @@ defineShortcuts({
       </div>
 
       <ChatPanel
-        :entries="chat" :is-drawer="isDrawer" :has-guessed="hasGuessed"
+        :entries="chat" :isDrawer="isDrawer" :hasGuessed="hasGuessed"
         :drawing="phase === 'drawing'" :paused="paused" @guess="submitGuess" />
     </section>
   </main>

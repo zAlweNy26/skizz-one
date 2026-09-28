@@ -1,5 +1,20 @@
 {
   "worktree": {
     "bgIsolation": "none"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *.ts|*.mts|*.js|*.mjs|*.vue|*.json|*.jsonc|*.yaml|*.yml|*.md) cd \"${CLAUDE_PROJECT_DIR:-.}\" && bunx eslint --fix --no-warn-ignored \"$f\";; esac; } >/dev/null 2>&1 || true",
+            "timeout": 60,
+            "statusMessage": "eslint --fix"
+          }
+        ]
+      }
+    ]
   }
 }

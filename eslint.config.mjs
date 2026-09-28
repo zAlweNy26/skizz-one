@@ -13,8 +13,19 @@ export default antfu({
   rules: {
     'node/prefer-global/process': 'off',
     'vue/first-attribute-linebreak': 'off',
-    'vue/v-on-event-hyphenation': 'off',
-    'vue/attribute-hyphenation': 'off',
+    // camelCase in templates, matching the names used in <script setup>.
+    'vue/v-on-event-hyphenation': ['error', 'never', { autofix: true }],
+    'vue/attribute-hyphenation': ['error', 'never'],
+    'ts/no-explicit-any': 'error',
+    'style/brace-style': ['error', '1tbs', { allowSingleLine: true }],
+    // Warn only: max-len has no autofix, so the edit hook can't correct it.
+    'style/max-len': ['warn', {
+      code: 120,
+      ignoreUrls: true,
+      ignoreStrings: true,
+      ignoreTemplateLiterals: true,
+      ignoreRegExpLiterals: true,
+    }],
     'array-bracket-spacing': 'off',
     'unused-imports/no-unused-vars': 'warn',
     'unused-imports/no-unused-imports': 'warn',
@@ -25,7 +36,6 @@ export default antfu({
     'antfu/if-newline': 'off',
     'antfu/curly': 'off',
     'antfu/consistent-list-newline': 'off',
-    'brace-style': 'off',
     'vue/html-closing-bracket-newline': 'off',
   },
 })

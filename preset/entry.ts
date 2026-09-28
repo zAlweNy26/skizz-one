@@ -3,6 +3,16 @@ import { createHandler } from 'nitropack/presets/cloudflare/runtime/_module-hand
 import { isPublicAssetURL } from '#nitro-internal-virtual/public-assets'
 import '#nitro-internal-pollyfills'
 
+interface Binding {
+  fetch: (request: Request) => Promise<Response>
+}
+
+/** Bindings this entry reads; both are absent until configured in wrangler. */
+interface AppEnv {
+  ASSETS?: Binding
+  REALTIME?: Binding
+}
+
 /**
  * Worker entry for the Nuxt app.
  *
@@ -15,8 +25,8 @@ import '#nitro-internal-pollyfills'
  * cannot survive that. The generated entry is the only place that sees the raw
  * `Request`.
  */
-export default createHandler({
-  fetch(request: Request, env: any, _context: unknown, url: URL) {
+export default createHandler<AppEnv>({
+  fetch(request: Request, env: AppEnv, _context: unknown, url: URL) {
     if (env.ASSETS && isPublicAssetURL(url.pathname))
       return env.ASSETS.fetch(request)
 

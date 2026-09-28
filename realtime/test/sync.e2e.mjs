@@ -28,8 +28,7 @@ function connect(playerId, name) {
   ws.addEventListener('message', (e) => {
     try {
       ws.inbox.push(JSON.parse(e.data))
-    }
-    catch {
+    } catch {
       // A frame we can't parse is not part of any assertion.
     }
   })
