@@ -1,9 +1,7 @@
 import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessage } from '#shared/utils/protocol'
 import { createEventHook, useLocalStorage } from '@vueuse/core'
 import PartySocket from 'partysocket'
-import { pascalCase } from 'scule'
 import { randomUUID } from 'uncrypto'
-import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator'
 
 /**
  * A line in the chat panel.
@@ -33,11 +31,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
    * so a refresh mid-round lost your score and your turn. This does not.
    */
   const playerId = useLocalStorage('playerId', () => randomUUID())
-  const nickname = useLocalStorage('nickname', () => pascalCase(uniqueNamesGenerator({
-    dictionaries: [adjectives, colors, animals],
-    separator: '-',
-    length: 2,
-  })))
+  const nickname = useNickname()
 
   const socket = shallowRef<PartySocket>()
   const connected = ref(false)
@@ -57,6 +51,10 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const isHost = computed(() => Boolean(you.value) && state.value?.hostId === you.value)
   const players = computed(() => state.value?.players ?? [])
   const leaderboard = computed(() => players.value.toSorted((a, b) => b.points - a.points))
+  /** Out of the guessing this turn, so chat goes to the private channel. */
+  const hasGuessed = computed(() => players.value.some(p => p.id === you.value && p.guessed))
+  const paused = computed(() => state.value?.paused ?? false)
+  const votedPause = computed(() => state.value?.pauseVotes.includes(you.value) ?? false)
 
   function send(msg: ClientMessage) {
     const ws = socket.value
@@ -73,9 +71,13 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       case 'welcome':
         you.value = msg.you
         state.value = msg.state
+        endsAt.value = msg.state.endsAt
         break
       case 'state':
         state.value = msg.state
+        // A pause freezes the countdown and a resume moves it, both without
+        // a new turn, so the state is what keeps the timer honest.
+        endsAt.value = msg.state.endsAt
         break
       case 'turn':
         // `word` is present only in the drawer's copy.
@@ -170,6 +172,9 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     leaderboard,
     isDrawer,
     isHost,
+    hasGuessed,
+    paused,
+    votedPause,
     send,
     onMessage: messageHook.on,
     close,

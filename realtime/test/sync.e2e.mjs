@@ -170,6 +170,52 @@ async function main() {
     JSON.stringify(scored?.state?.players?.map(p => `${p.name}:${p.points}`)),
   )
 
+  // --- private chat once you've guessed ---------------------------------
+  // Carol is still guessing, so the round goes on.
+  for (const ws of [a, b, c]) ws.inbox.length = 0
+  send(watcherWs, { t: 'guess', text: 'psst, easy one' })
+  const toDrawer = await waitFor(drawerWs, m => m.t === 'chat' && m.text === 'psst, easy one')
+  check('a guesser\'s chat reaches the drawer, marked private', toDrawer?.private === true, JSON.stringify(toDrawer))
+  send(drawerWs, { t: 'guess', text: 'thanks!' })
+  const toGuesser = await waitFor(watcherWs, m => m.t === 'chat' && m.text === 'thanks!')
+  check('the drawer can chat back privately', toGuesser?.private === true, JSON.stringify(toGuesser))
+  await sleep(400)
+  const overheard = c.inbox.find(m => m.t === 'chat')
+  check('a player still guessing sees none of it', !overheard, overheard ? JSON.stringify(overheard) : '')
+
+  // --- pausing takes everyone -------------------------------------------
+  for (const ws of [a, b, c]) ws.inbox.length = 0
+  send(a, { t: 'pause', want: true })
+  send(b, { t: 'pause', want: true })
+  const twoVotes = await waitFor(c, m => m.t === 'state' && m.state.pauseVotes.length === 2)
+  check('votes are tallied in the state', Boolean(twoVotes))
+  check('two of three votes do not pause', twoVotes?.state?.paused === false)
+
+  send(c, { t: 'pause', want: true })
+  const pausedState = await waitFor(a, m => m.t === 'state' && m.state.paused)
+  check('a unanimous vote pauses the game', Boolean(pausedState))
+  check('the countdown is frozen', pausedState?.state?.endsAt === null && pausedState?.state?.remainingMs > 0,
+    `endsAt=${pausedState?.state?.endsAt} remainingMs=${pausedState?.state?.remainingMs}`)
+  check('votes reset after pausing', pausedState?.state?.pauseVotes?.length === 0)
+
+  watcherWs.inbox.length = 0
+  send(drawerWs, { t: 'strokeStart', id: 'frozen', brush })
+  send(c, { t: 'guess', text: drawerTurn.word })
+  const onHold = await waitFor(c, m => m.t === 'log' && m.key === 'guessOnHold')
+  check('guessing is on hold while paused', Boolean(onHold))
+  const frozenStroke = watcherWs.inbox.find(m => m.id === 'frozen')
+  check('the drawer cannot draw while paused', !frozenStroke)
+
+  // --- resuming takes a majority ----------------------------------------
+  a.inbox.length = 0
+  send(a, { t: 'pause', want: true })
+  const oneResume = await waitFor(a, m => m.t === 'state' && m.state.pauseVotes.length === 1)
+  check('one of three votes does not resume', oneResume?.state?.paused === true)
+  send(b, { t: 'pause', want: true })
+  const resumed = await waitFor(a, m => m.t === 'state' && !m.state.paused)
+  check('a majority resumes the game', Boolean(resumed))
+  check('the countdown runs again', typeof resumed?.state?.endsAt === 'number')
+
   for (const ws of [a, b, c]) ws.close()
   await sleep(200)
 
