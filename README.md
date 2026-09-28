@@ -8,7 +8,7 @@ The app is **two Cloudflare Workers**:
 
 | Worker | Source | Role |
 | --- | --- | --- |
-| `skizz-one` | repo root | The Nuxt SPA. Serves assets and forwards `/parties/*` websocket upgrades. |
+| `skizz` | repo root | The Nuxt SPA on [skizz.app](https://skizz.app). Serves assets and forwards `/parties/*` websocket upgrades. |
 | `skizz-realtime` | `realtime/` | One `partyserver` Durable Object per game room: canvas relay, turns, scoring. |
 
 The realtime half lives in its own Worker because **Durable Objects are the only
@@ -76,9 +76,17 @@ bun run deploy:realtime
 bun run build && bunx wrangler deploy --cwd .output
 ```
 
-Set `ALLOWED_ORIGINS` on `skizz-realtime` to the deployed app origin before going
-live. Browsers do not send a CORS preflight for websocket upgrades, so that
-variable is the only thing gating who can open a room.
+Both Workers are configured entirely from their `wrangler.jsonc`: a deploy
+replaces whatever was set in the dashboard. The app's custom domain
+(`skizz.app`) is declared there too, so it stays attached.
+
+`ALLOWED_ORIGINS` in `realtime/wrangler.jsonc` is set to `https://skizz.app`.
+Browsers do not send a CORS preflight for websocket upgrades, so that variable
+is the only thing gating who can open a room; add any new origin (another
+domain, a preview URL) there and redeploy `skizz-realtime`.
+
+When a change touches `shared/utils/protocol.ts`, deploy `skizz-realtime`
+first, then the app.
 
 > **Note on `nuxthub deploy`:** the NuxtHub CLI does not upload `wrangler.jsonc`,
 > and `@nuxthub/core` 0.10.8 has no `hub.bindings` option to declare the service

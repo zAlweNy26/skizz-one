@@ -31,8 +31,8 @@
     "enabled": true
   },
   "vars": {
-    // Comma-separated. Set this to the deployed app origin before going live —
-    // WebSocket upgrades get no CORS preflight, so this is the only gate.
-    "ALLOWED_ORIGINS": ""
+    // Comma-separated. The deployed app's origin — WebSocket upgrades get no
+    // CORS preflight, so this is the only gate on who can open a room.
+    "ALLOWED_ORIGINS": "https://skizz.app"
   }
 }
