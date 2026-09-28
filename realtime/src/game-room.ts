@@ -445,7 +445,7 @@ export class GameRoom extends Server<Env> {
     player.points += points
 
     const drawer = s.drawerId ? s.players[s.drawerId] : null
-    if (drawer) drawer.points += drawerShare(points, guessers)
+    if (drawer) drawer.points += drawerShare(points, rank, guessers)
 
     this.#log('success', 'guessed', { name: player.name })
     await this.#save()

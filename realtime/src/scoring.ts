@@ -13,7 +13,7 @@ export function guessPoints(remainingMs: number, drawMs: number, rank: number) {
   return BASE_GUESS_POINTS + Math.round(SPEED_GUESS_POINTS * left ** SPEED_CURVE) + (ORDER_BONUS[rank] ?? 0)
 }
 
-/** The drawer's cut of one guess, so a turn pays them the average of what every guesser earned. */
-export function drawerShare(points: number, guessers: number) {
-  return guessers > 0 ? Math.round(points / guessers) : 0
+/** The drawer's cut of one guess: its points without the order bonus, split across every guesser. */
+export function drawerShare(points: number, rank: number, guessers: number) {
+  return guessers > 0 ? Math.round((points - (ORDER_BONUS[rank] ?? 0)) / guessers) : 0
 }

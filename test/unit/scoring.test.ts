@@ -33,18 +33,28 @@ describe('guessPoints', () => {
 })
 
 describe('drawerShare', () => {
-  it('adds up to the average of what the guessers earned, give or take rounding', () => {
+  it('adds up to the average of what the guessers earned without order bonuses, give or take rounding', () => {
     const earned = [300, 250, 180]
     const guessers = 4
-    const total = earned.reduce((sum, points) => sum + drawerShare(points, guessers), 0)
-    expect(Math.abs(total - (300 + 250 + 180) / guessers)).toBeLessThanOrEqual(earned.length / 2)
+    const total = earned.reduce((sum, points, rank) => sum + drawerShare(points, rank, guessers), 0)
+    expect(Math.abs(total - (250 + 225 + 180) / guessers)).toBeLessThanOrEqual(earned.length / 2)
   })
 
-  it('gives the whole guess to the drawer in a two-player room', () => {
-    expect(drawerShare(220, 1)).toBe(220)
+  it('pays the drawer less than the first guesser in a two-player room', () => {
+    const first = guessPoints(DRAW_MS, DRAW_MS, 0)
+    expect(drawerShare(first, 0, 1)).toBe(first - 50)
+  })
+
+  it('never pays the drawer as much as the first guesser', () => {
+    for (let guessers = 1; guessers <= 6; guessers++) {
+      const earned = Array.from({ length: guessers }, (_, rank) =>
+        guessPoints(DRAW_MS * (1 - rank / guessers), DRAW_MS, rank))
+      const drawer = earned.reduce((sum, points, rank) => sum + drawerShare(points, rank, guessers), 0)
+      expect(drawer).toBeLessThan(earned[0]!)
+    }
   })
 
   it('pays nothing without guessers', () => {
-    expect(drawerShare(220, 0)).toBe(0)
+    expect(drawerShare(220, 0, 0)).toBe(0)
   })
 })
