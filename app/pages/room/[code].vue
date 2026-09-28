@@ -48,7 +48,7 @@ watch(paused, (now, was) => {
   if (was && !now) sync.syncCanvas()
 })
 
-const now = useNow({ interval: 250 })
+const now = useNow({ scheduler: cb => useIntervalFn(cb, 250) })
 const secondsLeft = computed(() => {
   // Frozen: the room reports what is left instead of when it ends.
   if (paused.value) return Math.ceil((state.value?.remainingMs ?? 0) / 1000)
