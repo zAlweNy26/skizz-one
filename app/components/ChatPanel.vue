@@ -168,11 +168,12 @@ function submit(event: KeyboardEvent) {
       </div>
     </div>
     <div
-      ref="log" class="overflow-y-auto overscroll-contain grow min-h-0 flex flex-col gap-1.5 text-sm pe-1"
+      ref="log" class="overflow-y-auto overscroll-contain grow min-h-0 flex flex-col gap-0.5 text-sm pe-1"
       role="log">
+      <!-- Striped by arrival index, not position, so rows keep their shade as new messages push in. -->
       <div
         v-for="{ entry, index } in shown" :key="index" class="flex items-start gap-2 px-2 py-1 rounded-sketch"
-        :class="!entry.system && entry.private ? 'bg-success/12' : ''">
+        :class="!entry.system && entry.private ? 'bg-success/12' : index % 2 ? 'bg-elevated' : ''">
         <p
           v-if="entry.system" class="font-display font-semibold"
           :class="{
