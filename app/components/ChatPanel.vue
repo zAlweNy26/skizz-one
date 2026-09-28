@@ -64,7 +64,7 @@ function submit(event: KeyboardEvent) {
     as="aside" :strokeWidth="2.5" :radius="18" class="flex flex-col gap-3 p-3"
     :aria-label="$t('chat.title')">
     <UInput
-      class="w-full lg:order-last" size="lg" :ui="{ base: 'min-h-11' }"
+      class="w-full lg:order-last" size="lg" :ui="{ base: ['min-h-11', channel === 'private' && 'ring-2'] }"
       autocomplete="off" enterkeyhint="send"
       :placeholder="$t(placeholder)"
       :color="channel === 'private' ? 'success' : 'primary'"
