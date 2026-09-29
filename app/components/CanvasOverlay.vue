@@ -47,7 +47,7 @@ const awardCards = computed(() => props.awards.flatMap((award) => {
 }))
 
 const STEP_ORDER = ['order-2', 'order-1', 'order-3']
-const STEP_HEIGHT: Record<number, string> = { 1: 'h-12 lg:h-24', 2: 'h-8 lg:h-16', 3: 'h-5 lg:h-10' }
+const STEP_HEIGHT: Record<number, string> = { 1: 'h-9 lg:h-24', 2: 'h-6 lg:h-16', 3: 'h-4 lg:h-10' }
 const STEP_FILL: Record<number, string> = {
   1: 'var(--color-tangerine-300)',
   2: 'var(--color-tangerine-200)',
@@ -97,7 +97,8 @@ const STEP_DELAY = [360, 180, 0]
   </div>
   <div
     v-else-if="phase === 'finished'"
-    class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-3 bg-default/90 lg:gap-5">
+    class="absolute inset-0 z-10 flex flex-col items-center justify-center-safe gap-1.5 p-2 overflow-y-auto
+      bg-default/90 lg:gap-5 lg:p-3">
     <p class="pop-in font-bouncy font-bold text-xl text-center lg:text-4xl">
       {{ winnerTitle }}
     </p>
@@ -109,7 +110,7 @@ const STEP_DELAY = [360, 180, 0]
         <span class="relative">
           <UAvatar
             :src="avatarUrl(place.player.avatar)"
-            :alt="place.player.name" :size="isDesktop ? '3xl' : 'lg'" />
+            :alt="place.player.name" :size="isDesktop ? '3xl' : 'md'" />
           <span v-if="place.rank === 1" class="absolute -top-3 -start-2 -rotate-20 lg:-top-5 lg:-start-3">
             <SketchFrame
               shape="crown" fill="var(--color-tangerine-400)" stroke="var(--ink-fixed)"
@@ -132,18 +133,20 @@ const STEP_DELAY = [360, 180, 0]
       </li>
     </ol>
     <ul
-      v-if="awardCards.length" class="flex flex-wrap justify-center gap-1.5 max-w-lg lg:gap-3"
+      v-if="awardCards.length"
+      class="grid grid-cols-2 gap-1.5 w-full max-w-lg lg:flex lg:flex-wrap lg:justify-center lg:w-auto lg:gap-3"
       :aria-label="$t('awards.title')">
       <li
-        v-for="(award, index) in awardCards" :key="award.key" class="pop-in"
+        v-for="(award, index) in awardCards" :key="award.key"
+        class="pop-in min-w-0 odd:last:col-span-2 odd:last:justify-self-center"
         :style="{ animationDelay: `${600 + index * 120}ms` }">
         <SketchFrame
           :radius="8" :strokeWidth="1.8" :roughness="1.1"
           class="flex items-center gap-1.5 px-2 py-0.5 lg:gap-2 lg:px-3 lg:py-1.5"
           :class="index % 2 ? 'rotate-2' : '-rotate-2'">
           <UIcon :name="award.icon" class="size-4 shrink-0 text-primary lg:size-5" />
-          <span class="flex flex-col leading-tight">
-            <span class="font-display font-bold text-xs lg:text-sm">{{ $t(`awards.${award.key}`) }}</span>
+          <span class="flex flex-col min-w-0 leading-tight">
+            <span class="truncate font-display font-bold text-xs lg:text-sm">{{ $t(`awards.${award.key}`) }}</span>
             <span class="text-xs text-muted" :class="{ 'text-primary': award.playerId === you }">
               {{ award.name }} · {{ award.value }}
             </span>
