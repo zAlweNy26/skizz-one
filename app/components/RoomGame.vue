@@ -66,6 +66,9 @@ const { muted } = useSounds({ onMessage: game.onMessage, you, state, secondsLeft
 
 const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
+useEventListener(sketch, 'touchmove', (event: TouchEvent) => {
+  if (canDraw.value) event.preventDefault()
+}, { passive: false })
 
 const hasDrawing = ref(false)
 watch(phase, (now) => {
