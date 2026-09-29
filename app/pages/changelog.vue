@@ -2,7 +2,7 @@
 const { locale } = useI18n()
 
 function queryVersions(lang: string) {
-  return queryCollection('changelog').where('path', 'LIKE', `/changelog/${lang}/%`).order('date', 'DESC').all()
+  return queryCollection('changelog').where('path', 'LIKE', `/changelog/${lang}/%`).order('date', 'DESC').order('version', 'DESC').all()
 }
 
 const { data: versions } = await useAsyncData(
