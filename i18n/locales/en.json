@@ -44,7 +44,6 @@
   },
   "canvas": {
     "color": "Colour {color}",
-    "background": "Swap canvas background",
     "brushSize": "Brush size",
     "tools": {
       "draw": "Brush",

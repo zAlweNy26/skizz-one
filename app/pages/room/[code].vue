@@ -15,7 +15,6 @@ const { t } = useI18n()
 const route = useRoute()
 const gameId = computed(() => String(route.params.code ?? ''))
 const sketch = useTemplateRef<SVGSVGElement>('sketch')
-const currentBg = ref('#FFFFFF')
 
 const drauu = useDrauu(sketch, {
   brush: {
@@ -370,7 +369,7 @@ defineShortcuts({
             phone-landscape:canvas-landscape phone-landscape:col-start-2 phone-landscape:row-span-full
             phone-landscape:self-start"
           :class="{ 'phone-landscape:hidden': phase === 'lobby' }">
-          <div class="relative aspect-4/3 rounded-sm overflow-hidden" :style="{ backgroundColor: currentBg }">
+          <div class="relative aspect-4/3 rounded-sm overflow-hidden bg-white">
             <CanvasOverlay
               :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices"
               :drawerName="drawerName" :players="leaderboard" :you="you"
@@ -392,12 +391,6 @@ defineShortcuts({
           class="flex flex-wrap items-center justify-between gap-2 p-1.5 lg:gap-4 lg:p-3
             phone-landscape:flex-col phone-landscape:flex-nowrap phone-landscape:gap-1
             phone-landscape:col-start-1 phone-landscape:row-span-full phone-landscape:self-center">
-          <button
-            type="button"
-            class="max-lg:hidden press size-11 shrink-0 rounded-full ring-2 ring-(--ink) cursor-pointer
-              bg-linear-45 from-black from-50% to-50% to-white"
-            :aria-label="$t('canvas.background')"
-            @click="currentBg = currentBg === '#FFFFFF' ? '#000000' : '#FFFFFF'" />
           <div class="max-lg:hidden grid grid-cols-13 gap-1">
             <button
               v-for="(color, index) in paletteColors" :key="index" type="button"
@@ -440,17 +433,7 @@ defineShortcuts({
                   :style="{ backgroundColor: color }" :aria-label="$t('canvas.color', { color })"
                   :aria-pressed="brush.color === color" @click="brush.color = color" />
               </div>
-              <div class="flex items-center gap-4">
-                <USlider
-                  v-model="brush.size" size="lg" :min="8" :max="48" class="grow"
-                  :aria-label="$t('canvas.brushSize')" />
-                <button
-                  type="button"
-                  class="press size-11 shrink-0 rounded-full ring-2 ring-(--ink) cursor-pointer
-                    bg-linear-45 from-black from-50% to-50% to-white"
-                  :aria-label="$t('canvas.background')"
-                  @click="currentBg = currentBg === '#FFFFFF' ? '#000000' : '#FFFFFF'" />
-              </div>
+              <USlider v-model="brush.size" size="lg" :min="8" :max="48" :aria-label="$t('canvas.brushSize')" />
             </template>
           </UDrawer>
 

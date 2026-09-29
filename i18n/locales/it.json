@@ -44,7 +44,6 @@
   },
   "canvas": {
     "color": "Colore {color}",
-    "background": "Cambia sfondo della tela",
     "brushSize": "Dimensione pennello",
     "tools": {
       "draw": "Pennello",
