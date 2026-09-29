@@ -14,7 +14,7 @@ defineEmits<{
   kick: [target: string, want: boolean]
 }>()
 
-const leaders = computed(() => leaderIds(props.players))
+const leader = computed(() => leaderId(props.players))
 </script>
 
 <template>
@@ -51,7 +51,7 @@ const leaders = computed(() => leaderIds(props.players))
             </UChip>
             <span class="absolute -top-2 -start-1.5 -rotate-20">
               <SketchFrame
-                v-if="leaders.has(player.id)" shape="crown" fill="var(--color-tangerine-400)"
+                v-if="leader === player.id" shape="crown" fill="var(--color-tangerine-400)"
                 stroke="var(--ink-fixed)" :strokeWidth="1.6" :roughness="0.9" class="pop-in w-5 h-4" />
             </span>
             <span class="font-display font-bold text-xs tabular-nums leading-none">

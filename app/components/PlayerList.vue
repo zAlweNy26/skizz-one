@@ -18,7 +18,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const leaders = computed(() => leaderIds(props.players))
+const leader = computed(() => leaderId(props.players))
 
 function kickItems(player: GamePlayer) {
   const voted = props.kickVotes?.[player.id]?.includes(props.you) ?? false
@@ -62,7 +62,7 @@ function kickItems(player: GamePlayer) {
         <UAvatar
           :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
           size="lg" :alt="player.name" class="bg-transparent" />
-        <UTooltip v-if="leaders.has(player.id)" :text="$t('players.leader')">
+        <UTooltip v-if="leader === player.id" :text="$t('players.leader')">
           <span class="absolute -top-4 -start-2 -rotate-20" role="img" :aria-label="$t('players.leader')">
             <SketchFrame
               shape="crown" fill="var(--color-tangerine-400)" stroke="var(--ink-fixed)"

@@ -289,6 +289,11 @@ async function main() {
     JSON.stringify(scored?.state?.players?.map(p => `${p.name}:${p.points}`)),
   )
 
+  const ranks = scored?.state?.players?.map(p => p.rank).sort() ?? []
+  check('every player has a place of their own', JSON.stringify(ranks) === JSON.stringify(ranks.map((_, i) => i + 1)),
+    JSON.stringify(ranks))
+  check('shown points are whole', scored?.state?.players?.every(p => Number.isInteger(p.points)))
+
   // --- private chat once you've guessed ---------------------------------
   for (const ws of [a, b, c]) ws.inbox.length = 0
   send(watcherWs, { t: 'guess', text: 'psst, easy one' })

@@ -40,7 +40,7 @@ import {
   votesNeeded,
   WORD_CHOICES,
 } from '../../shared/utils/protocol'
-import { drawerShare, guessPoints } from './scoring'
+import { drawerShare, guessPoints, standings } from './scoring'
 import { pickWords } from './words'
 
 /** Pause between the word reveal and the next turn. */
@@ -213,9 +213,20 @@ export class GameRoom extends Server<Env> {
     return (connection.state as ConnState | null)?.playerId ?? null
   }
 
+  /** Everyone with a place on the scoreboard, in join order. */
+  #listed() {
+    const s = this.#state
+    return s.order
+      .filter(id => !s.banned.includes(id))
+      .map(id => s.players[id])
+      .filter((p): p is StoredPlayer => Boolean(p))
+  }
+
   /** The room as everyone is allowed to see it. */
   #publicState(): GameState {
     const s = this.#state
+    const listed = this.#listed()
+    const ranks = new Map(standings(listed).map((p, index) => [p.id, index + 1]))
     return {
       id: this.name,
       phase: s.phase,
@@ -229,18 +240,15 @@ export class GameRoom extends Server<Env> {
       drawerId: s.drawerId,
       endsAt: s.endsAt,
       hint: s.word ? maskWord(s.word, s.revealed) : '',
-      players: s.order
-        .filter(id => !s.banned.includes(id))
-        .map(id => s.players[id])
-        .filter((p): p is StoredPlayer => Boolean(p))
-        .map<GamePlayer>(p => ({
-          id: p.id,
-          name: p.name,
-          points: p.points,
-          connected: p.connected,
-          away: p.awaySince !== undefined,
-          guessed: p.guessed,
-        })),
+      players: listed.map<GamePlayer>(p => ({
+        id: p.id,
+        name: p.name,
+        points: Math.round(p.points),
+        rank: ranks.get(p.id)!,
+        connected: p.connected,
+        away: p.awaySince !== undefined,
+        guessed: p.guessed,
+      })),
       paused: s.pause !== null,
       pauseVotes: this.#pauseVoters(),
       remainingMs: s.pause?.remainingMs ?? null,
@@ -996,13 +1004,14 @@ export class GameRoom extends Server<Env> {
     await this.#clearAlarm()
     await this.#save()
 
-    const winner = s.order
-      .map(id => s.players[id])
-      .filter((p): p is StoredPlayer => Boolean(p))
-      .sort((a, b) => b.points - a.points)[0]
-
-    if (winner) this.#log('success', 'winner', { name: winner.name, points: winner.points })
-    else this.#log('success', 'gameOver')
+    const [winner, runnerUp] = standings(this.#listed())
+    const points = Math.round(winner?.points ?? 0)
+    if (winner && runnerUp && Math.round(runnerUp.points) === points)
+      this.#log('success', 'winnerByAHair', { name: winner.name, points, other: runnerUp.name })
+    else if (winner)
+      this.#log('success', 'winner', { name: winner.name, points })
+    else
+      this.#log('success', 'gameOver')
     this.#broadcastState()
   }
 

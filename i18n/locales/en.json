@@ -93,6 +93,7 @@
     "guessed": "{name} guessed the word!",
     "timeUp": "Time is up!",
     "winner": "{name} wins with {points} points!",
+    "winnerByAHair": "{name} wins by a hair over {other}, with {points} points!",
     "gameOver": "Game over",
     "wordWas": "The word was \"{word}\"",
     "paused": "Everyone voted — the game is paused",

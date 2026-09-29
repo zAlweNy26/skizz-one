@@ -93,6 +93,7 @@
     "guessed": "{name} ha indovinato la parola!",
     "timeUp": "Tempo scaduto!",
     "winner": "{name} vince con {points} punti!",
+    "winnerByAHair": "{name} vince per un soffio su {other}, con {points} punti!",
     "gameOver": "Partita finita",
     "wordWas": "La parola era \"{word}\"",
     "paused": "Hanno votato tutti — la partita è in pausa",

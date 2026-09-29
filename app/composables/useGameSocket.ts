@@ -42,7 +42,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const isDrawer = computed(() => Boolean(you.value) && state.value?.drawerId === you.value)
   const isHost = computed(() => Boolean(you.value) && state.value?.hostId === you.value)
   const players = computed(() => state.value?.players ?? [])
-  const leaderboard = computed(() => players.value.toSorted((a, b) => b.points - a.points))
+  const leaderboard = computed(() => players.value.toSorted((a, b) => a.rank - b.rank))
   /** Out of the guessing this turn. */
   const hasGuessed = computed(() => players.value.some(p => p.id === you.value && p.guessed))
   const paused = computed(() => state.value?.paused ?? false)

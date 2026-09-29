@@ -145,7 +145,10 @@ export interface Award {
 export interface GamePlayer {
   id: string
   name: string
+  /** Rounded for display; `rank` comes from the exact score. */
   points: number
+  /** 1-based and never shared: exact score first, then join order. */
+  rank: number
   connected: boolean
   /** Dropped, but still inside `AWAY_GRACE_MS`. */
   away: boolean
@@ -189,7 +192,7 @@ export type LogLevel = 'info' | 'success' | 'warning' | 'error'
 export type LogKey
   = | 'joined' | 'reconnected' | 'disconnected' | 'hostLeft' | 'drawerDropped'
     | 'drawerGone' | 'languageChanged' | 'waitingForPlayers' | 'drawing'
-    | 'close' | 'guessed' | 'timeUp' | 'winner' | 'gameOver'
+    | 'close' | 'guessed' | 'timeUp' | 'winner' | 'winnerByAHair' | 'gameOver'
     | 'paused' | 'resumed' | 'guessOnHold' | 'choosing' | 'pauseRequested' | 'resumeRequested'
     | 'kickRequested' | 'kicked' | 'newHost'
 
