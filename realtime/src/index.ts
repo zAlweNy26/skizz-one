@@ -1,4 +1,5 @@
 import { routePartykitRequest } from 'partyserver'
+import { isRoomCode } from '../../shared/utils/protocol'
 import { GameRoom } from './game-room'
 import { Lobby } from './lobby'
 
@@ -10,6 +11,10 @@ export default {
     const origin = request.headers.get('Origin')
     if (origin && allowed.length && !allowed.includes(origin))
       return new Response('Forbidden', { status: 403 })
+
+    const [, party, room] = new URL(request.url).pathname.split('/').filter(Boolean)
+    if (party === 'game-room' && !isRoomCode(room ?? ''))
+      return new Response('Not found', { status: 404 })
 
     return (await routePartykitRequest(request, env))
       ?? new Response('Not found', { status: 404 })

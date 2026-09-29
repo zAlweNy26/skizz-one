@@ -6,7 +6,7 @@
  */
 
 const PORT = process.env.REALTIME_PORT ?? '8799'
-const ROOM = `test-${crypto.randomUUID().slice(0, 8)}`
+const ROOM = crypto.randomUUID().slice(0, 8)
 const BASE = `ws://127.0.0.1:${PORT}/parties/game-room`
 
 /** Mirrors `AWAY_GRACE_MS` in the protocol. */
@@ -75,12 +75,12 @@ async function publicRooms() {
   const entry = (m, id) => m?.rooms?.find(r => r.id === id)
   check('the lobby sends the room list on connect', Boolean(await waitFor(lobby, m => m.t === 'rooms')))
 
-  const hidden = `private-${crypto.randomUUID().slice(0, 8)}`
+  const hidden = crypto.randomUUID().slice(0, 8)
   const p1 = await connect('pub-p', 'Pat', hidden)
   await waitFor(p1, m => m.t === 'welcome')
   check('a private room is never listed', !(await waitFor(lobby, listed(hidden), 800)))
 
-  const room = `public-${crypto.randomUUID().slice(0, 8)}`
+  const room = crypto.randomUUID().slice(0, 8)
   const h = await connect('pub-h', 'Hugo', room, '&public=1')
   const welcome = await waitFor(h, m => m.t === 'welcome')
   check('quick play creates a public room', welcome?.state?.public === true)
@@ -126,7 +126,7 @@ async function publicRooms() {
 }
 
 async function kicking() {
-  const room = `kick-${crypto.randomUUID().slice(0, 8)}`
+  const room = crypto.randomUUID().slice(0, 8)
   const h = await connect('kick-h', 'Hana', room)
   await waitFor(h, m => m.t === 'welcome')
   const p = await connect('kick-p', 'Pia', room)

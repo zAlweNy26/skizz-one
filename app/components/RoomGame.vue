@@ -92,10 +92,10 @@ const pauseTally = computed(() => ({
   needed: votesNeeded(activeCount.value, paused.value),
 }))
 
-const kickRule = computed(() => ({
-  needed: kickVotesNeeded(activeCount.value),
-  locked: activeCount.value < MIN_PLAYERS_TO_VOTE_KICK,
-}))
+/** Unset while the room is too small to vote, which hides the player menu. */
+const kickRule = computed(() => (activeCount.value < MIN_PLAYERS_TO_VOTE_KICK
+  ? undefined
+  : { needed: kickVotesNeeded(activeCount.value) }))
 
 function voteKick(target: string, want: boolean) {
   game.send({ t: 'kick', target, want })
@@ -358,8 +358,8 @@ defineShortcuts({
     <section
       class="flex flex-col flex-1 min-h-0 w-full gap-2
         lg:grid lg:flex-none lg:gap-5 lg:items-start
-        lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_22rem]
-        2xl:grid-cols-[15rem_minmax(0,1fr)_24rem] phone-landscape:contents">
+        lg:grid-cols-[min-content_minmax(0,1fr)] xl:grid-cols-[min-content_minmax(0,1fr)_22rem]
+        2xl:grid-cols-[min-content_minmax(0,1fr)_24rem] phone-landscape:contents">
       <PlayerList
         :players="leaderboard" :drawerId="state?.drawerId" :you="you" :kickVotes="state?.kickVotes" :kick="kickRule"
         class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1"

@@ -15,6 +15,15 @@ export const AWAY_GRACE_MS = 60_000
 
 export const MAX_NAME_LENGTH = 24
 
+/** Room codes are this many lowercase hex characters. */
+export const ROOM_CODE_LENGTH = 8
+
+const ROOM_CODE = new RegExp(`^[0-9a-f]{${ROOM_CODE_LENGTH}}$`)
+
+export function isRoomCode(code: string) {
+  return ROOM_CODE.test(code)
+}
+
 /** WebSocket close code for a player voted out of the room. */
 export const KICKED_CLOSE_CODE = 4003
 

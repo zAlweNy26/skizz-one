@@ -76,9 +76,7 @@
     "leader": "In the lead",
     "showAll": "Show all players",
     "away": "Away for a moment",
-    "actions": "Actions for {name}",
     "kick": "Vote to kick {name} ({votes}/{needed})",
-    "kickLocked": "Voting to kick needs {n} players",
     "unkick": "Take back your kick vote",
     "kickVotes": "{n} vote to kick | {n} votes to kick"
   },
@@ -119,6 +117,7 @@
     "or": "or",
     "code": "Join a room",
     "codePlaceholder": "Room code or link",
+    "codeInvalid": "Room codes are {n} characters long, letters a–f and digits.",
     "join": "Join",
     "madeBy": "Made by {name}",
     "sourceCode": "Source code on GitHub",
@@ -133,7 +132,8 @@
   },
   "join": {
     "title": "Ready to draw?",
-    "room": "Joining room {code}"
+    "room": "Joining room {code}",
+    "invalidTitle": "That isn't a room code"
   },
   "pause": {
     "pause": "Pause",

@@ -76,9 +76,7 @@
     "leader": "In testa",
     "showAll": "Mostra tutti i giocatori",
     "away": "Assente per un momento",
-    "actions": "Azioni per {name}",
     "kick": "Vota per espellere {name} ({votes}/{needed})",
-    "kickLocked": "Per votare un'espulsione servono {n} giocatori",
     "unkick": "Ritira il tuo voto di espulsione",
     "kickVotes": "{n} voto per espellere | {n} voti per espellere"
   },
@@ -119,6 +117,7 @@
     "or": "oppure",
     "code": "Entra in una stanza",
     "codePlaceholder": "Codice o link della stanza",
+    "codeInvalid": "I codici delle stanze sono lunghi {n} caratteri, lettere a–f e cifre.",
     "join": "Entra",
     "madeBy": "Creato da {name}",
     "sourceCode": "Codice sorgente su GitHub",
@@ -133,7 +132,8 @@
   },
   "join": {
     "title": "Pronto a disegnare?",
-    "room": "Stai entrando nella stanza {code}"
+    "room": "Stai entrando nella stanza {code}",
+    "invalidTitle": "Questo non è un codice di stanza"
   },
   "pause": {
     "pause": "Pausa",

@@ -7,7 +7,7 @@ const props = defineProps<{
   drawerId?: string | null
   you: string
   kickVotes?: Record<string, string[]>
-  kick?: { needed: number, locked: boolean }
+  kick?: { needed: number }
 }>()
 
 defineEmits<{

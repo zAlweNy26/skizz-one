@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { randomUUID } from 'uncrypto'
 import { useSchemaOrg } from '#imports'
-import { LANGUAGES } from '#shared/utils/protocol'
+import { isRoomCode, LANGUAGES, ROOM_CODE_LENGTH } from '#shared/utils/protocol'
 
 const { t, locale } = useI18n()
 const { rooms, ready } = useLobby()
@@ -20,11 +20,20 @@ const roomCode = computed(() => {
   const raw = code.value.trim()
   try {
     const url = new URL(raw)
-    return url.searchParams.get('code') ?? url.pathname.split('/').filter(Boolean).at(-1) ?? ''
+    return (url.searchParams.get('code') ?? url.pathname.split('/').filter(Boolean).at(-1) ?? '').toLowerCase()
   } catch {
-    return raw
+    return raw.toLowerCase()
   }
 })
+const validCode = computed(() => isRoomCode(roomCode.value))
+/** Set by an Enter press on a code that isn't one; cleared once the code changes. */
+const triedInvalid = ref(false)
+watch(code, () => triedInvalid.value = false)
+
+function join() {
+  if (validCode.value) return enter(roomCode.value)
+  if (roomCode.value) triedInvalid.value = true
+}
 
 function enter(room: string, isPublic = false) {
   if (!trimmedName.value || !room) return
@@ -34,7 +43,7 @@ function enter(room: string, isPublic = false) {
 }
 
 function createRoom(isPublic = false) {
-  return enter(randomUUID().split('-')[0]!, isPublic)
+  return enter(randomUUID().replaceAll('-', '').slice(0, ROOM_CODE_LENGTH), isPublic)
 }
 
 function quickPlay() {
@@ -105,15 +114,17 @@ useSchemaOrg([
 
           <USeparator v-if="!invitedCode" :label="$t('home.or')" :ui="{ label: 'font-display text-muted' }" />
 
-          <UFormField :label="$t('home.code')" :ui="{ label: 'font-display text-base' }">
+          <UFormField
+            :label="$t('home.code')" :ui="{ label: 'font-display text-base' }"
+            :error="triedInvalid && $t('home.codeInvalid', { n: ROOM_CODE_LENGTH })">
             <UFieldGroup class="w-full">
               <UInput
                 v-model="code" size="lg" class="w-full" :placeholder="$t('home.codePlaceholder')"
-                @keyup.enter="enter(roomCode)" />
+                @keyup.enter="join()" />
               <UButton
                 :label="$t('home.join')" size="lg" icon="i-lucide-log-in"
                 :color="invitedCode ? 'secondary' : 'primary'" :variant="invitedCode ? 'solid' : 'soft'"
-                :disabled="!trimmedName || !roomCode" @click="enter(roomCode)" />
+                :disabled="!trimmedName || !validCode" @click="join()" />
             </UFieldGroup>
           </UFormField>
         </SketchFrame>

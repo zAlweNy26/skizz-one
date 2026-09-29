@@ -14,6 +14,7 @@ import {
   isFreehand,
   isLanguage,
   isOpaque,
+  isRoomCode,
   kickVotesNeeded,
   LANGUAGES,
   maskWord,
@@ -23,6 +24,18 @@ import {
   votesNeeded,
   wordLengths,
 } from '../../shared/utils/protocol'
+
+describe('room codes', () => {
+  it('accepts eight lowercase hex characters', () => {
+    expect(isRoomCode(crypto.randomUUID().slice(0, 8))).toBe(true)
+    expect(isRoomCode('0a1b2c3d')).toBe(true)
+  })
+
+  it('rejects anything else', () => {
+    for (const code of ['', 'abc', '0a1b2c3', '0a1b2c3d4', '0A1B2C3D', 'zzzzzzzz', '0a1b-c3d', '../0a1b2'])
+      expect(isRoomCode(code), code).toBe(false)
+  })
+})
 
 describe('coordinate quantisation', () => {
   it('round-trips to a tenth of a unit', () => {
