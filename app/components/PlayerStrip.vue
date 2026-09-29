@@ -34,7 +34,7 @@ const leader = computed(() => leaderId(props.players))
               :color="player.id === drawerId ? 'secondary' : 'success'"
               :ui="{ base: 'translate-x-1/4 translate-y-1/4' }">
               <UAvatar
-                :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
+                :src="avatarUrl(player.avatar)"
                 :alt="player.name" size="md" />
               <template #content>
                 <UIcon :name="player.id === drawerId ? 'i-lucide-pencil-line' : 'i-lucide-check'" class="size-3" />

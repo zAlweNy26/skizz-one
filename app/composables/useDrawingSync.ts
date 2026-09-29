@@ -1,7 +1,7 @@
 import type { UseDrauuReturn } from '@vueuse/integrations/useDrauu'
 import type { Brush, Point } from 'drauu'
 import type { ServerMessage, WireBrush } from '#shared/utils/protocol'
-import type { TimedPoint } from '~/utils/strokePlayback'
+import type { TimedPoint } from '~/utils/drawing'
 import {
   dequantize,
   DRAW_FLUSH_MS,
@@ -16,7 +16,7 @@ import {
   MAX_PLAYBACK_DELAY_MS,
   PLAYBACK_DELAY_MS,
   StrokePlayback,
-} from '~/utils/strokePlayback'
+} from '~/utils/drawing'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 

@@ -75,8 +75,9 @@ Two Workers, one shared protocol:
   with a per-build revision; `/parties/*` is excluded from the navigation fallback.
 - **`shared/utils/protocol.ts`** — the wire protocol (`ClientMessage` /
   `ServerMessage`), shared constants, and pure helpers (guess normalisation,
-  masking, quantisation). The worker can't use Nuxt's `#shared` alias, so it
-  imports this by **relative path** and it must stay dependency-free. Any
+  masking, quantisation). The worker imports it as `#shared/utils/protocol`
+  too, resolved by the `paths` in `realtime/tsconfig.json` (which esbuild
+  follows when Wrangler bundles), so it must stay dependency-free. Any
   protocol change touches both `realtime/src/game-room.ts` and the client.
 
 Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.vue`):
@@ -86,7 +87,7 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
   localStorage (survives refresh), not the connection id.
 - `useDrawingSync` bridges drauu (`useDrauu`) and the socket. Drawer streams
   quantised points coalesced by `DRAW_FLUSH_MS`/`DRAW_FLUSH_POINTS`; watchers
-  replay them at the drawer's pace via `app/utils/strokePlayback.ts`, then
+  replay them at the drawer's pace via `app/utils/drawing.ts`, then
   snap to the committed SVG. Erase/bucket (`OPAQUE_MODES`), undo/redo/clear
   resync the whole canvas instead of streaming. The canvas `viewBox` is fixed
   at `CANVAS_WIDTH`×`CANVAS_HEIGHT`, so coordinates are portable across devices.
@@ -97,6 +98,11 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
 
 ## Conventions
 
+- **Imports:** no relative imports. Use `~/` for `app/`, `#shared/` for
+  `shared/` and `#realtime/` for `realtime/src/`; the worker gets them from
+  `realtime/tsconfig.json` `paths`, unit tests from `vitest.config.ts`. Only
+  `nuxt.config.ts` (loaded before Nuxt's aliases exist) and
+  `app/assets/css/lint.css` (read by `@shadcn/lint`) stay relative.
 - **i18n:** UI language is per player (`@nuxtjs/i18n`, `no_prefix`, locales in
   `i18n/locales/{en,it}.json`) and is unrelated to the room's *word* language
   (`LANGUAGES` in the protocol, lists in `realtime/src/words/`). The server

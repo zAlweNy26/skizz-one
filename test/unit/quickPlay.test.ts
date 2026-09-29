@@ -1,7 +1,7 @@
-import type { PublicRoom } from '../../shared/utils/protocol'
+import type { PublicRoom } from '#shared/utils/protocol'
 import { describe, expect, it } from 'vitest'
-import { pickQuickPlayRoom } from '../../app/utils/quickPlay'
-import { PUBLIC_ROOM_CAP } from '../../shared/utils/protocol'
+import { PUBLIC_ROOM_CAP } from '#shared/utils/protocol'
+import { pickQuickPlayRoom } from '~/utils/game'
 
 function room(id: string, extra: Partial<PublicRoom> = {}): PublicRoom {
   return { id, hostName: id, players: 2, language: 'en', phase: 'lobby', round: 0, totalRounds: 3, ...extra }

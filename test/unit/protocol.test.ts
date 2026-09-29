@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CUSTOM_WORD_WEIGHT, pickWord, pickWords, WORDS } from '../../realtime/src/words'
+import { CUSTOM_WORD_WEIGHT, pickWord, pickWords, WORDS } from '#realtime/words'
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -23,7 +23,7 @@ import {
   quantize,
   votesNeeded,
   wordLengths,
-} from '../../shared/utils/protocol'
+} from '#shared/utils/protocol'
 
 describe('room codes', () => {
   it('accepts eight lowercase hex characters', () => {

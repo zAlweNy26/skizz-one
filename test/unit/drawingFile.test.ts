@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { drawingFileName, drawingSvg } from '../../app/utils/drawingFile'
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../../shared/utils/protocol'
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '#shared/utils/protocol'
+import { drawingFileName, drawingSvg } from '~/utils/drawing'
 
 describe('drawingSvg', () => {
   it('wraps the canvas markup in the canvas\'s own user space, on white', () => {

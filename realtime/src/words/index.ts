@@ -1,6 +1,6 @@
-import type { Language } from '../../../shared/utils/protocol'
-import en from './en'
-import it from './it'
+import type { Language } from '#shared/utils/protocol'
+import en from '#realtime/words/en'
+import it from '#realtime/words/it'
 
 /** Word lists for rounds, one per language. */
 export const WORDS: Record<Language, readonly string[]> = { en, it }

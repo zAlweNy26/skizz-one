@@ -14,8 +14,10 @@ import type {
   RoomSettings,
   RoundPhase,
   ServerMessage,
-} from '../../shared/utils/protocol'
+} from '#shared/utils/protocol'
 import { getServerByName, Server } from 'partyserver'
+import { drawerShare, guessPoints, standings } from '#realtime/scoring'
+import { pickWords } from '#realtime/words'
 import {
   AWAY_GRACE_MS,
   clampSetting,
@@ -33,6 +35,7 @@ import {
   kickVotesNeeded,
   LANGUAGES,
   maskWord,
+  MAX_AVATAR_LENGTH,
   MAX_NAME_LENGTH,
   MIN_PLAYERS_TO_VOTE_KICK,
   normalizeGuess,
@@ -42,9 +45,7 @@ import {
   ROUNDS,
   votesNeeded,
   WORD_CHOICES,
-} from '../../shared/utils/protocol'
-import { drawerShare, guessPoints, standings } from './scoring'
-import { pickWords } from './words'
+} from '#shared/utils/protocol'
 
 /** Pause between the word reveal and the next turn. */
 const INTERMISSION_MS = 5_000
@@ -71,6 +72,7 @@ type AlarmKind = 'choose' | 'round' | 'intermission' | 'grace'
 interface StoredPlayer {
   id: string
   name: string
+  avatar: string
   points: number
   guessed: boolean
   connected: boolean
@@ -289,6 +291,7 @@ export class GameRoom extends Server<Env> {
       players: listed.map<GamePlayer>(p => ({
         id: p.id,
         name: p.name,
+        avatar: p.avatar,
         points: Math.round(p.points),
         rank: ranks.get(p.id)!,
         connected: p.connected,
@@ -393,6 +396,7 @@ export class GameRoom extends Server<Env> {
     const url = new URL(ctx.request.url)
     const playerId = url.searchParams.get('playerId')
     const name = (url.searchParams.get('name') ?? '').trim().slice(0, MAX_NAME_LENGTH).trim()
+    const avatar = (url.searchParams.get('avatar') ?? '').trim().slice(0, MAX_AVATAR_LENGTH) || name
 
     if (!playerId || !name) {
       connection.close(1008, 'playerId and name are required')
@@ -417,12 +421,14 @@ export class GameRoom extends Server<Env> {
     if (existing) {
       existing.connected = true
       existing.name = name
+      existing.avatar = avatar
       delete existing.awaySince
     } else {
       if (s.order.length === 0 && url.searchParams.get('public') === '1') s.public = true
       s.players[playerId] = {
         id: playerId,
         name,
+        avatar,
         points: 0,
         guessed: false,
         connected: true,

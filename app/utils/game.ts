@@ -1,4 +1,27 @@
-import type { GameState } from '#shared/utils/protocol'
+import type { GamePlayer, GameState, PublicRoom } from '#shared/utils/protocol'
+import { PUBLIC_ROOM_CAP } from '#shared/utils/protocol'
+
+export function avatarUrl(seed: string) {
+  return `https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(seed)}`
+}
+
+/** Whoever is ranked first; nobody while it is still 0–0. */
+export function leaderId(players: readonly GamePlayer[]) {
+  const leader = players.find(p => p.rank === 1)
+  return leader && leader.points > 0 ? leader.id : null
+}
+
+/** The top three of a best-first list. */
+export function podium(players: readonly GamePlayer[]) {
+  return players.slice(0, 3).map(player => ({ player, rank: player.rank }))
+}
+
+/** The room quick play drops you into: one still in its lobby first, then the fullest that has space. */
+export function pickQuickPlayRoom(rooms: readonly PublicRoom[], language?: string) {
+  const open = rooms.filter(r => r.players < PUBLIC_ROOM_CAP && r.phase !== 'finished')
+  const score = (r: PublicRoom) => (r.phase === 'lobby' ? 2 : 0) + (r.language === language ? 1 : 0)
+  return open.toSorted((a, b) => score(b) - score(a) || b.players - a.players)[0] ?? null
+}
 
 export type Sound
   = | 'your-turn' | 'turn-start' | 'guessed-self' | 'guessed-other' | 'tick'

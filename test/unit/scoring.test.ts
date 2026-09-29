@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { drawerShare, guessPoints, standings } from '../../realtime/src/scoring'
+import { drawerShare, guessPoints, standings } from '#realtime/scoring'
 
 const DRAW_MS = 80_000
 

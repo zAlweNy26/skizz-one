@@ -5,19 +5,24 @@ const emit = defineEmits<{ submit: [] }>()
 const name = defineModel<string>({ required: true })
 
 const { t } = useI18n()
+const avatar = useAvatarSeed()
 const trimmedName = computed(() => name.value.trim())
 const nameError = computed(() => (trimmedName.value ? false : t('home.nameRequired')))
 </script>
 
 <template>
   <div class="flex items-center gap-4">
-    <SketchFrame
-      shape="circle" fill="var(--color-tangerine-200)" :strokeWidth="2.5"
-      class="shrink-0 p-2 rotate-3">
-      <UAvatar
-        :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(trimmedName)}`"
-        size="3xl" :alt="trimmedName" />
-    </SketchFrame>
+    <div class="relative shrink-0">
+      <SketchFrame shape="circle" fill="var(--color-tangerine-200)" :strokeWidth="2.5" class="p-2 rotate-3">
+        <UAvatar :src="avatarUrl(avatar)" size="4xl" :alt="trimmedName" />
+      </SketchFrame>
+      <UTooltip :text="$t('home.randomAvatar')">
+        <UButton
+          color="neutral" variant="soft" size="sm" icon="i-lucide-refresh-cw" square
+          class="absolute end-0 bottom-0" :aria-label="$t('home.randomAvatar')"
+          @click="avatar = randomAvatarSeed()" />
+      </UTooltip>
+    </div>
     <UFormField
       :label="$t('home.name')" :error="nameError" size="xl" class="grow"
       :ui="{ label: 'font-display' }">

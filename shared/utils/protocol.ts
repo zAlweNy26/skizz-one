@@ -15,6 +15,9 @@ export const AWAY_GRACE_MS = 60_000
 
 export const MAX_NAME_LENGTH = 24
 
+/** Longest DiceBear seed a player can send. */
+export const MAX_AVATAR_LENGTH = 32
+
 /** Room codes are this many lowercase hex characters. */
 export const ROOM_CODE_LENGTH = 8
 
@@ -159,6 +162,8 @@ export interface Award {
 export interface GamePlayer {
   id: string
   name: string
+  /** DiceBear seed, independent of the name. */
+  avatar: string
   /** Rounded for display; `rank` comes from the exact score. */
   points: number
   /** 1-based and never shared: exact score first, then join order. */

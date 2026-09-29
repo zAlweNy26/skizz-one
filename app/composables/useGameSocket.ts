@@ -18,6 +18,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   /** A player id that outlives the connection. */
   const playerId = useLocalStorage('playerId', () => randomUUID())
   const nickname = useNickname()
+  const avatar = useAvatarSeed()
   /** Set by quick play: the room is created public if it doesn't exist yet. */
   const createPublic = useRoute().query.public === '1'
 
@@ -145,7 +146,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       protocol: window.location.protocol === 'https:' ? 'wss' : 'ws',
       party: 'game-room',
       room,
-      query: () => ({ playerId: playerId.value, name: nickname.value, ...(createPublic ? { public: '1' } : {}) }),
+      query: () => ({ playerId: playerId.value, name: nickname.value, avatar: avatar.value, ...(createPublic ? { public: '1' } : {}) }),
     })
 
     ws.addEventListener('open', () => {

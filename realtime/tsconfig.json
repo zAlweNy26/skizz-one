@@ -5,6 +5,10 @@
     "moduleDetection": "force",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "#shared/*": ["../shared/*"],
+      "#realtime/*": ["./src/*"]
+    },
     "resolveJsonModule": true,
     "types": ["@cloudflare/workers-types/2023-07-01"],
     "allowJs": true,

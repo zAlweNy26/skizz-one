@@ -108,7 +108,7 @@ const STEP_DELAY = [360, 180, 0]
         :style="{ animationDelay: `${STEP_DELAY[index]}ms` }">
         <span class="relative">
           <UAvatar
-            :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(place.player.name)}`"
+            :src="avatarUrl(place.player.avatar)"
             :alt="place.player.name" :size="isDesktop ? '3xl' : 'lg'" />
           <span v-if="place.rank === 1" class="absolute -top-3 -start-2 -rotate-20 lg:-top-5 lg:-start-3">
             <SketchFrame

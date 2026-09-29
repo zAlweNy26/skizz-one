@@ -1,5 +1,5 @@
 import type { Connection } from 'partyserver'
-import type { LobbyMessage, PublicRoom } from '../../shared/utils/protocol'
+import type { LobbyMessage, PublicRoom } from '#shared/utils/protocol'
 import { getServerByName, Server } from 'partyserver'
 
 /** How long a listing goes without an update before the lobby asks its room whether it is still open. */

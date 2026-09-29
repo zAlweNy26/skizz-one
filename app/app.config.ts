@@ -92,6 +92,13 @@ export default defineAppConfig({
         { highlight: true, class: 'ring-2' },
       ],
     },
+    avatar: {
+      variants: {
+        size: {
+          '4xl': { root: 'size-20 text-4xl' },
+        },
+      },
+    },
     chip: {
       variants: {
         size: {

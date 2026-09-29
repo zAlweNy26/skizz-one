@@ -7,7 +7,11 @@ export default defineConfig({
     projects: [
       {
         resolve: {
-          alias: { '#shared': fileURLToPath(new URL('./shared', import.meta.url)) },
+          alias: {
+            '#shared': fileURLToPath(new URL('./shared', import.meta.url)),
+            '#realtime': fileURLToPath(new URL('./realtime/src', import.meta.url)),
+            '~': fileURLToPath(new URL('./app', import.meta.url)),
+          },
         },
         test: {
           name: 'unit',

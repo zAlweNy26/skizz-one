@@ -1,9 +1,9 @@
-import type { GamePlayer } from '../../shared/utils/protocol'
+import type { GamePlayer } from '#shared/utils/protocol'
 import { describe, expect, it } from 'vitest'
-import { leaderId, podium } from '../../app/utils/leaderboard'
+import { leaderId, podium } from '~/utils/game'
 
 function player(id: string, points: number, rank: number): GamePlayer {
-  return { id, name: id, points, rank, connected: true, away: false, guessed: false }
+  return { id, name: id, avatar: id, points, rank, connected: true, away: false, guessed: false }
 }
 
 describe('podium', () => {

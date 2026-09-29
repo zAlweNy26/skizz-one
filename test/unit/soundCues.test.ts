@@ -1,9 +1,9 @@
-import type { GamePlayer, GameState } from '../../shared/utils/protocol'
+import type { GamePlayer, GameState } from '#shared/utils/protocol'
 import { describe, expect, it } from 'vitest'
-import { soundCues } from '../../app/utils/soundCues'
+import { soundCues } from '~/utils/game'
 
 function player(id: string, extra: Partial<GamePlayer> = {}): GamePlayer {
-  return { id, name: id, points: 0, rank: 1, connected: true, away: false, guessed: false, ...extra }
+  return { id, name: id, avatar: id, points: 0, rank: 1, connected: true, away: false, guessed: false, ...extra }
 }
 
 function game(extra: Partial<GameState> = {}): GameState {

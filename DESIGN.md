@@ -204,10 +204,11 @@ The size scale is retuned so the sizes the room needs exist:
 
 - **Button `lg`:** the standard control and the 44px tap target (`py-3`); square `lg` buttons are 44×44. Toolbar tools, header controls, kick, download, form actions.
 - **Button `xl`:** the call to action, `text-lg` at 52px tall. Create a room, Quick play, Join, Start game, Room settings.
-- **Button `sm`, `md`, `xs`:** only where the control sits inside another one (phone reactions, the player-strip trigger, desktop colour swatches).
+- **Button `sm`, `md`, `xs`:** only where the control sits inside another one (phone reactions, the player-strip trigger, desktop colour swatches, the avatar re-roll).
 - **Input, Select, Textarea, InputNumber `lg`:** 44px, matching a `lg` button in a `UFieldGroup`. Put `size` on the `UFieldGroup`, not on each child.
 - **FormField `xl`:** the `text-base` label on the home and join forms.
 - **Chip `3xl`:** 16px, big enough to hold an icon (the pencil and check badges on the player strip).
+- **Avatar `4xl`:** 80px, the player's own avatar on the home and join forms, with the re-roll button on its corner.
 
 When a control changes size at `lg`, switch the prop with `useIsDesktop()` (`:size="isDesktop ? 'lg' : 'sm'"`)
 rather than with `lg:` size classes. `UIcon` has no size or colour prop, so it keeps `size-*` and `text-*`

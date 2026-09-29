@@ -1,5 +1,5 @@
 import type { GameState } from '#shared/utils/protocol'
-import type { Sound } from '~/utils/soundCues'
+import type { Sound } from '~/utils/game'
 import { useEventListener, useLocalStorage } from '@vueuse/core'
 
 const VOLUME = 0.5

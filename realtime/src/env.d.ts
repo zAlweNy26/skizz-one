@@ -1,5 +1,5 @@
-import type { GameRoom } from './game-room'
-import type { Lobby } from './lobby'
+import type { GameRoom } from '#realtime/game-room'
+import type { Lobby } from '#realtime/lobby'
 
 declare global {
   interface Env {

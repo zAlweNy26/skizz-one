@@ -52,7 +52,7 @@ function kickLabel(player: GamePlayer) {
         </span>
         <span class="relative shrink-0">
           <UAvatar
-            :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
+            :src="avatarUrl(player.avatar)"
             size="lg" :alt="player.name" />
           <UTooltip v-if="leader === player.id" :text="$t('players.leader')">
             <span class="absolute -top-4 -start-2 -rotate-20" role="img" :aria-label="$t('players.leader')">

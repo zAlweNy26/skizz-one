@@ -1,7 +1,7 @@
 import { routePartykitRequest } from 'partyserver'
-import { isRoomCode } from '../../shared/utils/protocol'
-import { GameRoom } from './game-room'
-import { Lobby } from './lobby'
+import { GameRoom } from '#realtime/game-room'
+import { Lobby } from '#realtime/lobby'
+import { isRoomCode } from '#shared/utils/protocol'
 
 export { GameRoom, Lobby }
 

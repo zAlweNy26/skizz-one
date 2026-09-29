@@ -1,8 +1,8 @@
 import type { Point } from 'drauu'
-import type { TimedPoint } from '../../app/utils/strokePlayback'
+import type { TimedPoint } from '~/utils/drawing'
 import { DrawModel } from 'drauu'
 import { describe, expect, it } from 'vitest'
-import { ChunkedDrawPath, StrokePlayback } from '../../app/utils/strokePlayback'
+import { ChunkedDrawPath, StrokePlayback } from '~/utils/drawing'
 
 /** A wobbly line, one point every 8ms, as a 120Hz pointer would give. */
 function stroke(n: number): TimedPoint[] {
