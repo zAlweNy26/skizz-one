@@ -121,8 +121,8 @@ watch(phase, (now) => {
     wakeLock.release().catch(() => {})
 }, { immediate: true })
 
-const isDark = useDark()
-const toggleDark = useToggle(isDark)
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
 
 const menuItems = computed(() => [
   [{ type: 'label' as const, label: t('header.gameId', { id: gameId.value }) }],
@@ -143,7 +143,7 @@ const menuItems = computed(() => [
     {
       label: isDark.value ? t('theme.light') : t('theme.dark'),
       icon: isDark.value ? 'i-lucide-sun' : 'i-lucide-moon',
-      onSelect: () => toggleDark(),
+      onSelect: () => { colorMode.preference = isDark.value ? 'light' : 'dark' },
     },
   ],
 ])
@@ -231,9 +231,9 @@ defineShortcuts({
     <header
       class="flex items-center gap-x-3 lg:flex-wrap lg:gap-x-5 lg:gap-y-3
         phone-landscape:col-start-3 phone-landscape:row-start-1">
-      <NuxtLink to="/" class="press shrink-0 inline-flex items-center min-h-11 -rotate-6 rounded-sketch">
+      <ULink to="/" raw class="press shrink-0 inline-flex items-center min-h-11 -rotate-6 rounded-sketch">
         <img src="/favicon.svg" alt="SkizzOne" class="size-11 lg:size-12">
-      </NuxtLink>
+      </ULink>
       <p class="font-display font-bold text-lg text-(--on-stage)">
         <span class="lg:hidden">{{ $t('header.roundShort', roundArgs) }}</span>
         <span class="max-lg:hidden">{{ $t('header.round', roundArgs) }}</span>
@@ -267,7 +267,7 @@ defineShortcuts({
             :icon="muted ? 'i-lucide-volume-x' : 'i-lucide-volume-2'"
             :aria-label="muted ? $t('sound.unmute') : $t('sound.mute')" :aria-pressed="muted"
             @click="muted = !muted" />
-          <ThemeSwitch />
+          <UColorModeButton size="lg" class="text-(--on-stage) hover:bg-(--on-stage)/15" />
         </div>
 
         <UDropdownMenu :items="menuItems" :content="{ align: 'end' }">
@@ -392,9 +392,9 @@ defineShortcuts({
             phone-landscape:flex-col phone-landscape:flex-nowrap phone-landscape:gap-1
             phone-landscape:col-start-1 phone-landscape:row-span-full phone-landscape:self-center">
           <div class="max-lg:hidden grid grid-cols-13 gap-1">
-            <button
-              v-for="(color, index) in paletteColors" :key="index" type="button"
-              class="press size-6 rounded-full cursor-pointer ring-1 ring-(--ink)/30 transition-shadow"
+            <UButton
+              v-for="(color, index) in paletteColors" :key="index" variant="ghost"
+              class="size-6 p-0 rounded-full ring-1 ring-(--ink)/30 transition-shadow"
               :class="{ 'ring-3 ring-(--ink)': brush.color === color }"
               :style="{ backgroundColor: color }" :aria-label="$t('canvas.color', { color })"
               :aria-pressed="brush.color === color" @click="brush.color = color" />
@@ -426,9 +426,9 @@ defineShortcuts({
             </UButton>
             <template #body>
               <div class="grid grid-cols-7 gap-2 justify-items-center">
-                <button
-                  v-for="(color, index) in paletteColors" :key="index" type="button"
-                  class="press size-11 rounded-full cursor-pointer ring-1 ring-(--ink)/30 transition-shadow"
+                <UButton
+                  v-for="(color, index) in paletteColors" :key="index" variant="ghost"
+                  class="size-11 p-0 rounded-full ring-1 ring-(--ink)/30 transition-shadow"
                   :class="{ 'ring-4 ring-(--ink)': brush.color === color }"
                   :style="{ backgroundColor: color }" :aria-label="$t('canvas.color', { color })"
                   :aria-pressed="brush.color === color" @click="brush.color = color" />
@@ -445,11 +445,9 @@ defineShortcuts({
                 class="relative size-11 grid place-content-center" square
                 :aria-label="$t(tool.label)" :aria-pressed="brush.mode === tool.mode" @click="selectMode(tool.mode)">
                 <UIcon :name="tool.icon" class="size-5" />
-                <span
-                  class="max-lg:hidden absolute top-0.5 start-1.5 text-2xs font-bold opacity-70"
-                  aria-hidden="true">
-                  {{ tool.key }}
-                </span>
+                <UKbd
+                  :value="tool.key" size="sm" variant="soft" color="neutral"
+                  class="max-lg:hidden absolute top-0.5 start-0.5 font-bold" aria-hidden="true" />
               </UButton>
             </UTooltip>
           </div>
@@ -459,11 +457,9 @@ defineShortcuts({
                 size="xl" variant="soft" :color="tool.color" class="relative size-11 grid place-content-center" square
                 :aria-label="$t(tool.label)" :disabled="tool.disabled" @click="tool.run()">
                 <UIcon :name="tool.icon" class="size-5" />
-                <span
-                  class="max-lg:hidden absolute top-0.5 start-1.5 text-2xs font-bold opacity-70"
-                  aria-hidden="true">
-                  {{ tool.key }}
-                </span>
+                <UKbd
+                  :value="tool.key" size="sm" variant="soft" color="neutral"
+                  class="max-lg:hidden absolute top-0.5 start-0.5 font-bold" aria-hidden="true" />
               </UButton>
             </UTooltip>
           </div>

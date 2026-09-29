@@ -31,7 +31,6 @@ export default defineNuxtConfig({
     head: {
       title: siteTitle,
       meta: [
-        { name: 'description', content: siteDescription },
         { property: 'og:title', content: siteTitle },
         { property: 'og:description', content: siteDescription },
         { property: 'og:image', content: 'https://skizz.app/og-image.png' },

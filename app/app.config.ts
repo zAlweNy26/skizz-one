@@ -1,6 +1,11 @@
 export default defineAppConfig({
   // https://ui.nuxt.com/getting-started/theme#design-system
   ui: {
+    tv: {
+      twMergeConfig: {
+        extend: { classGroups: { rounded: ['rounded-sketch'] } },
+      },
+    },
     colors: {
       primary: 'bordeaux',
       secondary: 'tangerine',

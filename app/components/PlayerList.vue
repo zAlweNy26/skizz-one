@@ -45,7 +45,9 @@ function fillOf(player: GamePlayer) {
       <div class="min-w-0 grow">
         <p class="text-sm font-semibold truncate leading-tight">
           {{ player.name }}
-          <span v-if="you === player.id" class="font-display text-xs text-primary">({{ $t('players.you') }})</span>
+          <UBadge
+            v-if="you === player.id" size="sm" variant="soft"
+            class="font-display align-middle text-current bg-current/10" :label="$t('players.you')" />
         </p>
         <p class="text-xs font-medium tabular-nums">
           {{ $t('players.points', player.points) }}

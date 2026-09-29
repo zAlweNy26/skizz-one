@@ -71,7 +71,7 @@ useSchemaOrg([
   <main class="relative min-h-dvh flex flex-col">
     <img src="/favicon.svg" alt="SkizzOne" class="absolute top-4 start-4 size-12 -rotate-6">
     <div class="absolute top-4 end-4">
-      <ThemeSwitch />
+      <UColorModeButton size="lg" class="text-(--on-stage) hover:bg-(--on-stage)/15" />
     </div>
 
     <div class="grow grid place-items-center px-4 pt-20 pb-8">

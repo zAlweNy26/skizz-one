@@ -16,8 +16,8 @@ const mine = computed(() => props.reactions[props.you] ?? null)
 const options = computed(() => {
   const all = Object.values(props.reactions)
   return ([
-    { reaction: 'like', icon: 'i-lucide-thumbs-up', color: 'success', text: 'text-success' },
-    { reaction: 'dislike', icon: 'i-lucide-thumbs-down', color: 'error', text: 'text-error' },
+    { reaction: 'like', icon: 'i-lucide-thumbs-up', color: 'success' },
+    { reaction: 'dislike', icon: 'i-lucide-thumbs-down', color: 'error' },
   ] as const).map(option => ({ ...option, count: all.filter(r => r === option.reaction).length }))
 })
 </script>
@@ -28,14 +28,13 @@ const options = computed(() => {
       :radius="10" :strokeWidth="1.8" :roughness="1" class="flex items-center gap-0.5 p-0.5 lg:gap-1 lg:p-1"
       role="group" :aria-label="$t('reactions.label')">
       <template v-for="option in options" :key="option.reaction">
-        <p
-          v-if="isDrawer" class="flex items-center gap-1 px-1.5 min-h-7 font-display font-bold text-sm tabular-nums
-            lg:px-2 lg:min-h-8 lg:text-base"
-          :class="option.count ? option.text : 'text-muted'"
+        <UBadge
+          v-if="isDrawer" variant="soft" :color="option.count ? option.color : 'neutral'" :icon="option.icon"
+          class="min-h-7 font-display font-bold text-sm tabular-nums lg:min-h-8 lg:text-base"
+          :ui="{ leadingIcon: 'size-4 lg:size-5' }"
           :aria-label="$t(`reactions.${option.reaction}Count`, option.count)">
-          <UIcon :name="option.icon" class="size-4 lg:size-5" />
           <span :key="option.count" class="pop-in">{{ option.count }}</span>
-        </p>
+        </UBadge>
         <UButton
           v-else
           size="sm" :color="mine === option.reaction ? option.color : 'neutral'"

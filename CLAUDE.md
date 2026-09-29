@@ -122,6 +122,14 @@ Client side of a room (`app/pages/room/[code].vue`):
 - **UI:** Nuxt UI v4 components. The visual system ("The Sketchbook Party")
   is specified in `DESIGN.md` and the product context in `PRODUCT.md`; read both
   before UI work.
+  - **Nuxt UI first.** Before writing a raw element (`<button>`, `<input>`,
+    `<kbd>`, a badge/chip `<span>`, an overlay or list wrapper) or a
+    hand-rolled component, check whether a Nuxt UI component or prop covers it
+    (`UButton`, `UChip`/`UAvatar :chip`, `UKbd`, `UBadge`, `UColorModeButton`,
+    `USlider :tooltip`…); use the `nuxt-ui` MCP/skill to look it up. Restyle it
+    through `app.config.ts` or `:ui` rather than replacing it. Go custom only
+    for what Nuxt UI can't do (roughjs frames via `SketchFrame`, the drawing
+    canvas), and use `useColorMode` rather than VueUse's `useDark`.
   - Colors: `primary` bordeaux, `secondary` tangerine (call to action only), `neutral` mulberry.
   - Tokens: `--stage`, `--paper`, `--ink`, `--on-stage`, `--ink-fixed` and `--chip`/`--on-chip` (controls on the stage) live in
     `app/assets/css/theme.css` (with the colour ramps, custom utilities and base
