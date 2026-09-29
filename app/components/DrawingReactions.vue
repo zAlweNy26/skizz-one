@@ -38,7 +38,7 @@ const options = computed(() => {
         </UBadge>
         <UButton
           v-else
-          :size="isDesktop ? 'lg' : 'sm'" :color="mine === option.reaction ? option.color : 'neutral'"
+          :size="isDesktop ? 'md' : 'sm'" :color="mine === option.reaction ? option.color : 'neutral'"
           :variant="mine === option.reaction ? 'solid' : 'ghost'"
           class="justify-center font-display font-bold tabular-nums"
           :icon="option.icon" :label="String(option.count)"
