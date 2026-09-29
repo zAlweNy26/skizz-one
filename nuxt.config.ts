@@ -196,9 +196,13 @@ export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
       include: [
+        '@unhead/schema-org/vue',
         '@vue/devtools-core',
         '@vue/devtools-kit',
         '@vueuse/integrations/useDrauu',
+        'drauu',
+        'partysocket',
+        'roughjs',
         'unique-names-generator',
       ],
     },
