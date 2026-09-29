@@ -15,6 +15,10 @@ const AWAY_GRACE_MS = 60_000
 /** Mirrors `PUBLIC_ROOM_CAP` in the protocol. */
 const PUBLIC_ROOM_CAP = 10
 
+/** Mirrors `TEXT_BURST` and `TEXT_REFILL_MS` in the game room. */
+const TEXT_BURST = 5
+const TEXT_REFILL_MS = 1_000
+
 let failures = 0
 
 function check(label, ok, detail = '') {
@@ -22,8 +26,8 @@ function check(label, ok, detail = '') {
   if (!ok) failures++
 }
 
-function connect(playerId, name, room = ROOM, extra = '') {
-  const ws = new WebSocket(`${BASE}/${room}?playerId=${playerId}&name=${name}${extra}`)
+function connect(token, name, room = ROOM, extra = '') {
+  const ws = new WebSocket(`${BASE}/${room}?token=${token}&name=${name}${extra}`)
   ws.inbox = []
   ws.addEventListener('message', (e) => {
     try {
@@ -53,6 +57,11 @@ async function waitFor(ws, pred, ms = 4000) {
 }
 
 const send = (ws, msg) => ws.send(JSON.stringify(msg))
+
+/** The public id the room gave this socket. */
+async function idOf(ws) {
+  return (await waitFor(ws, m => m.t === 'welcome'))?.you
+}
 
 /** A kicked socket is told so before the server closes it; the close frame itself can lag. */
 async function waitKicked(ws, ms = 4000) {
@@ -133,26 +142,27 @@ async function kicking() {
   const q = await connect('kick-q', 'Quin', room)
   const r = await connect('kick-r', 'Rex', room)
   await waitFor(h, m => m.t === 'state' && m.state.players.length === 4)
+  const [hId, pId, qId, rId] = await Promise.all([h, p, q, r].map(idOf))
   const inRoom = (m, id) => m.state.players.some(pl => pl.id === id)
 
   h.inbox.length = 0
-  send(p, { t: 'kick', target: 'kick-r', want: true })
-  const oneVote = await waitFor(h, m => m.t === 'state' && m.state.kickVotes['kick-r']?.length === 1)
+  send(p, { t: 'kick', target: rId, want: true })
+  const oneVote = await waitFor(h, m => m.t === 'state' && m.state.kickVotes[rId]?.length === 1)
   check('a kick vote is tallied in the state', Boolean(oneVote))
   const asked = h.inbox.find(m => m.t === 'log' && m.key === 'kickRequested')
   check('the chat hears who wants to kick whom', asked?.params?.target === 'Rex' && asked?.params?.needed === 2,
     JSON.stringify(asked?.params))
 
   h.inbox.length = 0
-  send(p, { t: 'kick', target: 'kick-r', want: false })
-  const withdrawn = await waitFor(h, m => m.t === 'state' && !m.state.kickVotes['kick-r'])
+  send(p, { t: 'kick', target: rId, want: false })
+  const withdrawn = await waitFor(h, m => m.t === 'state' && !m.state.kickVotes[rId])
   check('a kick vote can be taken back', Boolean(withdrawn))
 
   h.inbox.length = 0
-  send(p, { t: 'kick', target: 'kick-r', want: true })
-  send(q, { t: 'kick', target: 'kick-r', want: true })
+  send(p, { t: 'kick', target: rId, want: true })
+  send(q, { t: 'kick', target: rId, want: true })
   check('a majority kicks the player', await waitKicked(r))
-  const gone = await waitFor(h, m => m.t === 'state' && !inRoom(m, 'kick-r'))
+  const gone = await waitFor(h, m => m.t === 'state' && !inRoom(m, rId))
   check('a kicked player leaves the roster', Boolean(gone))
   check('the room hears about the kick', h.inbox.some(m => m.t === 'log' && m.key === 'kicked'))
 
@@ -160,34 +170,82 @@ async function kicking() {
   check('a kicked player cannot come back', await waitKicked(r2))
   check('a kicked player gets no welcome', !r2.inbox.some(m => m.t === 'welcome'))
 
-  send(h, { t: 'kick', target: 'kick-q', want: true })
+  send(h, { t: 'kick', target: qId, want: true })
   check('the host\'s vote alone does not kick', !(await waitKicked(q, 600)))
-  send(p, { t: 'kick', target: 'kick-q', want: true })
+  send(p, { t: 'kick', target: qId, want: true })
   check('the host needs a majority like everyone else', await waitKicked(q))
 
   h.inbox.length = 0
-  send(h, { t: 'kick', target: 'kick-p', want: true })
-  send(p, { t: 'kick', target: 'kick-h', want: true })
+  send(h, { t: 'kick', target: pId, want: true })
+  send(p, { t: 'kick', target: hId, want: true })
   const lone = await waitFor(h, m => m.t === 'state' && Object.keys(m.state.kickVotes).length, 600)
   check('nobody can vote to kick with two players', !lone)
 
   const s = await connect('kick-s', 'Sol', room)
-  await waitFor(h, m => m.t === 'state' && inRoom(m, 'kick-s'))
+  const sId = await idOf(s)
+  await waitFor(h, m => m.t === 'state' && inRoom(m, sId))
   h.inbox.length = 0
   send(h, { t: 'start' })
   const choosing = await waitFor(h, m => m.t === 'state' && m.state.phase === 'choosing')
   const drawer = choosing?.state?.drawerId
   h.inbox.length = 0
-  const others = [[h, 'kick-h'], [p, 'kick-p'], [s, 'kick-s']].filter(([, id]) => id !== drawer)
+  const others = [[h, hId], [p, pId], [s, sId]].filter(([, id]) => id !== drawer)
   for (const [ws] of others) send(ws, { t: 'kick', target: drawer, want: true })
 
   const watcher = others[0][0]
   const moved = await waitFor(watcher, m => m.t === 'state' && m.state.phase === 'choosing' && m.state.drawerId !== drawer)
   check('kicking the drawer moves the turn on', Boolean(moved), moved?.state?.drawerId)
-  if (drawer === 'kick-h')
-    check('kicking the host hands the room over', moved?.state?.hostId && moved.state.hostId !== 'kick-h')
+  if (drawer === hId)
+    check('kicking the host hands the room over', moved?.state?.hostId && moved.state.hostId !== hId)
 
   for (const ws of [h, p, s]) ws.close()
+}
+
+/** Attacks on a running turn: impersonating the drawer and spraying guesses. */
+async function guarding() {
+  const room = crypto.randomUUID().slice(0, 8)
+  const h = await connect('guard-h', 'Hal', room)
+  const g = await connect('guard-g', 'Gus', room)
+  const [hId, gId] = await Promise.all([h, g].map(idOf))
+  send(h, { t: 'start' })
+  const choosing = await waitFor(h, m => m.t === 'state' && m.state.phase === 'choosing')
+  const drawer = choosing?.state?.drawerId
+  const [drawerWs, guesser] = drawer === hId ? [h, g] : [g, h]
+  await waitFor(drawerWs, m => m.t === 'choices')
+  send(drawerWs, { t: 'choose', index: 0 })
+  const word = (await waitFor(drawerWs, m => m.t === 'turn' && m.word))?.word
+  await waitFor(guesser, m => m.t === 'turn')
+
+  // --- the drawer's public id is not a key ------------------------------
+  const spy = await connect(drawer, 'Spy', room)
+  const spyId = await idOf(spy)
+  check('connecting with someone\'s public id gives you your own seat', spyId && spyId !== drawer && spyId !== gId,
+    spyId)
+  await sleep(500)
+  check('impersonating the drawer does not reveal the word', !JSON.stringify(spy.inbox).includes(`"${word}"`))
+  check('nor any word choices', !spy.inbox.some(m => m.t === 'choices'))
+  guesser.inbox.length = 0
+  send(spy, { t: 'commit', id: 'spy-stroke', svg: '<path d="M0 0"/>' })
+  check('the impersonator cannot draw', !(await waitFor(guesser, m => m.id === 'spy-stroke', 500)))
+  spy.close()
+
+  // --- guesses are rate limited -------------------------------------------
+  drawerWs.inbox.length = 0
+  guesser.inbox.length = 0
+  const spray = Array.from({ length: 30 }, (_, i) => `nope-${i}`)
+  for (const text of [...spray, word]) send(guesser, { t: 'guess', text })
+  await sleep(800)
+  const heard = drawerWs.inbox.filter(m => m.t === 'chat' && m.text.startsWith('nope-')).length
+  check('a spray of guesses is cut to the burst', heard === TEXT_BURST, `${heard} relayed`)
+  check('the sprayer is told to slow down', guesser.inbox.some(m => m.t === 'log' && m.key === 'slowDown'))
+  const guessedOf = m => m.t === 'state' && m.state.players.some(p => p.id !== drawer && p.guessed)
+  check('the answer hidden in a spray does not score', !drawerWs.inbox.some(guessedOf))
+
+  await sleep(TEXT_REFILL_MS + 100)
+  send(guesser, { t: 'guess', text: word })
+  check('a guess at a human pace still scores', Boolean(await waitFor(drawerWs, guessedOf)))
+
+  for (const ws of [h, g]) ws.close()
 }
 
 async function main() {
@@ -198,8 +256,11 @@ async function main() {
   const welcomeA = await waitFor(a, m => m.t === 'welcome')
   const welcomeB = await waitFor(b, m => m.t === 'welcome')
   check('both players get a welcome', Boolean(welcomeA && welcomeB))
-  check('welcome carries own id', welcomeA?.you === 'player-a', welcomeA?.you)
-  check('first player is host', welcomeA?.state?.hostId === 'player-a', welcomeA?.state?.hostId)
+  const idA = welcomeA?.you
+  const idB = welcomeB?.you
+  check('welcome carries a public id, not the token', /^[0-9a-f]{32}$/.test(idA ?? '') && idA !== idB, idA)
+  check('the token never reaches the other players', !JSON.stringify(b.inbox).includes('player-a'))
+  check('first player is host', welcomeA?.state?.hostId === idA, welcomeA?.state?.hostId)
 
   await sleep(300)
   const rosterA = await waitFor(a, m => m.t === 'state' && m.state.players.length === 2)
@@ -250,9 +311,9 @@ async function main() {
   const choosing = await waitFor(a, m => m.t === 'state' && m.state.phase === 'choosing')
   check('the turn opens with the drawer choosing', Boolean(choosing))
   const drawer = choosing?.state?.drawerId
-  const drawerWs = drawer === 'player-a' ? a : b
-  const watcherWs = drawer === 'player-a' ? b : a
-  const watcherId = drawer === 'player-a' ? 'player-b' : 'player-a'
+  const drawerWs = drawer === idA ? a : b
+  const watcherWs = drawer === idA ? b : a
+  const watcherId = drawer === idA ? idB : idA
   const choices = await waitFor(drawerWs, m => m.t === 'choices')
   check('the drawer is offered three words', choices?.words?.length === 3, JSON.stringify(choices?.words))
   check('the watcher is offered nothing', !watcherWs.inbox.some(m => m.t === 'choices'))
@@ -279,8 +340,8 @@ async function main() {
   const turnA = await waitFor(a, m => m.t === 'turn')
   const turnB = await waitFor(b, m => m.t === 'turn')
   check('a turn starts for both', Boolean(turnA && turnB))
-  const drawerTurn = drawer === 'player-a' ? turnA : turnB
-  const watcherTurn = drawer === 'player-a' ? turnB : turnA
+  const drawerTurn = drawer === idA ? turnA : turnB
+  const watcherTurn = drawer === idA ? turnB : turnA
 
   check('drawer receives the word', typeof drawerTurn?.word === 'string' && drawerTurn.word.length > 0)
   check('the word is the one chosen', drawerTurn?.word === rerolled?.words?.[1], drawerTurn?.word)
@@ -316,6 +377,20 @@ async function main() {
   await sleep(600)
   const forged = drawerWs.inbox.find(m => m.id === 'forged')
   check('a watcher cannot draw', !forged, forged ? JSON.stringify(forged) : '')
+
+  // --- drawing markup is sanitised --------------------------------------
+  watcherWs.inbox.length = 0
+  const handler = '<g><animate attributeName="x" dur="1s" onbegin="alert(1)"/></g>'
+  send(drawerWs, { t: 'commit', id: 'xss-commit', svg: handler })
+  send(drawerWs, { t: 'preview', id: 'xss-preview', svg: '<image href="x" onerror="alert(1)"/>' })
+  send(drawerWs, { t: 'canvas', svg: `<path d="M 10,20 L 150,800"/>${handler}` })
+  send(drawerWs, { t: 'commit', id: 'arrow', svg: '<g><defs><marker id="m-1"><path d="M0,0"></path></marker></defs>'
+    + '<line x1="0" y1="0" x2="9" y2="9" marker-end="url(#m-1)"></line></g>' })
+  const arrow = await waitFor(watcherWs, m => m.t === 'commit' && m.id === 'arrow')
+  check('drauu\'s own markup still goes through', arrow?.svg?.includes('marker-end="url(#m-1)"'), arrow?.svg)
+  const unsafe = watcherWs.inbox.find(m => /onbegin|onerror/.test(JSON.stringify(m)))
+  check('markup with scripts is never relayed', !unsafe, unsafe ? JSON.stringify(unsafe) : '')
+  check('an unsafe canvas does not replace the drawing', !watcherWs.inbox.some(m => m.t === 'canvas'))
 
   // --- the cached canvas is capped ---------------------------------------
   watcherWs.inbox.length = 0
@@ -446,7 +521,7 @@ async function main() {
   // --- a short absence keeps the seat -------------------------------------
   a.inbox.length = 0
   b.close()
-  const bobOf = m => m.state.players.find(p => p.id === 'player-b')
+  const bobOf = m => m.state.players.find(p => p.id === idB)
   const away = await waitFor(a, m => m.t === 'state' && bobOf(m)?.away)
   check('a dropped player is shown as away', Boolean(away))
   check('an away player keeps their seat', bobOf(away ?? { state: { players: [] } })?.connected === true)
@@ -484,6 +559,7 @@ async function main() {
   a.close()
   await sleep(200)
 
+  await guarding()
   await kicking()
   await publicRooms()
 

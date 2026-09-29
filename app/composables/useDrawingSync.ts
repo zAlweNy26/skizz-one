@@ -11,6 +11,7 @@ import {
   POINT_STRIDE,
   quantize,
 } from '#shared/utils/protocol'
+import { sanitizeSvg } from '#shared/utils/svg'
 import {
   ChunkedDrawPath,
   MAX_PLAYBACK_DELAY_MS,
@@ -56,8 +57,10 @@ function createStrokeGroup(brush: WireBrush): SVGGElement {
 
 /** Parse one serialised SVG element back into a node. */
 function parseSvgElement(markup: string): SVGElement | null {
+  const clean = sanitizeSvg(markup)
+  if (clean === null) return null
   const host = document.createElementNS(SVG_NS, 'svg')
-  host.innerHTML = markup
+  host.innerHTML = clean
   return host.firstElementChild as SVGElement | null
 }
 
@@ -328,10 +331,13 @@ export function useDrawingSync(
         return showRemotePreview(msg)
       case 'commit':
         return commitRemoteStroke(msg)
-      case 'canvas':
+      case 'canvas': {
+        const svg = sanitizeSvg(msg.svg)
+        if (svg === null) return
         clearPreviews()
-        load(msg.svg)
+        load(svg)
         break
+      }
       case 'roundEnd':
         clearPreviews()
         break

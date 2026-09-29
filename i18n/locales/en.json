@@ -106,7 +106,8 @@
     "kickRequested": "{name} voted to kick {target} ({votes}/{needed})",
     "kicked": "{name} was kicked from the room",
     "newHost": "{name} is now the host",
-    "canvasFull": "The canvas is full: undo or clear to keep drawing"
+    "canvasFull": "The canvas is full: undo or clear to keep drawing",
+    "slowDown": "Slow down: you're sending messages too fast"
   },
   "home": {
     "tagline": "Draw, guess, laugh. Pick a name and jump in.",

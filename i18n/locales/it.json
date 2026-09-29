@@ -106,7 +106,8 @@
     "kickRequested": "{name} ha votato per espellere {target} ({votes}/{needed})",
     "kicked": "{name} è stato espulso dalla stanza",
     "newHost": "Ora {name} è l'host",
-    "canvasFull": "La tela è piena: annulla o cancella per continuare a disegnare"
+    "canvasFull": "La tela è piena: annulla o cancella per continuare a disegnare",
+    "slowDown": "Rallenta: stai inviando messaggi troppo in fretta"
   },
   "home": {
     "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",

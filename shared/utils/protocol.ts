@@ -232,7 +232,7 @@ export type LogKey
     | 'drawerGone' | 'languageChanged' | 'waitingForPlayers' | 'drawing'
     | 'close' | 'guessed' | 'timeUp' | 'winner' | 'winnerByAHair' | 'gameOver'
     | 'paused' | 'resumed' | 'guessOnHold' | 'choosing' | 'pauseRequested' | 'resumeRequested'
-    | 'kickRequested' | 'kicked' | 'newHost' | 'canvasFull'
+    | 'kickRequested' | 'kicked' | 'newHost' | 'canvasFull' | 'slowDown'
 
 /** Values interpolated into a log message, e.g. `{ name: 'Bob' }`. */
 export type LogParams = Record<string, string | number>

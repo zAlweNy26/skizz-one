@@ -15,8 +15,8 @@ const PING_INTERVAL_MS = 25_000
 const WAKE_PROBE_MS = 3_000
 
 export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
-  /** A player id that outlives the connection. */
-  const playerId = useLocalStorage('playerId', () => randomUUID())
+  /** A secret that outlives the connection; the room derives your public id from it. */
+  const token = useLocalStorage('playerToken', () => randomUUID())
   const nickname = useNickname()
   const avatar = useAvatarSeed()
   /** Set by quick play: the room is created public if it doesn't exist yet. */
@@ -146,7 +146,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       protocol: window.location.protocol === 'https:' ? 'wss' : 'ws',
       party: 'game-room',
       room,
-      query: () => ({ playerId: playerId.value, name: nickname.value, avatar: avatar.value, ...(createPublic ? { public: '1' } : {}) }),
+      query: () => ({ token: token.value, name: nickname.value, avatar: avatar.value, ...(createPublic ? { public: '1' } : {}) }),
     })
 
     ws.addEventListener('open', () => {
@@ -194,7 +194,6 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   return {
     socket,
     connected,
-    playerId,
     nickname,
     you,
     state,

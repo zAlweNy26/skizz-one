@@ -16,6 +16,7 @@ import type {
   ServerMessage,
 } from '#shared/utils/protocol'
 import { getServerByName, Server } from 'partyserver'
+import { RateLimiter } from '#realtime/rate-limit'
 import { drawerShare, guessPoints, standings } from '#realtime/scoring'
 import { pickWords } from '#realtime/words'
 import {
@@ -46,6 +47,7 @@ import {
   votesNeeded,
   WORD_CHOICES,
 } from '#shared/utils/protocol'
+import { sanitizeSvg } from '#shared/utils/svg'
 
 /** Pause between the word reveal and the next turn. */
 const INTERMISSION_MS = 5_000
@@ -64,6 +66,22 @@ const CANVAS_SAVE_MS = 1_000
 
 /** Longest cached canvas, in characters; storage caps a value at 2 MB. */
 const MAX_CANVAS_LENGTH = 1_000_000
+
+/** Longest secret a client may identify itself with. */
+const MAX_TOKEN_LENGTH = 64
+
+/** Hex characters of a player's public id. */
+const PLAYER_ID_LENGTH = 32
+
+/** Guesses and chat lines a player can send at once, then one per refill. */
+const TEXT_BURST = 5
+const TEXT_REFILL_MS = 1_000
+
+/** Votes, reactions and host commands a player can send at once, then one per refill. */
+const ACTION_BURST = 5
+const ACTION_REFILL_MS = 500
+
+const ACTIONS: ReadonlySet<ClientMessage['t']> = new Set(['start', 'settings', 'pause', 'react', 'kick'])
 
 const IN_GAME_PHASES: readonly RoundPhase[] = ['choosing', 'drawing', 'intermission']
 
@@ -197,6 +215,9 @@ export class GameRoom extends Server<Env> {
 
   /** The last listing sent to the lobby, as JSON. */
   #reported: string | null = null
+
+  #textLimit = new RateLimiter(TEXT_BURST, TEXT_REFILL_MS)
+  #actionLimit = new RateLimiter(ACTION_BURST, ACTION_REFILL_MS)
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -387,19 +408,30 @@ export class GameRoom extends Server<Env> {
 
   // --- connection lifecycle ----------------------------------------------
 
-  getConnectionTags(_connection: Connection, ctx: ConnectionContext): string[] {
-    const playerId = new URL(ctx.request.url).searchParams.get('playerId')
+  /** The public id for a client's secret token: the only id anyone else ever sees. */
+  async #playerIdFor(url: URL) {
+    const token = url.searchParams.get('token')
+    if (!token || token.length > MAX_TOKEN_LENGTH) return null
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${this.name}:${token}`))
+    return [...new Uint8Array(digest)]
+      .map(byte => byte.toString(16).padStart(2, '0'))
+      .join('')
+      .slice(0, PLAYER_ID_LENGTH)
+  }
+
+  async getConnectionTags(_connection: Connection, ctx: ConnectionContext) {
+    const playerId = await this.#playerIdFor(new URL(ctx.request.url))
     return playerId ? [playerId] : []
   }
 
   async onConnect(connection: Connection, ctx: ConnectionContext) {
     const url = new URL(ctx.request.url)
-    const playerId = url.searchParams.get('playerId')
+    const playerId = await this.#playerIdFor(url)
     const name = (url.searchParams.get('name') ?? '').trim().slice(0, MAX_NAME_LENGTH).trim()
     const avatar = (url.searchParams.get('avatar') ?? '').trim().slice(0, MAX_AVATAR_LENGTH) || name
 
     if (!playerId || !name) {
-      connection.close(1008, 'playerId and name are required')
+      connection.close(1008, 'token and name are required')
       return
     }
 
@@ -511,6 +543,8 @@ export class GameRoom extends Server<Env> {
     delete player.awaySince
     delete s.kickVotes[player.id]
     s.pauseVotes = s.pauseVotes.filter(id => id !== player.id)
+    this.#textLimit.forget(player.id)
+    this.#actionLimit.forget(player.id)
 
     if (kicked) this.#log('warning', 'kicked', { name: player.name })
 
@@ -549,6 +583,7 @@ export class GameRoom extends Server<Env> {
     } catch {
       return
     }
+    if (typeof msg !== 'object' || msg === null) return
 
     const s = this.#state
 
@@ -557,6 +592,14 @@ export class GameRoom extends Server<Env> {
       this.#handleDrawing(connection, msg)
       return
     }
+
+    if (msg.t === 'guess' || msg.t === 'chat') {
+      if (!this.#textLimit.take(playerId)) {
+        this.#send(connection, { t: 'log', level: 'warning', key: 'slowDown' })
+        return
+      }
+    } else if (ACTIONS.has(msg.t) && !this.#actionLimit.take(playerId))
+      return
 
     switch (msg.t) {
       case 'start':
@@ -590,7 +633,14 @@ export class GameRoom extends Server<Env> {
     }
   }
 
-  #handleDrawing(connection: Connection, msg: DrawingMessage) {
+  #handleDrawing(connection: Connection, raw: DrawingMessage) {
+    let msg = raw
+    if (msg.t === 'preview' || msg.t === 'commit' || msg.t === 'canvas') {
+      const svg = sanitizeSvg(msg.svg)
+      if (svg === null) return
+      msg = { ...msg, svg }
+    }
+
     if (msg.t === 'commit' || msg.t === 'canvas') {
       const canvas = msg.t === 'commit' ? this.#canvas + msg.svg : msg.svg
       if (canvas.length > MAX_CANVAS_LENGTH) {
@@ -630,7 +680,7 @@ export class GameRoom extends Server<Env> {
   async #handleGuess(connection: Connection, playerId: string, rawText: string) {
     const s = this.#state
     const player = s.players[playerId]
-    if (!player) return
+    if (!player || typeof rawText !== 'string') return
 
     const text = rawText.slice(0, 120).trim()
     if (!text) return
@@ -691,7 +741,7 @@ export class GameRoom extends Server<Env> {
   #handleChat(playerId: string, rawText: string) {
     const s = this.#state
     const player = s.players[playerId]
-    if (!player) return
+    if (!player || typeof rawText !== 'string') return
 
     const text = rawText.slice(0, 200).trim()
     if (!text) return
