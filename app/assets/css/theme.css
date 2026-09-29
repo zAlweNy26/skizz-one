@@ -96,6 +96,14 @@
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
+/* Nuxt UI text tokens for components sitting directly on the stage. */
+@utility on-stage {
+  --ui-text: var(--on-stage);
+  --ui-text-toned: var(--on-stage);
+  --ui-text-highlighted: var(--on-stage);
+  --ui-text-muted: color-mix(in oklab, var(--on-stage) 80%, transparent);
+}
+
 /* Shantell Sans' informal and bounce axes. */
 @utility font-display {
   font-variation-settings: 'INFM' 90, 'BNCE' 60;

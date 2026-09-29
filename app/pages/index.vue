@@ -52,12 +52,15 @@ function quickPlay() {
 }
 
 const footerUi = {
-  container: 'max-w-none px-4 sm:px-4 lg:px-4 py-4 flex items-center justify-between gap-3',
-  left: 'mt-0 order-1 justify-start',
-  center: 'hidden',
-  right: 'flex-none order-3',
-  bottom: 'px-14 pt-0 lg:pt-0 pb-6 lg:pb-6 text-xs text-center text-(--on-stage)/80 text-balance',
+  container: 'max-w-none px-4 sm:px-4 lg:px-4 py-6 lg:py-4 lg:gap-x-6',
+  center: 'on-stage flex-col gap-2 text-center text-muted',
 }
+
+const footerLinks = computed(() => [
+  { label: t('home.terms'), to: '/terms' },
+  { label: t('home.changelog'), to: '/changelog' },
+  { label: t('home.credits'), to: '/credits' },
+])
 
 useHead({ title: () => t('seo.title'), titleTemplate: null })
 useSeoMeta({
@@ -174,28 +177,16 @@ useSchemaOrg([
         </i18n-t>
       </template>
 
+      <UNavigationMenu :items="footerLinks" color="neutral" variant="link" />
+      <p class="max-w-xl text-xs text-balance">
+        {{ $t('home.disclaimer') }}
+      </p>
+
       <template #right>
         <UButton
           icon="i-lucide-github" size="lg" square to="https://github.com/zAlweNy26/skizz-one" target="_blank"
           color="neutral" variant="outline"
           :aria-label="$t('home.sourceCode')" />
-      </template>
-
-      <template #bottom>
-        <p>
-          {{ $t('home.disclaimer') }}
-          <ULink to="/terms" raw class="underline underline-offset-4 whitespace-nowrap">
-            {{ $t('home.terms') }}
-          </ULink>
-          ·
-          <ULink to="/changelog" raw class="underline underline-offset-4 whitespace-nowrap">
-            {{ $t('home.changelog') }}
-          </ULink>
-          ·
-          <ULink to="/credits" raw class="underline underline-offset-4 whitespace-nowrap">
-            {{ $t('home.credits') }}
-          </ULink>
-        </p>
       </template>
     </UFooter>
   </main>
