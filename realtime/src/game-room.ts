@@ -43,7 +43,7 @@ import { drawerShare, guessPoints } from './scoring'
 import { pickWords } from './words'
 
 /** Pause between the word reveal and the next turn. */
-const INTERMISSION_MS = 3_000
+const INTERMISSION_MS = 5_000
 
 /** How long the drawer has to pick a word before one is picked for them. */
 const CHOOSE_MS = 15_000

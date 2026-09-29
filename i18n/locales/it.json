@@ -53,7 +53,8 @@
       "redo": "Ripeti",
       "clear": "Pulisci la tela"
     },
-    "brush": "Colore e dimensione del pennello"
+    "brush": "Colore e dimensione del pennello",
+    "download": "Scarica il disegno"
   },
   "chat": {
     "guessPlaceholder": "Scrivi qui la tua risposta...",

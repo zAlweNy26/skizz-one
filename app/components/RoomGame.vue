@@ -60,6 +60,21 @@ const { muted } = useSounds({ onMessage: game.onMessage, you, state, secondsLeft
 const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
 
+const hasDrawing = ref(false)
+watch(phase, (now) => {
+  hasDrawing.value = now === 'intermission' && Boolean(sketch.value?.childElementCount)
+})
+
+function downloadDrawing() {
+  const blob = new Blob([drawingSvg(sketch.value?.innerHTML ?? '')], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = drawingFileName(hint.value)
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 const drawerName = computed(() => state.value?.players.find(p => p.id === state.value?.drawerId)?.name ?? '')
 
 const activeCount = computed(() => state.value?.players.filter(p => p.connected && !p.away).length ?? 0)
@@ -392,6 +407,10 @@ defineShortcuts({
             <DrawingReactions
               v-if="phase === 'drawing' && state" :reactions="state.reactions" :isDrawer="isDrawer" :you="you"
               @react="game.send({ t: 'react', reaction: $event })" />
+            <UButton
+              v-if="hasDrawing" color="neutral" variant="solid" size="lg" icon="i-lucide-download"
+              class="pop-in absolute bottom-1 end-1 z-5 min-h-11 lg:bottom-2 lg:end-2" :class="[stageChip]"
+              :label="$t('canvas.download')" @click="downloadDrawing()" />
             <svg
               ref="sketch"
               class="size-full"

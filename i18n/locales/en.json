@@ -53,7 +53,8 @@
       "redo": "Redo",
       "clear": "Clear canvas"
     },
-    "brush": "Colour and brush size"
+    "brush": "Colour and brush size",
+    "download": "Download drawing"
   },
   "chat": {
     "guessPlaceholder": "Type your guess here...",
