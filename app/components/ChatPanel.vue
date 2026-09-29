@@ -33,8 +33,7 @@ const placeholder = computed(() => ({
   guess: 'chat.guessPlaceholder',
 })[channel.value])
 
-/** Tailwind's `lg` breakpoint. */
-const isDesktop = useMediaQuery('(min-width: 64rem)')
+const isDesktop = useIsDesktop()
 
 const shown = computed(() => {
   const list = props.entries.map((entry, index) => ({ entry, index }))
@@ -62,7 +61,7 @@ function submit(event: KeyboardEvent) {
     as="aside" :strokeWidth="2.5" :radius="18" class="flex flex-col gap-3 p-3"
     :aria-label="$t('chat.title')">
     <UInput
-      class="w-full lg:order-last" size="lg" :ui="{ base: ['min-h-11', channel === 'private' && 'ring-2'] }"
+      class="w-full lg:order-last" size="lg"
       autocomplete="off" enterkeyhint="send"
       :placeholder="$t(placeholder)"
       :color="channel === 'private' ? 'success' : 'primary'"

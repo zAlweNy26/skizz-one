@@ -135,8 +135,18 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
     through `app.config.ts` or `:ui` rather than replacing it. Go custom only
     for what Nuxt UI can't do (roughjs frames via `SketchFrame`, the drawing
     canvas), and use `useColorMode` rather than VueUse's `useDark`.
+  - **Look comes from props only.** Size, colour and variant come from
+    `size`, `color`, `variant` and, for toggles, `active`/`activeColor`/
+    `activeVariant`. Never restyle a Nuxt UI instance with size, colour,
+    background, ring or text classes or `:ui` overrides of them; classes are
+    for layout, font family/weight and visibility. Controls on the stage are
+    `color="neutral" variant="outline"`. Button/input `lg` is the 44px tap
+    target, button `xl` the call to action. A size that changes at `lg`
+    switches the prop via `useIsDesktop()`. Change `app.config.ts` only for a
+    rule every instance follows, never for one instance; see "Nuxt UI Props"
+    in `DESIGN.md`.
   - Colors: `primary` bordeaux, `secondary` tangerine (call to action only), `neutral` mulberry.
-  - Tokens: `--stage`, `--paper`, `--ink`, `--on-stage`, `--ink-fixed` and `--chip`/`--on-chip` (controls on the stage) live in
+  - Tokens: `--stage`, `--paper`, `--ink`, `--on-stage` and `--ink-fixed` live in
     `app/assets/css/theme.css` (with the colour ramps, custom utilities and base
     styles); component defaults are in `app/app.config.ts`. `main.css` only
     imports Tailwind, Nuxt UI and `theme.css`.
@@ -153,7 +163,7 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
     bottom sheet, and the chat filling the rest. In landscape below `lg`
     (`phone-landscape:` variant) it's toolbar | canvas | side column, with the
     canvas sized by `canvas-landscape` in `theme.css`. From `lg` up it's the
-    three-column grid. Keep tap targets ≥44px (`size-11`/`min-h-11`) and check
+    three-column grid. Keep tap targets ≥44px (`size="lg"` or larger) and check
     changes at 390×844.
 - **fallow:** entries or class members only reached by frameworks (e.g. new
   `partyserver` lifecycle hooks, `preset/entry.ts`) must be listed in

@@ -21,8 +21,8 @@ const leader = computed(() => leaderId(props.players))
   <div>
     <UDrawer :title="$t('players.title')" :ui="{ body: 'pb-safe' }">
       <UButton
-        variant="ghost" color="neutral" block
-        class="min-h-14 gap-3 px-2 py-0.5 overflow-hidden bg-(--paper)/10 text-(--on-stage) hover:bg-(--paper)/15"
+        variant="outline" color="neutral" size="xs" block trailingIcon="i-lucide-chevron-up"
+        class="overflow-hidden"
         :aria-label="$t('players.showAll')">
         <span class="flex items-end gap-3 min-w-0 overflow-hidden pt-2 ps-1.5">
           <span
@@ -30,23 +30,14 @@ const leader = computed(() => leaderId(props.players))
             class="relative shrink-0 flex flex-col items-center gap-0.5"
             :class="{ 'opacity-55': !player.connected || player.away }">
             <UChip
-              :show="player.id === drawerId || player.guessed" position="bottom-right"
-              :ui="{
-                base: [
-                  'size-4 p-0.5 translate-x-1/4 translate-y-1/4',
-                  player.id === drawerId
-                    ? 'bg-(--color-tangerine-400) text-(--ink-fixed)'
-                    : 'bg-success text-(--paper)',
-                ],
-              }">
+              :show="player.id === drawerId || player.guessed" position="bottom-right" size="3xl"
+              :color="player.id === drawerId ? 'secondary' : 'success'"
+              :ui="{ base: 'translate-x-1/4 translate-y-1/4' }">
               <UAvatar
                 :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
-                :alt="player.name" size="md" class="bg-(--paper) ring-2"
-                :class="player.id === drawerId
-                  ? 'ring-(--color-tangerine-400)'
-                  : player.guessed ? 'ring-success' : 'ring-transparent'" />
+                :alt="player.name" size="md" />
               <template #content>
-                <UIcon :name="player.id === drawerId ? 'i-lucide-pencil-line' : 'i-lucide-check'" class="size-full" />
+                <UIcon :name="player.id === drawerId ? 'i-lucide-pencil-line' : 'i-lucide-check'" class="size-3" />
               </template>
             </UChip>
             <span class="absolute -top-2 -start-1.5 -rotate-20">
@@ -59,7 +50,6 @@ const leader = computed(() => leaderId(props.players))
             </span>
           </span>
         </span>
-        <UIcon name="i-lucide-chevron-up" class="ms-auto size-5 shrink-0" />
       </UButton>
 
       <template #body>

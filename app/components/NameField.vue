@@ -16,18 +16,18 @@ const nameError = computed(() => (trimmedName.value ? false : t('home.nameRequir
       class="shrink-0 p-2 rotate-3">
       <UAvatar
         :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(trimmedName)}`"
-        size="3xl" :alt="trimmedName" class="bg-transparent" />
+        size="3xl" :alt="trimmedName" />
     </SketchFrame>
     <UFormField
-      :label="$t('home.name')" :error="nameError" class="grow"
-      :ui="{ label: 'font-display text-base' }">
-      <UFieldGroup class="w-full">
+      :label="$t('home.name')" :error="nameError" size="xl" class="grow"
+      :ui="{ label: 'font-display' }">
+      <UFieldGroup size="lg" class="w-full">
         <UInput
-          v-model="name" size="lg" class="w-full" autofocus :maxlength="MAX_NAME_LENGTH"
+          v-model="name" class="w-full" autofocus :maxlength="MAX_NAME_LENGTH"
           @keyup.enter="emit('submit')" />
         <UTooltip :text="$t('home.randomName')">
           <UButton
-            color="neutral" variant="soft" size="lg" icon="i-lucide-dices"
+            color="neutral" variant="soft" icon="i-lucide-dices"
             :aria-label="$t('home.randomName')" @click="name = randomNickname()" />
         </UTooltip>
       </UFieldGroup>

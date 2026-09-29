@@ -11,6 +11,8 @@ defineEmits<{
   react: [reaction: Reaction | null]
 }>()
 
+const isDesktop = useIsDesktop()
+
 const mine = computed(() => props.reactions[props.you] ?? null)
 
 const options = computed(() => {
@@ -30,17 +32,15 @@ const options = computed(() => {
       <template v-for="option in options" :key="option.reaction">
         <UBadge
           v-if="isDrawer" variant="soft" :color="option.count ? option.color : 'neutral'" :icon="option.icon"
-          class="min-h-7 font-display font-bold text-sm tabular-nums lg:min-h-8 lg:text-base"
-          :ui="{ leadingIcon: 'size-4 lg:size-5' }"
+          :size="isDesktop ? 'xl' : 'lg'" class="font-display font-bold tabular-nums"
           :aria-label="$t(`reactions.${option.reaction}Count`, option.count)">
           <span :key="option.count" class="pop-in">{{ option.count }}</span>
         </UBadge>
         <UButton
           v-else
-          size="sm" :color="mine === option.reaction ? option.color : 'neutral'"
+          :size="isDesktop ? 'lg' : 'sm'" :color="mine === option.reaction ? option.color : 'neutral'"
           :variant="mine === option.reaction ? 'solid' : 'ghost'"
-          class="justify-center font-display font-bold tabular-nums lg:min-h-11 lg:min-w-11 lg:text-base"
-          :ui="{ leadingIcon: 'size-4 lg:size-5' }"
+          class="justify-center font-display font-bold tabular-nums"
           :icon="option.icon" :label="String(option.count)"
           :aria-label="$t(`reactions.${option.reaction}`)" :aria-pressed="mine === option.reaction"
           @click="$emit('react', mine === option.reaction ? null : option.reaction)" />

@@ -20,6 +20,7 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const isDesktop = useIsDesktop()
 
 const places = computed(() => podium(props.players))
 
@@ -84,7 +85,7 @@ const STEP_DELAY = [360, 180, 0]
         </SketchFrame>
       </div>
       <UButton
-        v-if="canReroll" color="neutral" variant="soft" size="lg" icon="i-lucide-refresh-cw" class="min-h-11"
+        v-if="canReroll" color="neutral" variant="soft" size="lg" icon="i-lucide-refresh-cw"
         :label="$t('choose.reroll')" @click="$emit('reroll')" />
     </template>
     <template v-else>
@@ -108,7 +109,7 @@ const STEP_DELAY = [360, 180, 0]
         <span class="relative">
           <UAvatar
             :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(place.player.name)}`"
-            :alt="place.player.name" class="size-9 bg-transparent lg:size-16" />
+            :alt="place.player.name" :size="isDesktop ? '3xl' : 'lg'" />
           <span v-if="place.rank === 1" class="absolute -top-3 -start-2 -rotate-20 lg:-top-5 lg:-start-3">
             <SketchFrame
               shape="crown" fill="var(--color-tangerine-400)" stroke="var(--ink-fixed)"

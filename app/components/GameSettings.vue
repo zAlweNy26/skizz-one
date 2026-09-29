@@ -49,17 +49,16 @@ function save() {
 <template>
   <UModal v-model:open="open" :title="$t('settings.title')" :ui="{ body: 'flex flex-col gap-5' }">
     <UButton
-      color="neutral" variant="soft" size="xl" icon="i-lucide-settings-2" class="min-h-11"
+      color="neutral" variant="soft" size="xl" icon="i-lucide-settings-2"
       :label="$t('settings.open')" />
 
     <template #body>
       <USwitch
-        v-model="isPublic" size="lg" :label="$t('settings.public')" :description="$t('settings.publicHelp')"
-        :ui="{ root: 'min-h-11 items-center' }" />
+        v-model="isPublic" size="xl" :label="$t('settings.public')" :description="$t('settings.publicHelp')" />
 
       <UFormField :label="$t('lobby.wordLanguage')">
         <USelect
-          v-model="language" :items="languageItems" icon="i-lucide-languages" size="lg" class="w-full min-h-11" />
+          v-model="language" :items="languageItems" icon="i-lucide-languages" size="lg" class="w-full" />
       </UFormField>
 
       <UFormField :label="$t('settings.drawTime')">
@@ -92,10 +91,10 @@ function save() {
     <template #footer="{ close }">
       <div class="flex w-full justify-end gap-2">
         <UButton
-          color="neutral" variant="ghost" size="lg" class="min-h-11" :label="$t('settings.cancel')"
+          color="neutral" variant="ghost" size="lg" :label="$t('settings.cancel')"
           @click="close()" />
         <UButton
-          color="primary" size="lg" icon="i-lucide-check" class="min-h-11" :label="$t('settings.save')"
+          color="primary" size="lg" icon="i-lucide-check" :label="$t('settings.save')"
           @click="save()" />
       </div>
     </template>

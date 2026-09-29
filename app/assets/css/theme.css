@@ -113,9 +113,6 @@
   --on-stage: var(--color-mulberry-50);
   /* Dark in both themes. */
   --ink-fixed: var(--color-mulberry-900);
-  /* Controls sitting directly on the stage. */
-  --chip: var(--paper);
-  --on-chip: var(--ink);
 
   --ui-primary: var(--ui-color-primary-700);
   --ui-secondary: var(--ui-color-secondary-400);
@@ -149,8 +146,6 @@
   --paper: var(--color-mulberry-800);
   --ink: var(--color-mulberry-100);
   --on-stage: var(--color-mulberry-100);
-  --chip: var(--ink);
-  --on-chip: var(--color-mulberry-900);
 
   --ui-primary: var(--ui-color-primary-300);
   --ui-secondary: var(--ui-color-secondary-400);

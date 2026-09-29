@@ -32,7 +32,7 @@ function join() {
       <p class="text-muted text-center">
         {{ $t('home.codeInvalid', { n: ROOM_CODE_LENGTH }) }}
       </p>
-      <UButton to="/" size="xl" color="secondary" icon="i-lucide-house" class="min-h-11" :label="$t('kicked.home')" />
+      <UButton to="/" size="xl" color="secondary" icon="i-lucide-house" :label="$t('kicked.home')" />
     </SketchFrame>
   </main>
 
@@ -57,7 +57,7 @@ function join() {
         <NameField v-model="name" @submit="join()" />
 
         <UButton
-          block size="xl" color="secondary" icon="i-lucide-log-in" class="text-lg py-3"
+          block size="xl" color="secondary" icon="i-lucide-log-in"
           :label="$t('home.join')" :disabled="!trimmedName" @click="join()" />
       </SketchFrame>
     </div>

@@ -179,11 +179,48 @@ which hides the drawing while the game is frozen.
 
 ## 5. Components
 
+### Nuxt UI Props
+Nuxt UI components get their look only from their props: `size`, `color`,
+`variant`, and `active` / `activeColor` / `activeVariant` for toggles (the
+selected tool, a cast vote, the chosen swatch). Never restyle an instance with
+size, colour, background, ring or text classes, or with `:ui` overrides of
+them. Classes on a component are for layout (position, flex, order, width in
+its container), typography family and weight (`font-display`, `font-mono`) and
+visibility.
+
+Pick the stock combination that means what you want before touching the theme:
+
+- **On the stage:** `color="neutral" variant="outline"`, a paper chip with ink text (night paper and chalk in dark mode). Pause, room code, "⋯", mute, theme, GitHub, the player strip, and Download over the canvas.
+- **Secondary tools:** `color="neutral" variant="soft"`.
+- **Selected or voted:** `:active` with `activeVariant="solid"` and the state's colour (`primary` for the tool, `warning`/`success` for pause, `error` for kick).
+- **"You" badge:** the default `primary` solid badge.
+
+`app/app.config.ts` changes only for a rule that holds for every instance: the
+hand-rounded shape and inked ring of solid buttons, mulberry ink on tangerine
+(buttons and chips), the 2px field ring (also while highlighted), and the size
+scale below. If you need a look that no prop gives, change the theme there, never the instance.
+
+The size scale is retuned so the sizes the room needs exist:
+
+- **Button `lg`:** the standard control and the 44px tap target (`py-3`); square `lg` buttons are 44×44. Toolbar tools, header controls, kick, download, form actions.
+- **Button `xl`:** the call to action, `text-lg` at 52px tall. Create a room, Quick play, Join, Start game, Room settings.
+- **Button `sm`, `md`, `xs`:** only where the control sits inside another one (phone reactions, the player-strip trigger, desktop colour swatches).
+- **Input, Select, Textarea, InputNumber `lg`:** 44px, matching a `lg` button in a `UFieldGroup`. Put `size` on the `UFieldGroup`, not on each child.
+- **FormField `xl`:** the `text-base` label on the home and join forms.
+- **Chip `3xl`:** 16px, big enough to hold an icon (the pencil and check badges on the player strip).
+
+When a control changes size at `lg`, switch the prop with `useIsDesktop()` (`:size="isDesktop ? 'lg' : 'sm'"`)
+rather than with `lg:` size classes. `UIcon` has no size or colour prop, so it keeps `size-*` and `text-*`
+classes. The colour swatches are the one data-coloured exception: their fill is the brush colour, set inline.
+
+**The One Theme Rule.** If a component needs a size, colour or variant the theme doesn't have, change the theme in
+`app.config.ts` for every instance, not the instance.
+
 ### Buttons
 - **Shape:** hand-rounded corners, each one a little different (14px 9px 16px 8px / 9px 15px 8px 13px).
 - **Call to action:** Tangerine Marker fill, mulberry-ink label, 2px inked ring (mulberry ink at 85%). One per screen.
 - **Primary:** Bordeaux fill, paper text, the same inked ring. Used for the selected tool and "Join".
-- **Stage chip:** controls that sit directly on the stage (Pause, room code) use the `--chip` / `--on-chip` tokens: a paper chip with ink text in light mode, a chalk chip in dark mode. Dark ink would vanish against bordeaux (1.35:1).
+- **Stage chip:** controls that sit directly on the stage (Pause, room code, mute, theme) are neutral `outline` buttons: a paper chip with ink text, night paper with chalk in dark mode. Never a `ghost` or neutral `solid` button on the stage: dark ink would vanish against bordeaux (1.35:1).
 - **Soft:** a translucent tint and no ring, for secondary tools (undo, redo, brush size, random name).
 - **Press:** a 150ms squash to 95% scale on `:active` (ease-out-quart), removed under reduced motion. No hover lift, no elastic.
 
@@ -212,7 +249,7 @@ Below the `lg` breakpoint the room is one screen that fits the viewport and does
 - **Do** pair every state colour with an icon or label: pencil for drawing, check for guessed, lock for private, pause for paused.
 - **Do** give every animation a `prefers-reduced-motion: no-preference` guard; the reduced version is instant.
 - **Do** check text contrast against the ratios above (AA ≥4.5:1) before adding a colour pairing.
-- **Do** keep every control at least 44px and check new UI on a 390px-wide phone first.
+- **Do** keep every control at least 44px (button and input `lg` or larger) and check new UI on a 390px-wide phone first.
 
 ### Don't:
 - **Don't** drift back to the **SaaS dashboard**: neutral grey cards, stone greys, flat component-library defaults with nothing drawn.
@@ -222,3 +259,4 @@ Below the `lg` breakpoint the room is one screen that fits the viewport and does
 - **Don't** use tangerine as text, or place two tangerine buttons on one screen.
 - **Don't** add drop shadows, glassmorphism or gradient text; depth is drawn.
 - **Don't** add a second typeface.
+- **Don't** size or colour a Nuxt UI component with classes (`min-h-11`, `text-lg py-3`, `bg-…`, `text-…`, `ring-…`) or `:ui` slot overrides; pick a `size`, `color`, `variant` or `active` state.

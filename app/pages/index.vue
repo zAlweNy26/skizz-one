@@ -83,7 +83,7 @@ useSchemaOrg([
   <main class="relative min-h-dvh flex flex-col">
     <img src="/favicon.svg" alt="SkizzOne" class="absolute top-4 start-4 size-12 -rotate-6">
     <div class="absolute top-4 end-4">
-      <UColorModeButton size="lg" class="text-(--on-stage) hover:bg-(--on-stage)/15" />
+      <UColorModeButton size="lg" variant="outline" />
     </div>
 
     <div class="grow grid place-items-center px-4 pt-20 pb-8">
@@ -106,23 +106,23 @@ useSchemaOrg([
 
           <UButton
             v-if="!invitedCode" block size="xl" color="secondary" icon="i-lucide-sparkles"
-            class="text-lg py-3" :label="$t('home.create')" :disabled="!trimmedName" @click="createRoom()" />
+            :label="$t('home.create')" :disabled="!trimmedName" @click="createRoom()" />
 
           <UButton
             v-if="!invitedCode" block size="xl" color="primary" variant="soft" icon="i-lucide-zap"
-            class="text-lg py-3" :label="$t('home.quickPlay')" :disabled="!trimmedName" @click="quickPlay()" />
+            :label="$t('home.quickPlay')" :disabled="!trimmedName" @click="quickPlay()" />
 
-          <USeparator v-if="!invitedCode" :label="$t('home.or')" :ui="{ label: 'font-display text-muted' }" />
+          <USeparator v-if="!invitedCode" :label="$t('home.or')" :ui="{ label: 'font-display' }" />
 
           <UFormField
-            :label="$t('home.code')" :ui="{ label: 'font-display text-base' }"
+            :label="$t('home.code')" size="xl" :ui="{ label: 'font-display' }"
             :error="triedInvalid && $t('home.codeInvalid', { n: ROOM_CODE_LENGTH })">
-            <UFieldGroup class="w-full">
+            <UFieldGroup size="lg" class="w-full">
               <UInput
-                v-model="code" size="lg" class="w-full" :placeholder="$t('home.codePlaceholder')"
+                v-model="code" class="w-full" :placeholder="$t('home.codePlaceholder')"
                 @keyup.enter="join()" />
               <UButton
-                :label="$t('home.join')" size="lg" icon="i-lucide-log-in"
+                :label="$t('home.join')" icon="i-lucide-log-in"
                 :color="invitedCode ? 'secondary' : 'primary'" :variant="invitedCode ? 'solid' : 'soft'"
                 :disabled="!trimmedName || !validCode" @click="join()" />
             </UFieldGroup>
@@ -151,7 +151,7 @@ useSchemaOrg([
                 </p>
               </div>
               <UButton
-                size="lg" color="primary" variant="soft" icon="i-lucide-log-in" class="min-h-11 shrink-0"
+                size="lg" color="primary" variant="soft" icon="i-lucide-log-in" class="shrink-0"
                 :label="$t('home.join')" :disabled="!trimmedName" @click="enter(room.id)" />
             </li>
           </ul>
@@ -163,7 +163,7 @@ useSchemaOrg([
       <template #left>
         <i18n-t keypath="home.madeBy" tag="p" class="font-display font-semibold text-lg text-(--on-stage)">
           <template #name>
-            <ULink to="https://github.com/zAlweNy26" target="_blank" class="text-(--on-stage) underline underline-offset-4">
+            <ULink to="https://github.com/zAlweNy26" target="_blank" raw class="underline underline-offset-4">
               Dany
             </ULink>
           </template>
@@ -173,7 +173,7 @@ useSchemaOrg([
       <template #right>
         <UButton
           icon="i-lucide-github" size="lg" square to="https://github.com/zAlweNy26/skizz-one" target="_blank"
-          class="size-11 justify-center bg-(--chip) text-(--on-chip) hover:bg-(--chip)/85"
+          color="neutral" variant="outline"
           :aria-label="$t('home.sourceCode')" />
       </template>
     </UFooter>

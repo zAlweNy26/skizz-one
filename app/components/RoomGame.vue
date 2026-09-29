@@ -217,8 +217,6 @@ const timerFill = computed(() => ({
   calm: 'var(--paper)',
 })[timerTone.value])
 
-const stageChip = 'bg-(color:--chip) text-(color:--on-chip) hover:bg-(color:--chip)/85'
-
 const roundArgs = computed(() => ({ round: state.value?.round || 0, total: state.value?.totalRounds || 3 }))
 
 const turnKey = computed(() => `${state.value?.round ?? 0}:${state.value?.drawerId ?? ''}:${phase.value}`)
@@ -255,7 +253,7 @@ defineShortcuts({
         {{ $t(`${turnedAway}.description`, { n: PUBLIC_ROOM_CAP }) }}
       </p>
       <UButton
-        to="/" size="xl" color="secondary" icon="i-lucide-house" class="min-h-11"
+        to="/" size="xl" color="secondary" icon="i-lucide-house"
         :label="$t(`${turnedAway}.home`)" />
     </SketchFrame>
   </main>
@@ -288,30 +286,31 @@ defineShortcuts({
             :text="paused ? $t('pause.resumeHint', pauseTally) : $t('pause.pauseHint', pauseTally)">
             <UButton
               :icon="votedPause ? 'i-lucide-hand' : paused ? 'i-lucide-play' : 'i-lucide-pause'"
-              :color="votedPause ? (paused ? 'success' : 'warning') : 'neutral'" variant="solid"
-              :class="{ [stageChip]: !votedPause }"
+              color="neutral" variant="outline" size="lg" :active="votedPause"
+              :activeColor="paused ? 'success' : 'warning'" activeVariant="solid"
               :label="`${paused ? $t('pause.resume') : $t('pause.pause')} ${pauseTally.votes}/${pauseTally.needed}`"
               @click="togglePause()" />
           </UTooltip>
           <UTooltip :text="$t('header.share')">
             <UButton
-              color="neutral" variant="solid" trailingIcon="i-lucide-share-2" class="font-mono" :class="[stageChip]"
-              :label="gameId" :aria-label="`${$t('header.gameId', { id: gameId })}. ${$t('header.share')}`"
+              color="neutral" variant="outline" size="lg" trailingIcon="i-lucide-share-2"
+              class="font-mono" :label="gameId"
+              :aria-label="`${$t('header.gameId', { id: gameId })}. ${$t('header.share')}`"
               @click="shareGame()" />
           </UTooltip>
           <UButton
-            square variant="ghost" color="neutral" size="lg"
-            class="text-(--on-stage) hover:bg-(--on-stage)/15"
+            square variant="outline" color="neutral" size="lg"
             :icon="muted ? 'i-lucide-volume-x' : 'i-lucide-volume-2'"
             :aria-label="muted ? $t('sound.unmute') : $t('sound.mute')" :aria-pressed="muted"
             @click="muted = !muted" />
-          <UColorModeButton size="lg" class="text-(--on-stage) hover:bg-(--on-stage)/15" />
+          <UColorModeButton size="lg" variant="outline" />
         </div>
 
         <UDropdownMenu :items="menuItems" :content="{ align: 'end' }">
           <UButton
-            color="neutral" variant="solid" square icon="i-lucide-ellipsis" class="lg:hidden size-11 justify-center"
-            :class="[votedPause ? '' : stageChip]" :aria-label="$t('header.menu')" />
+            color="neutral" variant="outline" size="lg" square icon="i-lucide-ellipsis" class="lg:hidden"
+            :active="votedPause" :activeColor="paused ? 'success' : 'warning'" activeVariant="solid"
+            :aria-label="$t('header.menu')" />
         </UDropdownMenu>
       </div>
     </header>
@@ -350,7 +349,7 @@ defineShortcuts({
         <GameSettings
           :state="state" :customWords="customWords" @save="game.send({ t: 'settings', settings: $event })" />
         <UButton
-          color="secondary" size="xl" icon="i-lucide-rocket" class="text-lg min-h-11"
+          color="secondary" size="xl" icon="i-lucide-rocket"
           :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
       </div>
     </SketchFrame>
@@ -419,8 +418,8 @@ defineShortcuts({
               v-if="phase === 'drawing' && state" :reactions="state.reactions" :isDrawer="isDrawer" :you="you"
               @react="game.send({ t: 'react', reaction: $event })" />
             <UButton
-              v-if="hasDrawing" color="neutral" variant="solid" size="lg" icon="i-lucide-download"
-              class="pop-in absolute bottom-1 end-1 z-5 min-h-11 lg:bottom-2 lg:end-2" :class="[stageChip]"
+              v-if="hasDrawing" color="neutral" variant="outline" size="lg" icon="i-lucide-download"
+              class="pop-in absolute bottom-1 end-1 z-5 lg:bottom-2 lg:end-2"
               :label="$t('canvas.download')" @click="downloadDrawing()" />
             <svg
               ref="sketch"
@@ -438,20 +437,20 @@ defineShortcuts({
             phone-landscape:col-start-1 phone-landscape:row-span-full phone-landscape:self-center">
           <div class="max-lg:hidden grid grid-cols-13 gap-1">
             <UButton
-              v-for="(color, index) in paletteColors" :key="index" variant="ghost"
-              class="size-6 p-0 rounded-full ring-1 ring-(--ink)/30 transition-shadow"
-              :class="{ 'ring-3 ring-(--ink)': brush.color === color }"
+              v-for="(color, index) in paletteColors" :key="index" color="neutral" variant="outline"
+              :active="brush.color === color" activeVariant="solid" size="xs" square icon="i-lucide-check"
+              class="rounded-full"
+              :ui="{ leadingIcon: brush.color === color ? 'text-white mix-blend-difference' : 'invisible' }"
               :style="{ backgroundColor: color }" :aria-label="$t('canvas.color', { color })"
               :aria-pressed="brush.color === color" @click="brush.color = color" />
           </div>
           <div class="max-lg:hidden">
             <UPopover>
               <UButton
-                variant="soft" size="xl" color="neutral" square class="size-11 grid place-content-center"
-                :aria-label="$t('canvas.brushSize')">
+                variant="soft" size="lg" color="neutral" square :aria-label="$t('canvas.brushSize')">
                 <div
-                  class="rounded-full transition-transform size-4"
-                  :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.04})` }" />
+                  class="rounded-full transition-transform size-5"
+                  :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.032})` }" />
               </UButton>
               <template #content>
                 <div class="w-48 p-3">
@@ -463,18 +462,18 @@ defineShortcuts({
 
           <UDrawer :title="$t('canvas.brush')" :ui="{ body: 'pb-safe flex flex-col gap-5' }">
             <UButton
-              variant="soft" size="xl" color="neutral" square class="lg:hidden size-11 grid place-content-center"
-              :aria-label="$t('canvas.brush')">
+              variant="soft" size="lg" color="neutral" square class="lg:hidden" :aria-label="$t('canvas.brush')">
               <div
-                class="rounded-full ring-1 ring-(--ink)/30 transition-transform size-4"
-                :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.04})` }" />
+                class="rounded-full ring-1 ring-(--ink)/30 transition-transform size-5"
+                :style="{ backgroundColor: brush.color, transform: `scale(${brush.size * 0.032})` }" />
             </UButton>
             <template #body>
               <div class="grid grid-cols-7 gap-2 justify-items-center">
                 <UButton
-                  v-for="(color, index) in paletteColors" :key="index" variant="ghost"
-                  class="size-11 p-0 rounded-full ring-1 ring-(--ink)/30 transition-shadow"
-                  :class="{ 'ring-4 ring-(--ink)': brush.color === color }"
+                  v-for="(color, index) in paletteColors" :key="index" color="neutral" variant="outline"
+                  :active="brush.color === color" activeVariant="solid" size="lg" square icon="i-lucide-check"
+                  class="rounded-full"
+                  :ui="{ leadingIcon: brush.color === color ? 'text-white mix-blend-difference' : 'invisible' }"
                   :style="{ backgroundColor: color }" :aria-label="$t('canvas.color', { color })"
                   :aria-pressed="brush.color === color" @click="brush.color = color" />
               </div>
@@ -485,11 +484,9 @@ defineShortcuts({
           <div class="flex gap-1.5 lg:gap-2 phone-landscape:flex-col phone-landscape:gap-1">
             <UTooltip v-for="tool in modeTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
               <UButton
-                size="xl" :variant="brush.mode === tool.mode ? 'solid' : 'soft'"
-                :color="brush.mode === tool.mode ? 'primary' : 'neutral'"
-                class="relative size-11 grid place-content-center" square
+                size="lg" color="neutral" variant="soft" :active="brush.mode === tool.mode"
+                activeColor="primary" activeVariant="solid" class="relative" square :icon="tool.icon"
                 :aria-label="$t(tool.label)" :aria-pressed="brush.mode === tool.mode" @click="selectMode(tool.mode)">
-                <UIcon :name="tool.icon" class="size-5" />
                 <UKbd
                   :value="tool.key" size="sm" variant="soft" color="neutral"
                   class="max-lg:hidden absolute top-0.5 start-0.5 font-bold" aria-hidden="true" />
@@ -499,9 +496,8 @@ defineShortcuts({
           <div class="flex gap-1.5 lg:gap-2 phone-landscape:flex-col phone-landscape:gap-1">
             <UTooltip v-for="tool in actionTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
               <UButton
-                size="xl" variant="soft" :color="tool.color" class="relative size-11 grid place-content-center" square
+                size="lg" variant="soft" :color="tool.color" class="relative" square :icon="tool.icon"
                 :aria-label="$t(tool.label)" :disabled="tool.disabled" @click="tool.run()">
-                <UIcon :name="tool.icon" class="size-5" />
                 <UKbd
                   :value="tool.key" size="sm" variant="soft" color="neutral"
                   class="max-lg:hidden absolute top-0.5 start-0.5 font-bold" aria-hidden="true" />

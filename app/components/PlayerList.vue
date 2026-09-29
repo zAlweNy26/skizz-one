@@ -53,7 +53,7 @@ function kickLabel(player: GamePlayer) {
         <span class="relative shrink-0">
           <UAvatar
             :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
-            size="lg" :alt="player.name" class="bg-transparent" />
+            size="lg" :alt="player.name" />
           <UTooltip v-if="leader === player.id" :text="$t('players.leader')">
             <span class="absolute -top-4 -start-2 -rotate-20" role="img" :aria-label="$t('players.leader')">
               <SketchFrame
@@ -66,8 +66,7 @@ function kickLabel(player: GamePlayer) {
           <p class="text-sm font-semibold truncate leading-tight">
             {{ player.name }}
             <UBadge
-              v-if="you === player.id" size="sm" variant="soft"
-              class="font-display align-middle text-current bg-current/10" :label="$t('players.you')" />
+              v-if="you === player.id" size="sm" class="font-display align-middle" :label="$t('players.you')" />
           </p>
           <p class="text-xs font-medium tabular-nums">
             {{ $t('players.points', player.points) }}
@@ -89,14 +88,12 @@ function kickLabel(player: GamePlayer) {
       </SketchFrame>
       <UTooltip v-if="canKick(player)" :text="kickLabel(player)">
         <UButton
-          square icon="i-lucide-user-x" :color="votedKick(player) ? 'error' : 'neutral'"
-          :variant="votedKick(player) ? 'solid' : 'ghost'"
-          class="shrink-0 size-11 justify-center lg:size-9"
-          :class="!votedKick(player) && 'bg-(--chip) text-(--on-chip) hover:bg-(--chip)/85'"
+          square size="lg" icon="i-lucide-user-x" color="neutral" variant="outline"
+          :active="votedKick(player)" activeColor="error" activeVariant="solid" class="shrink-0"
           :aria-label="kickLabel(player)" :aria-pressed="votedKick(player)"
           @click="emit('kick', player.id, !votedKick(player))" />
       </UTooltip>
-      <span v-else-if="kick" class="shrink-0 size-11 lg:size-9" aria-hidden="true" />
+      <span v-else-if="kick" class="shrink-0 size-11" aria-hidden="true" />
     </div>
   </aside>
 </template>
