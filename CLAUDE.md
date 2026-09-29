@@ -137,15 +137,11 @@ Client side of a room (`app/pages/room/[code].vue`):
   - Phones are first-class. Below `lg` the room is one non-scrolling screen
     (`h-dvh`): top bar with a "⋯" menu, `PlayerStrip` (bottom sheet for the
     full list), word and timer, canvas, a one-row toolbar with colour/size in a
-    bottom sheet, and the chat filling the rest. From `lg` up it's the
+    bottom sheet, and the chat filling the rest. In landscape below `lg`
+    (`phone-landscape:` variant) it's toolbar | canvas | side column, with the
+    canvas sized by `canvas-landscape` in `theme.css`. From `lg` up it's the
     three-column grid. Keep tap targets ≥44px (`size-11`/`min-h-11`) and check
     changes at 390×844.
-  - iPhone keyboard: Safari overlays the keyboard (ignoring
-    `interactive-widget=resizes-content`) and pans the page to reveal a focused
-    input. Don't fight the pan: `useKeyboardFit` (iOS only) pins the room's
-    `<main>` to the `visualViewport` (offset and height, on `resize` and
-    `scroll`) while an input in it is focused, so the room shrinks above the
-    keyboard as it does on Android.
 - **fallow:** entries or class members only reached by frameworks (e.g. new
   `partyserver` lifecycle hooks, `preset/entry.ts`) must be listed in
   `.fallowrc.json`, or they're reported as unused.

@@ -16,8 +16,6 @@ const route = useRoute()
 const gameId = computed(() => String(route.params.code ?? ''))
 const sketch = useTemplateRef<SVGSVGElement>('sketch')
 const currentBg = ref('#FFFFFF')
-const room = useTemplateRef<HTMLElement>('room')
-const keyboardFit = useKeyboardFit(room)
 
 const drauu = useDrauu(sketch, {
   brush: {
@@ -227,10 +225,13 @@ defineShortcuts({
 
 <template>
   <main
-    ref="room" :style="keyboardFit"
-    class="group/room flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
-      overscroll-y-contain lg:gap-5 lg:h-auto lg:min-h-dvh lg:overflow-visible">
-    <header class="flex items-center gap-x-3 lg:flex-wrap lg:gap-x-5 lg:gap-y-3">
+    class="flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
+      overscroll-y-contain lg:gap-5 lg:h-auto lg:min-h-dvh lg:overflow-visible
+      phone-landscape:grid phone-landscape:grid-cols-[auto_auto_minmax(0,1fr)]
+      phone-landscape:grid-rows-[auto_auto_minmax(0,1fr)_auto]">
+    <header
+      class="flex items-center gap-x-3 lg:flex-wrap lg:gap-x-5 lg:gap-y-3
+        phone-landscape:col-start-3 phone-landscape:row-start-1">
       <NuxtLink to="/" class="press shrink-0 inline-flex items-center min-h-11 -rotate-6 rounded-sketch">
         <img src="/favicon.svg" alt="SkizzOne" class="size-11 lg:size-12">
       </NuxtLink>
@@ -280,11 +281,15 @@ defineShortcuts({
 
     <PlayerStrip
       :players="leaderboard" :drawerId="state?.drawerId" :you="you"
-      class="lg:hidden group-has-[input:focus]/room:hidden" />
+      class="lg:hidden phone-landscape:col-start-3 phone-landscape:row-start-4" />
 
     <SketchFrame
       v-if="phase === 'lobby' || phase === 'finished'" :radius="20" :strokeWidth="3"
-      class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 lg:gap-y-4 lg:px-6 lg:py-5">
+      class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 lg:gap-y-4 lg:px-6 lg:py-5"
+      :class="phase === 'lobby'
+        ? ['phone-landscape:canvas-landscape phone-landscape:col-start-2 phone-landscape:row-span-full',
+           'phone-landscape:content-center']
+        : 'phone-landscape:col-start-3 phone-landscape:row-start-2'">
       <SketchFrame
         shape="circle" fill="var(--color-tangerine-200)"
         class="max-sm:hidden size-14 grid place-content-center shrink-0 text-(--ink-fixed)">
@@ -315,17 +320,22 @@ defineShortcuts({
       class="flex flex-col flex-1 min-h-0 w-full gap-2
         lg:grid lg:flex-none lg:gap-5 lg:items-start
         lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_22rem]
-        2xl:grid-cols-[15rem_minmax(0,1fr)_24rem]">
+        2xl:grid-cols-[15rem_minmax(0,1fr)_24rem] phone-landscape:contents">
       <PlayerList
         :players="leaderboard" :drawerId="state?.drawerId" :you="you"
         class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1" />
 
-      <div class="flex flex-col gap-2 shrink-0 lg:gap-4 lg:order-2">
-        <div v-if="phase !== 'lobby' && phase !== 'finished'" class="flex items-center justify-center gap-3 lg:gap-4">
+      <div class="flex flex-col gap-2 shrink-0 lg:gap-4 lg:order-2 phone-landscape:contents">
+        <div
+          v-if="phase !== 'lobby' && phase !== 'finished'"
+          class="flex items-center justify-center gap-3 lg:gap-4
+            phone-landscape:col-start-3 phone-landscape:row-start-2">
           <SketchFrame
             :key="turnKey" :radius="18" :strokeWidth="3"
             class="pop-in flex items-center gap-3 px-4 py-1.5 min-h-12 min-w-0 lg:px-6 lg:py-2 lg:min-h-16">
-            <p class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word">
+            <p
+              class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word
+                phone-landscape:text-xl phone-landscape:tracking-widest">
               <span aria-hidden="true">{{ wordDisplay }}</span>
               <span class="sr-only">{{ word ?? $t('header.hint') }}</span>
             </p>
@@ -342,7 +352,7 @@ defineShortcuts({
           </SketchFrame>
           <SketchFrame
             v-if="secondsLeft !== null" shape="circle" :fill="timerFill" :strokeWidth="3"
-            class="size-14 shrink-0 grid place-content-center lg:size-18"
+            class="size-14 shrink-0 grid place-content-center lg:size-18 phone-landscape:size-12"
             :class="{ 'text-(--ink-fixed)': timerTone !== 'calm' }"
             role="timer" :aria-label="`${secondsLeft}s`">
             <span
@@ -356,8 +366,11 @@ defineShortcuts({
 
         <SketchFrame
           :radius="16" :strokeWidth="3.5" :roughness="1.4"
-          class="p-1.5 w-full mx-auto lg:p-2.5 lg:max-w-[calc((100dvh-21rem)*16/9)]">
-          <div class="relative aspect-video rounded-sm overflow-hidden" :style="{ backgroundColor: currentBg }">
+          class="p-1.5 w-full mx-auto lg:p-2.5 lg:max-w-[calc((100dvh-21rem)*4/3)]
+            phone-landscape:canvas-landscape phone-landscape:col-start-2 phone-landscape:row-span-full
+            phone-landscape:self-start"
+          :class="{ 'phone-landscape:hidden': phase === 'lobby' }">
+          <div class="relative aspect-4/3 rounded-sm overflow-hidden" :style="{ backgroundColor: currentBg }">
             <CanvasOverlay
               :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices"
               :drawerName="drawerName" :players="leaderboard" :you="you"
@@ -373,7 +386,9 @@ defineShortcuts({
 
         <SketchFrame
           v-if="canDraw" :radius="16" :strokeWidth="2.5"
-          class="flex flex-wrap items-center justify-between gap-2 p-1.5 lg:gap-4 lg:p-3">
+          class="flex flex-wrap items-center justify-between gap-2 p-1.5 lg:gap-4 lg:p-3
+            phone-landscape:flex-col phone-landscape:flex-nowrap phone-landscape:gap-1
+            phone-landscape:col-start-1 phone-landscape:row-span-full phone-landscape:self-center">
           <button
             type="button"
             class="max-lg:hidden press size-11 shrink-0 rounded-full ring-2 ring-(--ink) cursor-pointer
@@ -436,7 +451,7 @@ defineShortcuts({
             </template>
           </UDrawer>
 
-          <div class="flex gap-1.5 lg:gap-2">
+          <div class="flex gap-1.5 lg:gap-2 phone-landscape:flex-col phone-landscape:gap-1">
             <UTooltip v-for="tool in modeTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
               <UButton
                 size="xl" :variant="brush.mode === tool.mode ? 'solid' : 'soft'"
@@ -452,7 +467,7 @@ defineShortcuts({
               </UButton>
             </UTooltip>
           </div>
-          <div class="flex gap-1.5 lg:gap-2">
+          <div class="flex gap-1.5 lg:gap-2 phone-landscape:flex-col phone-landscape:gap-1">
             <UTooltip v-for="tool in actionTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
               <UButton
                 size="xl" variant="soft" :color="tool.color" class="relative size-11 grid place-content-center" square
@@ -470,8 +485,9 @@ defineShortcuts({
       </div>
 
       <ChatPanel
-        class="flex-1 min-h-24 lg:order-3 lg:flex-none lg:col-start-2 lg:h-80 lg:contain-size
-          xl:col-start-3 xl:row-start-1 xl:h-auto xl:self-stretch"
+        class="flex-1 min-h-36 lg:order-3 lg:flex-none lg:col-start-2 lg:h-80 lg:contain-size
+          xl:col-start-3 xl:row-start-1 xl:h-auto xl:self-stretch
+          phone-landscape:col-start-3 phone-landscape:row-start-3"
         :entries="chat" :isDrawer="isDrawer" :hasGuessed="hasGuessed"
         :drawing="phase === 'drawing'" :paused="paused" @guess="submitGuess" />
     </section>

@@ -2,6 +2,8 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+@custom-variant phone-landscape (@media (orientation: landscape) and (width < 64rem));
+
 @theme static {
   --font-sans: 'Shantell Sans', ui-rounded, system-ui, sans-serif;
 
@@ -82,6 +84,15 @@
     padding-top: max(1rem, env(safe-area-inset-top));
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+}
+
+/* Fits the room's height, leaving 21.5rem for the toolbar, two gaps and a 17rem side column. */
+@utility canvas-landscape {
+  width: min(
+    calc((100dvh - max(0.5rem, env(safe-area-inset-top)) - max(0.5rem, env(safe-area-inset-bottom)) - 0.75rem) * 4 / 3
+      + 0.75rem),
+    calc(100vw - max(1.25rem, env(safe-area-inset-left)) - max(1.25rem, env(safe-area-inset-right)) - 21.5rem)
+  );
 }
 
 @utility pb-safe {
