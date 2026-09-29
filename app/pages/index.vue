@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { randomUUID } from 'uncrypto'
 import { useSchemaOrg } from '#imports'
+import { LANGUAGES } from '#shared/utils/protocol'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const { rooms, ready } = useLobby()
 const nickname = useNickname()
 const joinedRooms = useJoinedRooms()
 
@@ -24,15 +26,20 @@ const roomCode = computed(() => {
   }
 })
 
-function enter(room: string) {
+function enter(room: string, isPublic = false) {
   if (!trimmedName.value || !room) return
   nickname.value = trimmedName.value
   if (!joinedRooms.value.includes(room)) joinedRooms.value.push(room)
-  return navigateTo(`/room/${encodeURIComponent(room)}`)
+  return navigateTo({ path: `/room/${encodeURIComponent(room)}`, query: isPublic ? { public: '1' } : undefined })
 }
 
-function createRoom() {
-  return enter(randomUUID().split('-')[0]!)
+function createRoom(isPublic = false) {
+  return enter(randomUUID().split('-')[0]!, isPublic)
+}
+
+function quickPlay() {
+  const room = pickQuickPlayRoom(rooms.value, locale.value)
+  return room ? enter(room.id) : createRoom(true)
 }
 
 const footerUi = {
@@ -92,6 +99,10 @@ useSchemaOrg([
             v-if="!invitedCode" block size="xl" color="secondary" icon="i-lucide-sparkles"
             class="text-lg py-3" :label="$t('home.create')" :disabled="!trimmedName" @click="createRoom()" />
 
+          <UButton
+            v-if="!invitedCode" block size="xl" color="primary" variant="soft" icon="i-lucide-zap"
+            class="text-lg py-3" :label="$t('home.quickPlay')" :disabled="!trimmedName" @click="quickPlay()" />
+
           <USeparator v-if="!invitedCode" :label="$t('home.or')" :ui="{ label: 'font-display text-muted' }" />
 
           <UFormField :label="$t('home.code')" :ui="{ label: 'font-display text-base' }">
@@ -105,6 +116,34 @@ useSchemaOrg([
                 :disabled="!trimmedName || !roomCode" @click="enter(roomCode)" />
             </UFieldGroup>
           </UFormField>
+        </SketchFrame>
+
+        <SketchFrame
+          v-if="!invitedCode" as="section" :radius="22" :strokeWidth="3" class="w-full p-6 sm:p-8 flex flex-col gap-4"
+          aria-labelledby="public-rooms">
+          <h2 id="public-rooms" class="font-display font-bold text-xl">
+            {{ $t('home.publicRooms') }}
+          </h2>
+          <p v-if="!rooms.length" class="text-muted">
+            {{ ready ? $t('home.noRooms') : $t('home.loadingRooms') }}
+          </p>
+          <ul v-else v-auto-animate class="flex flex-col gap-3">
+            <li v-for="room in rooms" :key="room.id" class="flex items-center gap-3">
+              <div class="grow min-w-0">
+                <p class="font-display font-semibold truncate">
+                  {{ $t('home.roomOf', { name: room.hostName }) }}
+                </p>
+                <p class="text-sm text-muted truncate">
+                  {{ LANGUAGES[room.language] }} · {{ $t('home.playerCount', room.players) }} ·
+                  {{ room.phase === 'lobby' ? $t('home.waiting')
+                    : $t('home.inGame', { round: room.round, total: room.totalRounds }) }}
+                </p>
+              </div>
+              <UButton
+                size="lg" color="primary" variant="soft" icon="i-lucide-log-in" class="min-h-11 shrink-0"
+                :label="$t('home.join')" :disabled="!trimmedName" @click="enter(room.id)" />
+            </li>
+          </ul>
         </SketchFrame>
       </div>
     </div>

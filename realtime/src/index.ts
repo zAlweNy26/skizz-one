@@ -1,7 +1,8 @@
 import { routePartykitRequest } from 'partyserver'
 import { GameRoom } from './game-room'
+import { Lobby } from './lobby'
 
-export { GameRoom }
+export { GameRoom, Lobby }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

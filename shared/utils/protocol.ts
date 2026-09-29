@@ -86,6 +86,8 @@ export interface RoomSettings {
   totalRounds: number
   hints: number
   customWords: string[]
+  /** Listed on the home page for anyone to join. */
+  public: boolean
 }
 
 /** Round `value` into `[min, max]`, or null if it isn't a number at all. */
@@ -184,7 +186,26 @@ export interface GameState {
   kickVotes: Record<string, string[]>
   /** Set once the game is over. */
   awards: Award[]
+  public: boolean
 }
+
+/** Players a public room can hold before quick play stops sending people to it. */
+export const PUBLIC_ROOM_CAP = 10
+
+/** A public room as the home page lists it. */
+export interface PublicRoom {
+  id: string
+  hostName: string
+  /** Connected players, away ones not counted. */
+  players: number
+  language: Language
+  phase: RoundPhase
+  round: number
+  totalRounds: number
+}
+
+/** What the lobby at `/parties/lobby/global` sends. */
+export interface LobbyMessage { t: 'rooms', rooms: PublicRoom[] }
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'
 

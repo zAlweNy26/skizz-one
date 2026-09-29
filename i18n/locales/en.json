@@ -40,7 +40,10 @@
     "roundCount": "{n} round | {n} rounds",
     "hintCount": "no hints | {n} hint | {n} hints",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "public": "Public room",
+    "publicHelp": "Anyone can find it on the home page and join.",
+    "publicBadge": "Public"
   },
   "canvas": {
     "color": "Colour {color}",
@@ -117,7 +120,15 @@
     "codePlaceholder": "Room code or link",
     "join": "Join",
     "madeBy": "Made by {name}",
-    "sourceCode": "Source code on GitHub"
+    "sourceCode": "Source code on GitHub",
+    "quickPlay": "Quick play",
+    "publicRooms": "Public rooms",
+    "loadingRooms": "Looking for public rooms…",
+    "noRooms": "No public rooms right now. Start one with Quick play!",
+    "roomOf": "{name}'s room",
+    "playerCount": "{n} player | {n} players",
+    "waiting": "waiting to start",
+    "inGame": "round {round}/{total}"
   },
   "join": {
     "title": "Ready to draw?",

@@ -4,7 +4,7 @@
   "usedClassMembers": [
     {
       "extends": "Server",
-      "members": ["options", "getConnectionTags", "onConnect", "onMessage", "onClose", "onError", "onAlarm", "onRequest", "onStart"]
+      "members": ["options", "getConnectionTags", "onConnect", "onMessage", "onClose", "onError", "onAlarm", "onRequest", "onStart", "update"]
     }
   ],
   "ignoreDependencies": [

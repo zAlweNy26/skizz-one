@@ -65,6 +65,9 @@ Two Workers, one shared protocol:
   persisted to DO storage and re-hydrated in the constructor. The secret word
   never leaves the DO except in the drawer's copy of the `turn` message.
   `ALLOWED_ORIGINS` is the only origin gate (no CORS preflight for WS upgrades).
+  A second DO, `Lobby` (`/parties/lobby/global`, one instance), lists public
+  rooms: each `GameRoom` pushes its listing via the `update` RPC and the home
+  page subscribes over a WebSocket.
 - **PWA** — `@vite-pwa/nuxt` (`pwa` in `nuxt.config.ts`, `autoUpdate`) owns the
   manifest (`/manifest.webmanifest`) and the Workbox service worker, which is
   only built in production. The SPA shell `/` is rendered by the Worker rather

@@ -19,8 +19,8 @@ function check(label, ok, detail = '') {
   if (!ok) failures++
 }
 
-function connect(playerId, name, room = ROOM) {
-  const ws = new WebSocket(`${BASE}/${room}?playerId=${playerId}&name=${name}`)
+function connect(playerId, name, room = ROOM, extra = '') {
+  const ws = new WebSocket(`${BASE}/${room}?playerId=${playerId}&name=${name}${extra}`)
   ws.inbox = []
   ws.addEventListener('message', (e) => {
     try {
@@ -54,6 +54,57 @@ const send = (ws, msg) => ws.send(JSON.stringify(msg))
 /** A kicked socket is told so before the server closes it; the close frame itself can lag. */
 async function waitKicked(ws, ms = 4000) {
   return Boolean(await waitFor(ws, m => m.t === 'kicked', ms))
+}
+
+function lobbySocket() {
+  const ws = new WebSocket(`ws://127.0.0.1:${PORT}/parties/lobby/global`)
+  ws.inbox = []
+  ws.addEventListener('message', e => ws.inbox.push(JSON.parse(e.data)))
+  return new Promise((resolve, reject) => {
+    ws.addEventListener('open', () => resolve(ws))
+    ws.addEventListener('error', reject)
+  })
+}
+
+async function publicRooms() {
+  const lobby = await lobbySocket()
+  const listed = id => m => m.t === 'rooms' && m.rooms.some(r => r.id === id)
+  const entry = (m, id) => m?.rooms?.find(r => r.id === id)
+  check('the lobby sends the room list on connect', Boolean(await waitFor(lobby, m => m.t === 'rooms')))
+
+  const hidden = `private-${crypto.randomUUID().slice(0, 8)}`
+  const p1 = await connect('pub-p', 'Pat', hidden)
+  await waitFor(p1, m => m.t === 'welcome')
+  check('a private room is never listed', !(await waitFor(lobby, listed(hidden), 800)))
+
+  const room = `public-${crypto.randomUUID().slice(0, 8)}`
+  const h = await connect('pub-h', 'Hugo', room, '&public=1')
+  const welcome = await waitFor(h, m => m.t === 'welcome')
+  check('quick play creates a public room', welcome?.state?.public === true)
+  const first = await waitFor(lobby, listed(room))
+  check('a public room shows up in the lobby', entry(first, room)?.hostName === 'Hugo'
+  && entry(first, room)?.players === 1, JSON.stringify(entry(first, room)))
+
+  const j = await connect('pub-j', 'Jo', room, '&public=1')
+  await waitFor(j, m => m.t === 'welcome')
+  const two = await waitFor(lobby, m => entry(m, room)?.players === 2)
+  check('the listing follows the player count', Boolean(two))
+  check('joining an existing room with the flag changes nothing', j.inbox.find(m => m.t === 'welcome')?.state?.public)
+
+  lobby.inbox.length = 0
+  send(j, { t: 'settings', settings: { public: false } })
+  check('only the host can make a room private', !(await waitFor(lobby, m => m.t === 'rooms' && !entry(m, room), 800)))
+  send(h, { t: 'settings', settings: { public: false } })
+  check('a room made private leaves the lobby', Boolean(await waitFor(lobby, m => m.t === 'rooms' && !entry(m, room))))
+  send(h, { t: 'settings', settings: { public: true } })
+  check('and comes back when made public again', Boolean(await waitFor(lobby, listed(room))))
+
+  h.close()
+  j.close()
+  const emptied = await waitFor(lobby, m => m.t === 'rooms' && !entry(m, room), AWAY_GRACE_MS + 5000)
+  check('an empty room leaves the lobby once its players\' grace runs out', Boolean(emptied))
+
+  for (const ws of [p1, lobby]) ws.close()
 }
 
 async function kicking() {
@@ -404,6 +455,7 @@ async function main() {
   await sleep(200)
 
   await kicking()
+  await publicRooms()
 
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`)
   process.exit(failures === 0 ? 0 : 1)

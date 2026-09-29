@@ -11,6 +11,10 @@
       {
         "name": "GameRoom",
         "class_name": "GameRoom"
+      },
+      {
+        "name": "Lobby",
+        "class_name": "Lobby"
       }
     ]
   },
@@ -18,6 +22,10 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["GameRoom"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["Lobby"]
     }
   ],
   "observability": {

@@ -9,12 +9,13 @@ import type {
   LogKey,
   LogLevel,
   LogParams,
+  PublicRoom,
   Reaction,
   RoomSettings,
   RoundPhase,
   ServerMessage,
 } from '../../shared/utils/protocol'
-import { Server } from 'partyserver'
+import { getServerByName, Server } from 'partyserver'
 import {
   AWAY_GRACE_MS,
   clampSetting,
@@ -75,6 +76,7 @@ interface RoomState {
   drawTime: number
   hints: number
   customWords: string[]
+  public: boolean
   hostId: string | null
   drawerId: string | null
   endsAt: number | null
@@ -143,6 +145,7 @@ function initialState(): RoomState {
     drawTime: DRAW_TIME.default,
     hints: HINTS.default,
     customWords: [],
+    public: false,
     hostId: null,
     drawerId: null,
     endsAt: null,
@@ -173,6 +176,9 @@ export class GameRoom extends Server<Env> {
 
   /** Cached SVG innerHTML for late joiners. */
   #canvas = ''
+
+  /** The last listing sent to the lobby, as JSON. */
+  #reported: string | null = null
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -258,6 +264,7 @@ export class GameRoom extends Server<Env> {
         return voters.length ? [[target, voters]] : []
       })),
       awards: s.phase === 'finished' ? this.#awards() : [],
+      public: s.public,
     }
   }
 
@@ -277,6 +284,33 @@ export class GameRoom extends Server<Env> {
 
   #broadcastState() {
     this.#broadcast({ t: 'state', state: this.#publicState() })
+    this.#reportToLobby()
+  }
+
+  #reportToLobby() {
+    const s = this.#state
+    const players = this.#activeCount()
+    const host = s.hostId ? s.players[s.hostId] : null
+    const room: PublicRoom | null = s.public && players > 0 && host
+      ? {
+          id: this.name,
+          hostName: host.name,
+          players,
+          language: s.language,
+          phase: s.phase,
+          round: s.round,
+          totalRounds: s.totalRounds,
+        }
+      : null
+
+    const report = JSON.stringify(room)
+    if (report === this.#reported || (this.#reported === null && room === null)) return
+    this.#reported = report
+    this.ctx.waitUntil(getServerByName(this.env.Lobby, 'global')
+      .then(lobby => lobby.update(this.name, room))
+      .catch(() => {
+        this.#reported = null
+      }))
   }
 
   #sendCustomWords() {
@@ -337,6 +371,7 @@ export class GameRoom extends Server<Env> {
       existing.name = name
       delete existing.awaySince
     } else {
+      if (s.order.length === 0 && url.searchParams.get('public') === '1') s.public = true
       s.players[playerId] = {
         id: playerId,
         name,
@@ -526,6 +561,7 @@ export class GameRoom extends Server<Env> {
     s.totalRounds = clampSetting(settings.totalRounds, ROUNDS) ?? s.totalRounds
     s.hints = clampSetting(settings.hints, HINTS) ?? s.hints
     if (Array.isArray(settings.customWords)) s.customWords = cleanCustomWords(settings.customWords)
+    if (typeof settings.public === 'boolean') s.public = settings.public
 
     await this.#save()
     if (languageChanged) this.#log('info', 'languageChanged', { language: LANGUAGES[s.language] })

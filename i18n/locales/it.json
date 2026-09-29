@@ -40,7 +40,10 @@
     "roundCount": "{n} round | {n} round",
     "hintCount": "nessun indizio | {n} indizio | {n} indizi",
     "save": "Salva",
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "public": "Stanza pubblica",
+    "publicHelp": "Chiunque può trovarla nella home e unirsi.",
+    "publicBadge": "Pubblica"
   },
   "canvas": {
     "color": "Colore {color}",
@@ -117,7 +120,15 @@
     "codePlaceholder": "Codice o link della stanza",
     "join": "Entra",
     "madeBy": "Creato da {name}",
-    "sourceCode": "Codice sorgente su GitHub"
+    "sourceCode": "Codice sorgente su GitHub",
+    "quickPlay": "Partita rapida",
+    "publicRooms": "Stanze pubbliche",
+    "loadingRooms": "Cerco stanze pubbliche…",
+    "noRooms": "Nessuna stanza pubblica al momento. Creane una con Partita rapida!",
+    "roomOf": "La stanza di {name}",
+    "playerCount": "{n} giocatore | {n} giocatori",
+    "waiting": "in attesa di iniziare",
+    "inGame": "round {round}/{total}"
   },
   "join": {
     "title": "Pronto a disegnare?",

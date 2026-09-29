@@ -104,6 +104,7 @@ const settingsSummary = computed(() => {
   const s = state.value
   if (!s) return []
   return [
+    ...(s.public ? [{ icon: 'i-lucide-globe', label: t('settings.publicBadge') }] : []),
     { icon: 'i-lucide-languages', label: LANGUAGES[s.language] },
     { icon: 'i-lucide-timer', label: t('settings.seconds', { n: s.drawTime }) },
     { icon: 'i-lucide-repeat', label: t('settings.roundCount', s.totalRounds) },

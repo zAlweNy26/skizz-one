@@ -18,6 +18,7 @@ const language = ref<Language>(props.state.language)
 const drawTime = ref(props.state.drawTime)
 const totalRounds = ref(props.state.totalRounds)
 const hints = ref(props.state.hints)
+const isPublic = ref(props.state.public)
 const wordsText = ref('')
 
 watch(open, (now) => {
@@ -26,6 +27,7 @@ watch(open, (now) => {
   drawTime.value = props.state.drawTime
   totalRounds.value = props.state.totalRounds
   hints.value = props.state.hints
+  isPublic.value = props.state.public
   wordsText.value = props.customWords.join(', ')
 })
 
@@ -38,6 +40,7 @@ function save() {
     totalRounds: totalRounds.value,
     hints: hints.value,
     customWords: words.value,
+    public: isPublic.value,
   })
   open.value = false
 }
@@ -50,6 +53,10 @@ function save() {
       :label="$t('settings.open')" />
 
     <template #body>
+      <USwitch
+        v-model="isPublic" size="lg" :label="$t('settings.public')" :description="$t('settings.publicHelp')"
+        :ui="{ root: 'min-h-11 items-center' }" />
+
       <UFormField :label="$t('lobby.wordLanguage')">
         <USelect
           v-model="language" :items="languageItems" icon="i-lucide-languages" size="lg" class="w-full min-h-11" />
