@@ -6,6 +6,12 @@ const VOLUME = 0.5
 const TICK_VOLUME = 0.3
 const TICK_FROM_SECONDS = 5
 
+declare global {
+  interface Navigator {
+    audioSession?: { type: string }
+  }
+}
+
 export function useSounds({ onMessage, you, state, secondsLeft }: Pick<
   ReturnType<typeof useGameSocket>,
   'onMessage' | 'you' | 'state'
@@ -16,10 +22,13 @@ export function useSounds({ onMessage, you, state, secondsLeft }: Pick<
   const buffers = new Map<Sound, Promise<AudioBuffer | undefined>>()
 
   function unlock() {
-    context ??= new AudioContext()
-    if (context.state === 'suspended') context.resume().catch(() => {})
+    if (!context) {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback'
+      context = new AudioContext()
+    }
+    if (context.state !== 'running') context.resume().catch(() => {})
   }
-  useEventListener(document, ['pointerdown', 'keydown'], unlock, { passive: true })
+  useEventListener(document, ['pointerdown', 'pointerup', 'click', 'keydown'], unlock, { passive: true })
   onMounted(() => {
     if (navigator.userActivation?.hasBeenActive) unlock()
   })
