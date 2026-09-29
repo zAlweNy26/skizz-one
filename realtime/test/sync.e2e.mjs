@@ -270,6 +270,9 @@ async function main() {
   const wrongEcho = await waitFor(drawerWs, m => m.t === 'chat' && m.text === 'definitely-not-the-word')
   check('a wrong guess is broadcast as chat', Boolean(wrongEcho))
 
+  send(watcherWs, { t: 'guess', text: drawerTurn.word.slice(0, -1) })
+  check('a near miss is flagged as close', Boolean(await waitFor(watcherWs, m => m.t === 'log' && m.key === 'close')))
+
   watcherWs.inbox.length = 0
   drawerWs.inbox.length = 0
   send(watcherWs, { t: 'guess', text: drawerTurn.word })
@@ -381,6 +384,16 @@ async function main() {
   check('the game ends when one player is left', Boolean(finished))
   check('the winner is announced', a.inbox.some(m => m.t === 'log' && m.key === 'winner'))
   check('nothing is paused after the game ends', finished?.state?.paused === false)
+
+  const awardOf = key => finished?.state?.awards?.find(award => award.key === key)
+  check('the fastest guess wins an award', awardOf('fastest')?.playerId === watcherId
+  && awardOf('fastest').value > 0, JSON.stringify(awardOf('fastest')))
+  check('the near miss wins "almost had it"', awardOf('almostHadIt')?.playerId === watcherId,
+    JSON.stringify(awardOf('almostHadIt')))
+  check('the guessed drawer wins "Picasso"', awardOf('picasso')?.playerId === drawer,
+    JSON.stringify(awardOf('picasso')))
+  check('no likes means no "most liked"', !awardOf('mostLiked'))
+  check('awards stay out of a running game', welcomeA?.state?.awards?.length === 0)
 
   a.close()
   await sleep(200)

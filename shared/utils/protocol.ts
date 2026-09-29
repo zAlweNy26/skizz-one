@@ -133,6 +133,15 @@ export function kickVotesNeeded(active: number) {
 /** A guesser's thumbs up or down on the current drawing. Feedback for the drawer only; it never scores. */
 export type Reaction = 'like' | 'dislike'
 
+export type AwardKey = 'fastest' | 'mostLiked' | 'almostHadIt' | 'picasso'
+
+/** An end-of-game title. `value` is ms for `fastest`, a count otherwise. */
+export interface Award {
+  key: AwardKey
+  playerId: string
+  value: number
+}
+
 export interface GamePlayer {
   id: string
   name: string
@@ -170,6 +179,8 @@ export interface GameState {
   reactions: Record<string, Reaction>
   /** Active players voting to kick each target, by target id. */
   kickVotes: Record<string, string[]>
+  /** Set once the game is over. */
+  awards: Award[]
 }
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'

@@ -1,5 +1,6 @@
 import type { Connection, ConnectionContext, WSMessage } from 'partyserver'
 import type {
+  Award,
   ClientMessage,
   DrawingMessage,
   GamePlayer,
@@ -103,6 +104,30 @@ interface RoomState {
   kickVotes: Record<string, string[]>
   /** Players kicked from the room, who can't rejoin it. */
   banned: string[]
+  stats: GameStats
+}
+
+/** What this game's awards are drawn from. */
+interface GameStats {
+  /** The quickest correct guess, in ms into the turn. */
+  fastest: { playerId: string, ms: number } | null
+  closeGuesses: Record<string, number>
+  /** The single drawing with the most likes. */
+  mostLiked: { playerId: string, likes: number } | null
+  /** Correct guesses on each drawer's turns. */
+  guessedOn: Record<string, number>
+}
+
+function emptyStats(): GameStats {
+  return { fastest: null, closeGuesses: {}, mostLiked: null, guessedOn: {} }
+}
+
+/** The player with the highest positive count; the earliest of a tie. */
+function topCount(counts: Record<string, number>) {
+  let best: [string, number] | null = null
+  for (const entry of Object.entries(counts))
+    if (entry[1] > 0 && entry[1] > (best?.[1] ?? 0)) best = entry
+  return best
 }
 
 interface ConnState {
@@ -137,6 +162,7 @@ function initialState(): RoomState {
     reactions: {},
     kickVotes: {},
     banned: [],
+    stats: emptyStats(),
   }
 }
 
@@ -223,7 +249,22 @@ export class GameRoom extends Server<Env> {
         const voters = this.#kickVoters(target)
         return voters.length ? [[target, voters]] : []
       })),
+      awards: s.phase === 'finished' ? this.#awards() : [],
     }
+  }
+
+  #awards() {
+    const s = this.#state
+    const { fastest, closeGuesses, mostLiked, guessedOn } = s.stats
+    const close = topCount(closeGuesses)
+    const picasso = topCount(guessedOn)
+    const awards: Award[] = [
+      ...(fastest ? [{ key: 'fastest' as const, playerId: fastest.playerId, value: fastest.ms }] : []),
+      ...(mostLiked ? [{ key: 'mostLiked' as const, playerId: mostLiked.playerId, value: mostLiked.likes }] : []),
+      ...(close ? [{ key: 'almostHadIt' as const, playerId: close[0], value: close[1] }] : []),
+      ...(picasso ? [{ key: 'picasso' as const, playerId: picasso[0], value: picasso[1] }] : []),
+    ]
+    return awards.filter(a => s.players[a.playerId] && !s.banned.includes(a.playerId))
   }
 
   #broadcastState() {
@@ -511,8 +552,11 @@ export class GameRoom extends Server<Env> {
     if (!answer || guess !== answer) {
       this.#broadcast({ t: 'chat', sender: player.name, text })
 
-      if (answer && editDistance(guess, answer, NEAR_MISS_DISTANCE) <= NEAR_MISS_DISTANCE)
+      if (answer && editDistance(guess, answer, NEAR_MISS_DISTANCE) <= NEAR_MISS_DISTANCE) {
         this.#send(connection, { t: 'log', level: 'warning', key: 'close', params: { text } })
+        s.stats.closeGuesses[playerId] = (s.stats.closeGuesses[playerId] ?? 0) + 1
+        await this.#save()
+      }
 
       return
     }
@@ -527,7 +571,13 @@ export class GameRoom extends Server<Env> {
     player.points += points
 
     const drawer = s.drawerId ? s.players[s.drawerId] : null
-    if (drawer) drawer.points += drawerShare(points, rank, guessers)
+    if (drawer) {
+      drawer.points += drawerShare(points, rank, guessers)
+      s.stats.guessedOn[drawer.id] = (s.stats.guessedOn[drawer.id] ?? 0) + 1
+    }
+
+    const ms = this.#drawMs() - remaining
+    if (!s.stats.fastest || ms < s.stats.fastest.ms) s.stats.fastest = { playerId, ms }
 
     this.#log('success', 'guessed', { name: player.name })
     await this.#save()
@@ -779,6 +829,7 @@ export class GameRoom extends Server<Env> {
     s.pauseVotes = []
     s.pause = null
     for (const p of Object.values(s.players)) p.points = 0
+    s.stats = emptyStats()
     await this.#startTurn()
   }
 
@@ -915,6 +966,9 @@ export class GameRoom extends Server<Env> {
   async #endRound() {
     const s = this.#state
     const word = s.word ?? ''
+    const likes = Object.values(s.reactions).filter(r => r === 'like').length
+    if (s.drawerId && likes > (s.stats.mostLiked?.likes ?? 0))
+      s.stats.mostLiked = { playerId: s.drawerId, likes }
 
     s.phase = 'intermission'
     s.endsAt = Date.now() + INTERMISSION_MS

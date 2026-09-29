@@ -162,5 +162,16 @@
     "title": "You were removed from this room",
     "description": "The other players voted you out, so you can't rejoin this room.",
     "home": "Back to the home page"
+  },
+  "awards": {
+    "title": "Awards",
+    "fastest": "Fastest guess",
+    "fastestValue": "{n} s",
+    "mostLiked": "Most liked drawing",
+    "mostLikedValue": "{n} like | {n} likes",
+    "almostHadIt": "Almost had it",
+    "almostHadItValue": "{n} close guess | {n} close guesses",
+    "picasso": "Picasso",
+    "picassoValue": "guessed {n} time | guessed {n} times"
   }
 }

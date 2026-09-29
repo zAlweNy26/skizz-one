@@ -402,7 +402,7 @@ defineShortcuts({
           <div class="relative aspect-4/3 rounded-sm overflow-hidden bg-white">
             <CanvasOverlay
               :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices" :canReroll="canReroll"
-              :drawerName="drawerName" :players="leaderboard" :you="you"
+              :drawerName="drawerName" :players="leaderboard" :you="you" :awards="state?.awards ?? []"
               @choose="game.send({ t: 'choose', index: $event })" @reroll="game.send({ t: 'reroll' })" />
             <DrawingReactions
               v-if="phase === 'drawing' && state" :reactions="state.reactions" :isDrawer="isDrawer" :you="you"

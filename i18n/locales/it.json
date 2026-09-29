@@ -162,5 +162,16 @@
     "title": "Sei stato rimosso da questa stanza",
     "description": "Gli altri giocatori hanno votato per espellerti, quindi non puoi rientrare in questa stanza.",
     "home": "Torna alla home"
+  },
+  "awards": {
+    "title": "Premi",
+    "fastest": "Risposta più rapida",
+    "fastestValue": "{n} s",
+    "mostLiked": "Disegno più amato",
+    "mostLikedValue": "{n} mi piace | {n} mi piace",
+    "almostHadIt": "C'eri quasi",
+    "almostHadItValue": "{n} tentativo vicino | {n} tentativi vicini",
+    "picasso": "Picasso",
+    "picassoValue": "indovinato {n} volta | indovinato {n} volte"
   }
 }
