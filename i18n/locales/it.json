@@ -119,7 +119,7 @@
     "codePlaceholder": "Codice o link della stanza",
     "codeInvalid": "I codici delle stanze sono lunghi {n} caratteri, lettere a–f e cifre.",
     "join": "Entra",
-    "madeBy": "Creato da {name}",
+    "copyright": "© {year} {name}. Tutti i diritti riservati.",
     "sourceCode": "Codice sorgente su GitHub",
     "quickPlay": "Partita rapida",
     "publicRooms": "Stanze pubbliche",
@@ -128,7 +128,10 @@
     "roomOf": "La stanza di {name}",
     "playerCount": "{n} giocatore | {n} giocatori",
     "waiting": "in attesa di iniziare",
-    "inGame": "round {round}/{total}"
+    "inGame": "round {round}/{total}",
+    "disclaimer": "Nomi, disegni e messaggi in chat sono creati dai giocatori. SkizzOne non li controlla e non ne è responsabile.",
+    "terms": "Termini di servizio",
+    "changelog": "Novità"
   },
   "join": {
     "title": "Pronto a disegnare?",
@@ -191,5 +194,12 @@
     "almostHadItValue": "{n} tentativo vicino | {n} tentativi vicini",
     "picasso": "Picasso",
     "picassoValue": "indovinato {n} volta | indovinato {n} volte"
+  },
+  "terms": {
+    "updated": "Ultimo aggiornamento: {date}"
+  },
+  "changelog": {
+    "title": "Novità",
+    "description": "Cosa c'è di nuovo in SkizzOne, versione per versione."
   }
 }

@@ -8,6 +8,7 @@
     }
   ],
   "ignoreDependencies": [
+    "@nuxt/content",
     "@vue/test-utils",
     "playwright-core",
     "@vueuse/router",

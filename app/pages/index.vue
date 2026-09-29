@@ -56,6 +56,7 @@ const footerUi = {
   left: 'mt-0 order-1 justify-start',
   center: 'hidden',
   right: 'flex-none order-3',
+  bottom: 'px-14 pt-0 lg:pt-0 pb-6 lg:pb-6 text-xs text-center text-(--on-stage)/80 text-balance',
 }
 
 useHead({ title: () => t('seo.title'), titleTemplate: null })
@@ -161,9 +162,12 @@ useSchemaOrg([
 
     <UFooter :ui="footerUi">
       <template #left>
-        <i18n-t keypath="home.madeBy" tag="p" class="font-display font-semibold text-lg text-(--on-stage)">
+        <i18n-t keypath="home.copyright" tag="p" class="font-display font-semibold text-(--on-stage)">
+          <template #year>
+            {{ new Date().getFullYear() }}
+          </template>
           <template #name>
-            <ULink to="https://github.com/zAlweNy26" target="_blank" raw class="underline underline-offset-4">
+            <ULink to="https://github.com/zAlweNy26" target="_blank" raw class="inline-block underline underline-offset-4">
               Dany
             </ULink>
           </template>
@@ -175,6 +179,19 @@ useSchemaOrg([
           icon="i-lucide-github" size="lg" square to="https://github.com/zAlweNy26/skizz-one" target="_blank"
           color="neutral" variant="outline"
           :aria-label="$t('home.sourceCode')" />
+      </template>
+
+      <template #bottom>
+        <p>
+          {{ $t('home.disclaimer') }}
+          <ULink to="/terms" raw class="underline underline-offset-4 whitespace-nowrap">
+            {{ $t('home.terms') }}
+          </ULink>
+          ·
+          <ULink to="/changelog" raw class="underline underline-offset-4 whitespace-nowrap">
+            {{ $t('home.changelog') }}
+          </ULink>
+        </p>
       </template>
     </UFooter>
   </main>

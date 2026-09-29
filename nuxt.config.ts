@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     'nitro-cloudflare-dev',
     '@formkit/auto-animate/nuxt',
     '@nuxt/ui',
+    '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/image',
     '@nuxt/scripts',
@@ -75,6 +76,12 @@ export default defineNuxtConfig({
     reactive: true,
   },
 
+  content: {
+    experimental: {
+      sqliteConnector: 'native',
+    },
+  },
+
   routeRules: {
     '/room/**': { robots: false },
   },
@@ -116,6 +123,11 @@ export default defineNuxtConfig({
   $production: {
     nitro: {
       entry: fileURLToPath(new URL('./preset/entry.ts', import.meta.url)),
+      hooks: {
+        'prerender:config': function (config) {
+          delete config.entry
+        },
+      },
     },
   },
 
