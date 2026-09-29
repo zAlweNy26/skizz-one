@@ -53,6 +53,9 @@ const CHOOSE_MS = 15_000
 /** Edit distance at which a guess earns a private "you're close" nudge. */
 const NEAR_MISS_DISTANCE = 2
 
+/** How long an empty room keeps its state before it is wiped. */
+const ROOM_RETENTION_MS = 15 * 60_000
+
 const IN_GAME_PHASES: readonly RoundPhase[] = ['choosing', 'drawing', 'intermission']
 
 type AlarmKind = 'choose' | 'round' | 'intermission' | 'grace'
@@ -107,6 +110,8 @@ interface RoomState {
   /** Players kicked from the room, who can't rejoin it. */
   banned: string[]
   stats: GameStats
+  /** When the last seat was freed; null while anyone is connected. */
+  emptySince: number | null
 }
 
 /** What this game's awards are drawn from. */
@@ -166,6 +171,7 @@ function initialState(): RoomState {
     kickVotes: {},
     banned: [],
     stats: emptyStats(),
+    emptySince: null,
   }
 }
 
@@ -182,6 +188,10 @@ export class GameRoom extends Server<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(
+      JSON.stringify({ t: 'ping' } satisfies ClientMessage),
+      JSON.stringify({ t: 'pong' } satisfies ServerMessage),
+    ))
     ctx.blockConcurrencyWhile(async () => {
       const stored = await ctx.storage.get<RoomState | string>(['state', 'canvas'])
       this.#state = { ...initialState(), ...(stored.get('state') as RoomState | undefined) }
@@ -195,6 +205,21 @@ export class GameRoom extends Server<Env> {
 
   #saveCanvas() {
     void this.ctx.storage.put('canvas', this.#canvas, { allowUnconfirmed: true })
+  }
+
+  async #wipe() {
+    this.#state = initialState()
+    this.#canvas = ''
+    await this.ctx.storage.deleteAlarm()
+    await this.ctx.storage.deleteAll()
+  }
+
+  /** Forget players whose seat has been freed. */
+  #pruneDeparted() {
+    const s = this.#state
+    s.order = s.order.filter(id => s.players[id]?.connected)
+    for (const player of Object.values(s.players))
+      if (!player.connected) delete s.players[player.id]
   }
 
   // --- messaging helpers -------------------------------------------------
@@ -384,6 +409,7 @@ export class GameRoom extends Server<Env> {
     }
 
     s.hostId ??= playerId
+    s.emptySince = null
 
     if (existing && s.drawerId === playerId && s.alarmKind === 'grace') {
       const remaining = s.pausedMs ?? this.#drawMs()
@@ -471,6 +497,9 @@ export class GameRoom extends Server<Env> {
     } else if (!kicked)
       this.#log('info', 'disconnected', { name: player.name })
 
+    if (!this.#seated().length) s.emptySince = Date.now()
+    if (s.phase === 'lobby') this.#pruneDeparted()
+
     if (IN_GAME_PHASES.includes(s.phase) && this.#seated().length < 2) {
       await this.#finishGame()
       return
@@ -489,11 +518,6 @@ export class GameRoom extends Server<Env> {
     try {
       msg = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message))
     } catch {
-      return
-    }
-
-    if (msg.t === 'ping') {
-      this.#send(connection, { t: 'pong' })
       return
     }
 
@@ -829,6 +853,7 @@ export class GameRoom extends Server<Env> {
     const s = this.#state
     const due = Object.values(s.players).flatMap(p => (p.awaySince === undefined ? [] : [p.awaySince + AWAY_GRACE_MS]))
     if (s.alarmKind && s.alarmAt !== null) due.push(s.alarmAt)
+    if (s.emptySince !== null) due.push(s.emptySince + ROOM_RETENTION_MS)
     if (due.length) await this.ctx.storage.setAlarm(Math.min(...due))
     else await this.ctx.storage.deleteAlarm()
   }
@@ -872,6 +897,7 @@ export class GameRoom extends Server<Env> {
     s.usedWords = []
     s.pauseVotes = []
     s.pause = null
+    this.#pruneDeparted()
     for (const p of Object.values(s.players)) p.points = 0
     s.stats = emptyStats()
     await this.#startTurn()
@@ -1054,6 +1080,11 @@ export class GameRoom extends Server<Env> {
   async onAlarm() {
     const s = this.#state
     const now = Date.now()
+
+    if (s.emptySince !== null && now >= s.emptySince + ROOM_RETENTION_MS) {
+      await this.#wipe()
+      return
+    }
 
     const expired = Object.values(s.players)
       .filter(p => p.awaySince !== undefined && now >= p.awaySince + AWAY_GRACE_MS)
