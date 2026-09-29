@@ -45,9 +45,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const votedPause = computed(() => state.value?.pauseVotes.includes(you.value) ?? false)
 
   function send(msg: ClientMessage) {
-    const ws = socket.value
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-    ws.send(JSON.stringify(msg))
+    if (socket.value?.readyState === WebSocket.OPEN) socket.value.send(JSON.stringify(msg))
   }
 
   function pushSystem(level: LogLevel, key: LogKey | 'wordWas', params?: LogParams) {

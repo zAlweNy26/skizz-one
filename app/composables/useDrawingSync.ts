@@ -58,7 +58,7 @@ function createStrokeGroup(brush: WireBrush): SVGGElement {
 function parseSvgElement(markup: string): SVGElement | null {
   const host = document.createElementNS(SVG_NS, 'svg')
   host.innerHTML = markup
-  return (host.firstElementChild as SVGElement | null) ?? null
+  return host.firstElementChild as SVGElement | null
 }
 
 /** Streams the drawing between the drawer and everyone watching. */
@@ -114,14 +114,6 @@ export function useDrawingSync(
     pending.push(quantize(point.x), quantize(point.y), Math.round(time - strokeT0))
   }
 
-  function scheduleFlush() {
-    if (pending.length / POINT_STRIDE >= DRAW_FLUSH_POINTS) {
-      flush()
-      return
-    }
-    if (!flushPending.value) startFlushTimer()
-  }
-
   onStart(() => {
     if (!game.isDrawer.value) return
 
@@ -143,7 +135,8 @@ export function useDrawingSync(
   onChanged(() => {
     if (!game.isDrawer.value || !strokeId || !strokeBrush) return
     if (isFreehand(strokeBrush.mode)) capturePoint()
-    scheduleFlush()
+    if (pending.length / POINT_STRIDE >= DRAW_FLUSH_POINTS) flush()
+    else if (!flushPending.value) startFlushTimer()
   })
 
   onCommitted(() => {

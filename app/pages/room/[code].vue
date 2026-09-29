@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { RoomSettings } from '#shared/utils/protocol'
 import { useDrauu } from '@vueuse/integrations/useDrauu'
 import { CANVAS_HEIGHT, CANVAS_WIDTH, LANGUAGES, votesNeeded, wordLengths } from '#shared/utils/protocol'
 
@@ -70,11 +69,6 @@ function togglePause() {
   game.send({ t: 'pause', want: !votedPause.value })
 }
 
-const wordDisplay = computed(() => {
-  if (word.value) return word.value
-  return hint.value || '—'
-})
-
 const lengths = computed(() => wordLengths(word.value ?? hint.value))
 
 const settingsSummary = computed(() => {
@@ -90,10 +84,6 @@ const settingsSummary = computed(() => {
       : []),
   ]
 })
-
-function saveSettings(settings: RoomSettings) {
-  game.send({ t: 'settings', settings })
-}
 
 const { copy } = useClipboard()
 const { share, isSupported: canShare } = useShare()
@@ -180,11 +170,9 @@ const actionTools = computed(() => [
   { key: 'D', icon: 'i-lucide-trash-2', label: 'canvas.tools.clear', color: 'error', disabled: false, run: localClear },
 ] as const)
 
-const timerTone = computed(() => {
-  if (paused.value) return 'warning'
-  if (secondsLeft.value !== null && secondsLeft.value <= 10) return 'error'
-  return 'calm'
-})
+const timerTone = computed(() => paused.value
+  ? 'warning'
+  : secondsLeft.value !== null && secondsLeft.value <= 10 ? 'error' : 'calm')
 
 const timerFill = computed(() => ({
   warning: 'color-mix(in oklab, var(--ui-color-warning-300) 70%, var(--paper))',
@@ -201,10 +189,6 @@ const turnKey = computed(() => `${state.value?.round ?? 0}:${state.value?.drawer
 function selectMode(mode: typeof modeTools[number]['mode']) {
   brush.value.mode = mode
   if (mode === 'eraseLine') brush.value.eraseMode = 'partial'
-}
-
-function submitGuess(text: string) {
-  game.send({ t: 'guess', text })
 }
 
 useHead({
@@ -308,7 +292,8 @@ defineShortcuts({
         </ul>
       </div>
       <div v-if="isHost && state" class="flex flex-wrap items-center gap-3">
-        <GameSettings :state="state" :customWords="customWords" @save="saveSettings" />
+        <GameSettings
+          :state="state" :customWords="customWords" @save="game.send({ t: 'settings', settings: $event })" />
         <UButton
           color="secondary" size="xl" icon="i-lucide-rocket" class="text-lg min-h-11"
           :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
@@ -335,7 +320,7 @@ defineShortcuts({
             <p
               class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word
                 phone-landscape:text-xl phone-landscape:tracking-widest">
-              <span aria-hidden="true">{{ wordDisplay }}</span>
+              <span aria-hidden="true">{{ word || hint || '—' }}</span>
               <span class="sr-only">{{ word ?? $t('header.hint') }}</span>
             </p>
             <UTooltip v-if="lengths.length" :text="$t('header.wordLengths', lengths.length)">
@@ -471,7 +456,7 @@ defineShortcuts({
           xl:col-start-3 xl:row-start-1 xl:h-auto xl:self-stretch
           phone-landscape:col-start-3 phone-landscape:row-start-3"
         :entries="chat" :isDrawer="isDrawer" :hasGuessed="hasGuessed"
-        :drawing="phase === 'drawing'" :paused="paused" @guess="submitGuess" />
+        :drawing="phase === 'drawing'" :paused="paused" @guess="game.send({ t: 'guess', text: $event })" />
     </section>
   </main>
 </template>

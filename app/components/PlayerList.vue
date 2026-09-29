@@ -9,19 +9,16 @@ const props = defineProps<{
 }>()
 
 const leaders = computed(() => leaderIds(props.players))
-
-function fillOf(player: GamePlayer) {
-  if (player.id === props.drawerId) return 'var(--color-tangerine-200)'
-  if (player.guessed) return 'color-mix(in oklab, var(--ui-color-success-300) 55%, var(--paper))'
-  return 'var(--paper)'
-}
 </script>
 
 <template>
   <aside v-auto-animate class="flex flex-col gap-3" :aria-label="$t('players.title')">
     <SketchFrame
       v-for="(player, index) in players" :key="player.id"
-      :fill="fillOf(player)" :strokeWidth="2" :roughness="1"
+      :fill="player.id === drawerId
+        ? 'var(--color-tangerine-200)'
+        : player.guessed ? 'color-mix(in oklab, var(--ui-color-success-300) 55%, var(--paper))' : 'var(--paper)'"
+      :strokeWidth="2" :roughness="1"
       class="flex items-center gap-2 py-1.5 ps-2 pe-3 transition-opacity"
       :class="{
         'opacity-55': !player.connected || player.away,

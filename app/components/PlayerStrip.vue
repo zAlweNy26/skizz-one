@@ -9,16 +9,6 @@ const props = defineProps<{
 }>()
 
 const leaders = computed(() => leaderIds(props.players))
-
-function ringOf(player: GamePlayer) {
-  if (player.id === props.drawerId) return 'ring-(--color-tangerine-400)'
-  if (player.guessed) return 'ring-success'
-  return 'ring-transparent'
-}
-
-function badgeOf(player: GamePlayer) {
-  return player.id === props.drawerId ? 'bg-(--color-tangerine-400) text-(--ink-fixed)' : 'bg-success text-(--paper)'
-}
 </script>
 
 <template>
@@ -35,10 +25,20 @@ function badgeOf(player: GamePlayer) {
             :class="{ 'opacity-55': !player.connected || player.away }">
             <UChip
               :show="player.id === drawerId || player.guessed" position="bottom-right"
-              :ui="{ base: ['size-4 p-0.5 translate-x-1/4 translate-y-1/4', badgeOf(player)] }">
+              :ui="{
+                base: [
+                  'size-4 p-0.5 translate-x-1/4 translate-y-1/4',
+                  player.id === drawerId
+                    ? 'bg-(--color-tangerine-400) text-(--ink-fixed)'
+                    : 'bg-success text-(--paper)',
+                ],
+              }">
               <UAvatar
                 :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(player.name)}`"
-                :alt="player.name" size="md" class="bg-(--paper) ring-2" :class="ringOf(player)" />
+                :alt="player.name" size="md" class="bg-(--paper) ring-2"
+                :class="player.id === drawerId
+                  ? 'ring-(--color-tangerine-400)'
+                  : player.guessed ? 'ring-success' : 'ring-transparent'" />
               <template #content>
                 <UIcon :name="player.id === drawerId ? 'i-lucide-pencil-line' : 'i-lucide-check'" class="size-full" />
               </template>

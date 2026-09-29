@@ -15,11 +15,9 @@ const emit = defineEmits<{
 }>()
 
 /** Who reads what you type right now. */
-const channel = computed(() => {
-  if (!props.drawing) return 'public'
-  if (props.isDrawer || props.hasGuessed) return 'private'
-  return props.paused ? 'onHold' : 'guess'
-})
+const channel = computed(() => !props.drawing
+  ? 'public'
+  : props.isDrawer || props.hasGuessed ? 'private' : props.paused ? 'onHold' : 'guess')
 
 const channelIcon = computed(() => ({
   public: 'i-lucide-message-circle',

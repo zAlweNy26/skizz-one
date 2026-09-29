@@ -35,10 +35,6 @@ function createRoom() {
   return enter(randomUUID().split('-')[0]!)
 }
 
-function joinRoom() {
-  return enter(roomCode.value)
-}
-
 const footerUi = {
   container: 'max-w-none px-4 sm:px-4 lg:px-4 py-4 flex items-center justify-between gap-3',
   left: 'mt-0 order-1 justify-start',
@@ -104,7 +100,7 @@ useSchemaOrg([
               <UFieldGroup class="w-full">
                 <UInput
                   v-model="name" size="lg" class="w-full" autofocus :maxlength="MAX_NAME_LENGTH"
-                  @keyup.enter="invitedCode ? joinRoom() : createRoom()" />
+                  @keyup.enter="invitedCode ? enter(roomCode) : createRoom()" />
                 <UTooltip :text="$t('home.randomName')">
                   <UButton
                     color="neutral" variant="soft" size="lg" icon="i-lucide-dices"
@@ -124,11 +120,11 @@ useSchemaOrg([
             <UFieldGroup class="w-full">
               <UInput
                 v-model="code" size="lg" class="w-full" :placeholder="$t('home.codePlaceholder')"
-                @keyup.enter="joinRoom()" />
+                @keyup.enter="enter(roomCode)" />
               <UButton
                 :label="$t('home.join')" size="lg" icon="i-lucide-log-in"
                 :color="invitedCode ? 'secondary' : 'primary'" :variant="invitedCode ? 'solid' : 'soft'"
-                :disabled="!trimmedName || !roomCode" @click="joinRoom()" />
+                :disabled="!trimmedName || !roomCode" @click="enter(roomCode)" />
             </UFieldGroup>
           </UFormField>
         </SketchFrame>
