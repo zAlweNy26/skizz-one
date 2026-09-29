@@ -18,6 +18,9 @@ export const MAX_NAME_LENGTH = 24
 /** WebSocket close code for a player voted out of the room. */
 export const KICKED_CLOSE_CODE = 4003
 
+/** WebSocket close code for a newcomer turned away from a full public room. */
+export const ROOM_FULL_CLOSE_CODE = 4004
+
 /** Active players a room needs before anyone can vote to kick. */
 export const MIN_PLAYERS_TO_VOTE_KICK = 3
 
@@ -189,7 +192,7 @@ export interface GameState {
   public: boolean
 }
 
-/** Players a public room can hold before quick play stops sending people to it. */
+/** Seats in a public room; newcomers beyond it are turned away. */
 export const PUBLIC_ROOM_CAP = 10
 
 /** A public room as the home page lists it. */
@@ -215,7 +218,7 @@ export type LogKey
     | 'drawerGone' | 'languageChanged' | 'waitingForPlayers' | 'drawing'
     | 'close' | 'guessed' | 'timeUp' | 'winner' | 'winnerByAHair' | 'gameOver'
     | 'paused' | 'resumed' | 'guessOnHold' | 'choosing' | 'pauseRequested' | 'resumeRequested'
-    | 'kickRequested' | 'kicked' | 'newHost'
+    | 'kickRequested' | 'kicked' | 'newHost' | 'canvasFull'
 
 /** Values interpolated into a log message, e.g. `{ name: 'Bob' }`. */
 export type LogParams = Record<string, string | number>
@@ -258,6 +261,8 @@ export type ServerMessage
     | { t: 'choices', words: string[], canReroll: boolean }
   /** Sent to a kicked player just before their socket is closed. */
     | { t: 'kicked' }
+  /** Sent to a newcomer turned away from a full public room just before their socket is closed. */
+    | { t: 'roomFull' }
     | { t: 'pong' }
 
 const DRAWING_MESSAGES = new Set(['strokeStart', 'draw', 'preview', 'commit', 'canvas'])

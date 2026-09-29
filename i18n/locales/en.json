@@ -107,7 +107,8 @@
     "resumeRequested": "{name} wants to resume ({votes}/{needed})",
     "kickRequested": "{name} voted to kick {target} ({votes}/{needed})",
     "kicked": "{name} was kicked from the room",
-    "newHost": "{name} is now the host"
+    "newHost": "{name} is now the host",
+    "canvasFull": "The canvas is full: undo or clear to keep drawing"
   },
   "home": {
     "tagline": "Draw, guess, laugh. Pick a name and jump in.",
@@ -173,6 +174,11 @@
   "kicked": {
     "title": "You were removed from this room",
     "description": "The other players voted you out, so you can't rejoin this room.",
+    "home": "Back to the home page"
+  },
+  "roomFull": {
+    "title": "This room is full",
+    "description": "Public rooms hold up to {n} players. Try another room or start your own.",
     "home": "Back to the home page"
   },
   "awards": {

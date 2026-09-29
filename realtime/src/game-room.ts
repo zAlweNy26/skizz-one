@@ -37,6 +37,8 @@ import {
   MIN_PLAYERS_TO_VOTE_KICK,
   normalizeGuess,
   PAUSABLE_PHASES,
+  PUBLIC_ROOM_CAP,
+  ROOM_FULL_CLOSE_CODE,
   ROUNDS,
   votesNeeded,
   WORD_CHOICES,
@@ -55,6 +57,12 @@ const NEAR_MISS_DISTANCE = 2
 
 /** How long an empty room keeps its state before it is wiped. */
 const ROOM_RETENTION_MS = 15 * 60_000
+
+/** Canvas writes are batched this long. */
+const CANVAS_SAVE_MS = 1_000
+
+/** Longest cached canvas, in characters; storage caps a value at 2 MB. */
+const MAX_CANVAS_LENGTH = 1_000_000
 
 const IN_GAME_PHASES: readonly RoundPhase[] = ['choosing', 'drawing', 'intermission']
 
@@ -183,6 +191,8 @@ export class GameRoom extends Server<Env> {
   /** Cached SVG innerHTML for late joiners. */
   #canvas = ''
 
+  #canvasTimer: ReturnType<typeof setTimeout> | null = null
+
   /** The last listing sent to the lobby, as JSON. */
   #reported: string | null = null
 
@@ -204,10 +214,15 @@ export class GameRoom extends Server<Env> {
   }
 
   #saveCanvas() {
-    void this.ctx.storage.put('canvas', this.#canvas, { allowUnconfirmed: true })
+    this.#canvasTimer ??= setTimeout(() => {
+      this.#canvasTimer = null
+      void this.ctx.storage.put('canvas', this.#canvas)
+    }, CANVAS_SAVE_MS)
   }
 
   async #wipe() {
+    if (this.#canvasTimer) clearTimeout(this.#canvasTimer)
+    this.#canvasTimer = null
     this.#state = initialState()
     this.#canvas = ''
     await this.ctx.storage.deleteAlarm()
@@ -312,22 +327,25 @@ export class GameRoom extends Server<Env> {
     this.#reportToLobby()
   }
 
-  #reportToLobby() {
+  /** The room as the lobby lists it, or null to stay unlisted. Called by the lobby to confirm a stale listing. */
+  listing(): PublicRoom | null {
     const s = this.#state
     const players = this.#activeCount()
     const host = s.hostId ? s.players[s.hostId] : null
-    const room: PublicRoom | null = s.public && players > 0 && host
-      ? {
-          id: this.name,
-          hostName: host.name,
-          players,
-          language: s.language,
-          phase: s.phase,
-          round: s.round,
-          totalRounds: s.totalRounds,
-        }
-      : null
+    if (!s.public || players === 0 || !host) return null
+    return {
+      id: this.name,
+      hostName: host.name,
+      players,
+      language: s.language,
+      phase: s.phase,
+      round: s.round,
+      totalRounds: s.totalRounds,
+    }
+  }
 
+  #reportToLobby() {
+    const room = this.listing()
     const report = JSON.stringify(room)
     if (report === this.#reported || (this.#reported === null && room === null)) return
     this.#reported = report
@@ -390,6 +408,11 @@ export class GameRoom extends Server<Env> {
     ;(connection as Connection<ConnState>).setState({ playerId })
 
     const existing = s.players[playerId]
+    if (s.public && !existing?.connected && this.#seated().length >= PUBLIC_ROOM_CAP) {
+      this.#send(connection, { t: 'roomFull' })
+      connection.close(ROOM_FULL_CLOSE_CODE, 'room is full')
+      return
+    }
 
     if (existing) {
       existing.connected = true
@@ -562,12 +585,17 @@ export class GameRoom extends Server<Env> {
   }
 
   #handleDrawing(connection: Connection, msg: DrawingMessage) {
+    if (msg.t === 'commit' || msg.t === 'canvas') {
+      const canvas = msg.t === 'commit' ? this.#canvas + msg.svg : msg.svg
+      if (canvas.length > MAX_CANVAS_LENGTH) {
+        this.#broadcast({ t: 'canvas', svg: this.#canvas })
+        this.#send(connection, { t: 'log', level: 'warning', key: 'canvasFull' })
+        return
+      }
+      this.#canvas = canvas
+      this.#saveCanvas()
+    }
     this.#broadcast(msg, [connection.id])
-
-    if (msg.t === 'commit') this.#canvas += msg.svg
-    else if (msg.t === 'canvas') this.#canvas = msg.svg
-    else return
-    this.#saveCanvas()
   }
 
   #canConfigure(playerId: string) {

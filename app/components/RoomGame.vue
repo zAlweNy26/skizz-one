@@ -6,6 +6,7 @@ import {
   kickVotesNeeded,
   LANGUAGES,
   MIN_PLAYERS_TO_VOTE_KICK,
+  PUBLIC_ROOM_CAP,
   votesNeeded,
   wordLengths,
 } from '#shared/utils/protocol'
@@ -34,8 +35,14 @@ const { undo, redo, clear, canUndo, canRedo, brush } = drauu
 const game = useGameSocket(gameId)
 const {
   state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you,
-  hasGuessed, paused, votedPause, customWords, choices, canReroll, kicked,
+  hasGuessed, paused, votedPause, customWords, choices, canReroll, kicked, full,
 } = game
+
+/** Why this tab can't be in the room, as the i18n group that explains it. */
+const turnedAway = computed(() => {
+  if (kicked.value) return 'kicked'
+  return full.value ? 'roomFull' : null
+})
 
 const sync = useDrawingSync(drauu, game)
 
@@ -237,16 +244,19 @@ defineShortcuts({
 </script>
 
 <template>
-  <main v-if="kicked" class="min-h-dvh grid place-items-center px-4 py-8">
+  <main v-if="turnedAway" class="min-h-dvh grid place-items-center px-4 py-8">
     <SketchFrame :radius="22" :strokeWidth="3" class="w-full max-w-md p-6 sm:p-8 flex flex-col items-center gap-4">
-      <UIcon name="i-lucide-user-x" class="size-12 text-error" />
+      <UIcon v-if="kicked" name="i-lucide-user-x" class="size-12 text-error" />
+      <UIcon v-else name="i-lucide-users" class="size-12 text-warning" />
       <h1 class="font-display font-extrabold text-2xl text-center">
-        {{ $t('kicked.title') }}
+        {{ $t(`${turnedAway}.title`) }}
       </h1>
       <p class="text-muted text-center">
-        {{ $t('kicked.description') }}
+        {{ $t(`${turnedAway}.description`, { n: PUBLIC_ROOM_CAP }) }}
       </p>
-      <UButton to="/" size="xl" color="secondary" icon="i-lucide-house" class="min-h-11" :label="$t('kicked.home')" />
+      <UButton
+        to="/" size="xl" color="secondary" icon="i-lucide-house" class="min-h-11"
+        :label="$t(`${turnedAway}.home`)" />
     </SketchFrame>
   </main>
 

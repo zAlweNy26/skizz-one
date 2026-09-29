@@ -1,8 +1,8 @@
 import type { Connection } from 'partyserver'
 import type { LobbyMessage, PublicRoom } from '../../shared/utils/protocol'
-import { Server } from 'partyserver'
+import { getServerByName, Server } from 'partyserver'
 
-/** How long a room stays listed without an update. */
+/** How long a listing goes without an update before the lobby asks its room whether it is still open. */
 const STALE_MS = 30 * 60_000
 
 interface Listing {
@@ -34,7 +34,8 @@ export class Lobby extends Server<Env> {
 
   async #save() {
     await this.ctx.storage.put('listings', [...this.#listings.values()])
-    if (this.#listings.size) await this.ctx.storage.setAlarm(Date.now() + STALE_MS)
+    const oldest = Math.min(...[...this.#listings.values()].map(l => l.updatedAt))
+    if (this.#listings.size) await this.ctx.storage.setAlarm(oldest + STALE_MS)
     else await this.ctx.storage.deleteAlarm()
     this.broadcast(this.#message())
   }
@@ -52,8 +53,15 @@ export class Lobby extends Server<Env> {
 
   async onAlarm() {
     const cutoff = Date.now() - STALE_MS
-    for (const [id, listing] of this.#listings)
-      if (listing.updatedAt < cutoff) this.#listings.delete(id)
+    const stale = [...this.#listings.values()].filter(l => l.updatedAt <= cutoff)
+    await Promise.all(stale.map(async (old) => {
+      const room = await getServerByName(this.env.GameRoom, old.room.id)
+        .then(stub => stub.listing())
+        .catch(() => null)
+      if (this.#listings.get(old.room.id) !== old) return
+      if (room) this.#listings.set(room.id, { room, updatedAt: Date.now() })
+      else this.#listings.delete(old.room.id)
+    }))
     await this.#save()
   }
 }

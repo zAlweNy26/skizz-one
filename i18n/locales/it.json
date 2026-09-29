@@ -107,7 +107,8 @@
     "resumeRequested": "{name} vuole riprendere ({votes}/{needed})",
     "kickRequested": "{name} ha votato per espellere {target} ({votes}/{needed})",
     "kicked": "{name} è stato espulso dalla stanza",
-    "newHost": "Ora {name} è l'host"
+    "newHost": "Ora {name} è l'host",
+    "canvasFull": "La tela è piena: annulla o cancella per continuare a disegnare"
   },
   "home": {
     "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",
@@ -173,6 +174,11 @@
   "kicked": {
     "title": "Sei stato rimosso da questa stanza",
     "description": "Gli altri giocatori hanno votato per espellerti, quindi non puoi rientrare in questa stanza.",
+    "home": "Torna alla home"
+  },
+  "roomFull": {
+    "title": "Questa stanza è piena",
+    "description": "Le stanze pubbliche ospitano fino a {n} giocatori. Prova un'altra stanza o creane una tua.",
     "home": "Torna alla home"
   },
   "awards": {

@@ -2,7 +2,7 @@ import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessa
 import { createEventHook, useDocumentVisibility, useIntervalFn, useLocalStorage, useTimeoutFn } from '@vueuse/core'
 import PartySocket from 'partysocket'
 import { randomUUID } from 'uncrypto'
-import { KICKED_CLOSE_CODE } from '#shared/utils/protocol'
+import { KICKED_CLOSE_CODE, ROOM_FULL_CLOSE_CODE } from '#shared/utils/protocol'
 
 /** A line in the chat panel. System lines keep their i18n key rather than text. */
 export type ChatEntry
@@ -28,6 +28,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const chat = ref<ChatEntry[]>([])
   /** The room voted you out; the socket stays closed. */
   const kicked = ref(false)
+  /** A public room with no seat left turned you away; the socket stays closed. */
+  const full = ref(false)
 
   /** The word — only ever populated when you are the drawer. */
   const word = ref<string | null>(null)
@@ -101,6 +103,9 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       case 'kicked':
         leave()
         break
+      case 'roomFull':
+        turnAway()
+        break
       case 'chat':
         chat.value.push({
           sender: msg.sender,
@@ -149,6 +154,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     ws.addEventListener('close', (event: CloseEvent) => {
       connected.value = false
       if (event.code === KICKED_CLOSE_CODE) leave()
+      else if (event.code === ROOM_FULL_CLOSE_CODE) turnAway()
     })
     ws.addEventListener('message', (event: MessageEvent) => {
       wakeProbe.stop()
@@ -165,6 +171,11 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
 
   function leave() {
     kicked.value = true
+    close()
+  }
+
+  function turnAway() {
+    full.value = true
     close()
   }
 
@@ -188,6 +199,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     state,
     chat,
     kicked,
+    full,
     word,
     hint,
     endsAt,

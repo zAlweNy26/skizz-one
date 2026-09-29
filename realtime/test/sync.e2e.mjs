@@ -12,6 +12,9 @@ const BASE = `ws://127.0.0.1:${PORT}/parties/game-room`
 /** Mirrors `AWAY_GRACE_MS` in the protocol. */
 const AWAY_GRACE_MS = 60_000
 
+/** Mirrors `PUBLIC_ROOM_CAP` in the protocol. */
+const PUBLIC_ROOM_CAP = 10
+
 let failures = 0
 
 function check(label, ok, detail = '') {
@@ -98,6 +101,21 @@ async function publicRooms() {
   check('a room made private leaves the lobby', Boolean(await waitFor(lobby, m => m.t === 'rooms' && !entry(m, room))))
   send(h, { t: 'settings', settings: { public: true } })
   check('and comes back when made public again', Boolean(await waitFor(lobby, listed(room))))
+
+  const others = []
+  for (let i = 0; i < PUBLIC_ROOM_CAP - 2; i++) {
+    const ws = await connect(`pub-${i}`, `P${i}`, room)
+    await waitFor(ws, m => m.t === 'welcome')
+    others.push(ws)
+  }
+  const extra = await connect('pub-extra', 'Xan', room)
+  check('a full public room turns newcomers away', Boolean(await waitFor(extra, m => m.t === 'roomFull')))
+  check('a turned-away newcomer gets no welcome', !extra.inbox.some(m => m.t === 'welcome'))
+  others.at(-1).close()
+  await sleep(300)
+  const back = await connect(`pub-${PUBLIC_ROOM_CAP - 3}`, 'Again', room)
+  check('a player coming back to their seat is let in', Boolean(await waitFor(back, m => m.t === 'welcome')))
+  for (const ws of [...others, back]) ws.close()
 
   h.close()
   j.close()
@@ -298,6 +316,18 @@ async function main() {
   await sleep(600)
   const forged = drawerWs.inbox.find(m => m.id === 'forged')
   check('a watcher cannot draw', !forged, forged ? JSON.stringify(forged) : '')
+
+  // --- the cached canvas is capped ---------------------------------------
+  watcherWs.inbox.length = 0
+  drawerWs.inbox.length = 0
+  const huge = `<path d="M 0,0 ${'L 1,1 '.repeat(200_000)}"/>`
+  send(drawerWs, { t: 'commit', id: 'huge', svg: huge })
+  const resync = await waitFor(watcherWs, m => m.t === 'canvas')
+  check('an oversized commit resyncs watchers to the cached canvas', resync?.svg?.includes('M 10,20')
+  && !resync.svg.includes('huge') && resync.svg.length < 1000, `${resync?.svg?.length} chars`)
+  check('the oversized commit is not relayed', !watcherWs.inbox.some(m => m.t === 'commit' && m.id === 'huge'))
+  check('the drawer hears the canvas is full', Boolean(await waitFor(drawerWs, m => m.t === 'log' && m.key === 'canvasFull')))
+  check('the drawer is resynced too', drawerWs.inbox.some(m => m.t === 'canvas'))
 
   // --- late joiner gets the canvas --------------------------------------
   const c = await connect('player-c', 'Carol')
