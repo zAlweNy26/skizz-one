@@ -71,7 +71,12 @@
     "guessed": "Guessed the word",
     "leader": "In the lead",
     "showAll": "Show all players",
-    "away": "Away for a moment"
+    "away": "Away for a moment",
+    "actions": "Actions for {name}",
+    "kick": "Vote to kick {name} ({votes}/{needed})",
+    "kickLocked": "Voting to kick needs {n} players",
+    "unkick": "Take back your kick vote",
+    "kickVotes": "{n} vote to kick | {n} votes to kick"
   },
   "log": {
     "joined": "{name} joined the game",
@@ -94,7 +99,10 @@
     "guessOnHold": "The game is paused — guesses count again once it resumes",
     "choosing": "{name} is choosing a word…",
     "pauseRequested": "{name} wants to pause ({votes}/{needed})",
-    "resumeRequested": "{name} wants to resume ({votes}/{needed})"
+    "resumeRequested": "{name} wants to resume ({votes}/{needed})",
+    "kickRequested": "{name} voted to kick {target} ({votes}/{needed})",
+    "kicked": "{name} was kicked from the room",
+    "newHost": "{name} is now the host"
   },
   "home": {
     "tagline": "Draw, guess, laugh. Pick a name and jump in.",
@@ -147,5 +155,10 @@
     "dislike": "I don't like it",
     "likeCount": "No likes | 1 like | {n} likes",
     "dislikeCount": "No dislikes | 1 dislike | {n} dislikes"
+  },
+  "kicked": {
+    "title": "You were removed from this room",
+    "description": "The other players voted you out, so you can't rejoin this room.",
+    "home": "Back to the home page"
   }
 }

@@ -15,6 +15,12 @@ export const AWAY_GRACE_MS = 60_000
 
 export const MAX_NAME_LENGTH = 24
 
+/** WebSocket close code for a player voted out of the room. */
+export const KICKED_CLOSE_CODE = 4003
+
+/** Active players a room needs before anyone can vote to kick. */
+export const MIN_PLAYERS_TO_VOTE_KICK = 3
+
 export type DrawingMode
   = | 'draw' | 'stylus' | 'line' | 'rectangle'
     | 'ellipse' | 'eraseLine' | 'highlighter' | 'bucket'
@@ -119,6 +125,11 @@ export function votesNeeded(connected: number, paused: boolean) {
   return paused ? Math.floor(connected / 2) + 1 : connected
 }
 
+/** Votes a kick needs to pass: a majority of the active players other than its target. */
+export function kickVotesNeeded(active: number) {
+  return Math.floor(Math.max(0, active - 1) / 2) + 1
+}
+
 /** A guesser's thumbs up or down on the current drawing. Feedback for the drawer only; it never scores. */
 export type Reaction = 'like' | 'dislike'
 
@@ -157,6 +168,8 @@ export interface GameState {
   remainingMs: number | null
   /** Guessers' reactions to this turn's drawing, by player id. */
   reactions: Record<string, Reaction>
+  /** Active players voting to kick each target, by target id. */
+  kickVotes: Record<string, string[]>
 }
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'
@@ -167,6 +180,7 @@ export type LogKey
     | 'drawerGone' | 'languageChanged' | 'waitingForPlayers' | 'drawing'
     | 'close' | 'guessed' | 'timeUp' | 'winner' | 'gameOver'
     | 'paused' | 'resumed' | 'guessOnHold' | 'choosing' | 'pauseRequested' | 'resumeRequested'
+    | 'kickRequested' | 'kicked' | 'newHost'
 
 /** Values interpolated into a log message, e.g. `{ name: 'Bob' }`. */
 export type LogParams = Record<string, string | number>
@@ -190,6 +204,7 @@ export type ClientMessage
     | { t: 'choose', index: number }
   /** `null` takes the reaction back. */
     | { t: 'react', reaction: Reaction | null }
+    | { t: 'kick', target: string, want: boolean }
     | { t: 'ping' }
 
 export type ServerMessage
@@ -204,6 +219,8 @@ export type ServerMessage
     | { t: 'customWords', words: string[] }
   /** Sent only to the drawer while they pick the turn's word. */
     | { t: 'choices', words: string[] }
+  /** Sent to a kicked player just before their socket is closed. */
+    | { t: 'kicked' }
     | { t: 'pong' }
 
 const DRAWING_MESSAGES = new Set(['strokeStart', 'draw', 'preview', 'commit', 'canvas'])

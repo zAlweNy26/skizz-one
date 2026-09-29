@@ -27,9 +27,12 @@ import {
   HINTS,
   isDrawingMessage,
   isLanguage,
+  KICKED_CLOSE_CODE,
+  kickVotesNeeded,
   LANGUAGES,
   maskWord,
   MAX_NAME_LENGTH,
+  MIN_PLAYERS_TO_VOTE_KICK,
   normalizeGuess,
   PAUSABLE_PHASES,
   ROUNDS,
@@ -94,6 +97,10 @@ interface RoomState {
   /** The countdown frozen by a vote: which alarm to re-arm, and with how long. */
   pause: { kind: AlarmKind, remainingMs: number } | null
   reactions: Record<string, Reaction>
+  /** Voters against each target, by target id. */
+  kickVotes: Record<string, string[]>
+  /** Players kicked from the room, who can't rejoin it. */
+  banned: string[]
 }
 
 interface ConnState {
@@ -125,6 +132,8 @@ function initialState(): RoomState {
     pauseVotes: [],
     pause: null,
     reactions: {},
+    kickVotes: {},
+    banned: [],
   }
 }
 
@@ -192,6 +201,7 @@ export class GameRoom extends Server<Env> {
       endsAt: s.endsAt,
       hint: s.word ? maskWord(s.word, s.revealed) : '',
       players: s.order
+        .filter(id => !s.banned.includes(id))
         .map(id => s.players[id])
         .filter((p): p is StoredPlayer => Boolean(p))
         .map<GamePlayer>(p => ({
@@ -206,6 +216,10 @@ export class GameRoom extends Server<Env> {
       pauseVotes: this.#pauseVoters(),
       remainingMs: s.pause?.remainingMs ?? null,
       reactions: s.reactions,
+      kickVotes: Object.fromEntries(Object.keys(s.kickVotes).flatMap((target) => {
+        const voters = this.#kickVoters(target)
+        return voters.length ? [[target, voters]] : []
+      })),
     }
   }
 
@@ -256,9 +270,14 @@ export class GameRoom extends Server<Env> {
       return
     }
 
+    const s = this.#state
+    if (s.banned.includes(playerId)) {
+      this.#closeKicked(connection)
+      return
+    }
+
     ;(connection as Connection<ConnState>).setState({ playerId })
 
-    const s = this.#state
     const existing = s.players[playerId]
 
     if (existing) {
@@ -343,20 +362,26 @@ export class GameRoom extends Server<Env> {
     this.#broadcastState()
   }
 
-  /** An away player whose grace ran out: they give up their seat. The caller saves and broadcasts. */
-  async #leave(player: StoredPlayer) {
+  /** Free a player's seat once their away grace runs out or they are kicked. The caller saves and broadcasts. */
+  async #leave(player: StoredPlayer, kicked = false) {
     const s = this.#state
     player.connected = false
     delete player.awaySince
+    delete s.kickVotes[player.id]
+    s.pauseVotes = s.pauseVotes.filter(id => id !== player.id)
+
+    if (kicked) this.#log('warning', 'kicked', { name: player.name })
 
     if (s.hostId === player.id) {
       const nextHost = s.order.find(id => this.#isActive(s.players[id])) ?? this.#seated()[0]
       s.hostId = nextHost ?? null
       if (nextHost) {
-        this.#log('warning', 'hostLeft', { name: player.name, host: s.players[nextHost]!.name })
+        const host = s.players[nextHost]!.name
+        if (kicked) this.#log('info', 'newHost', { name: host })
+        else this.#log('warning', 'hostLeft', { name: player.name, host })
         this.#sendCustomWords()
       }
-    } else
+    } else if (!kicked)
       this.#log('info', 'disconnected', { name: player.name })
 
     if (IN_GAME_PHASES.includes(s.phase) && this.#seated().length < 2) {
@@ -409,6 +434,9 @@ export class GameRoom extends Server<Env> {
         break
       case 'react':
         await this.#react(playerId, msg.reaction)
+        break
+      case 'kick':
+        await this.#voteKick(playerId, msg.target, msg.want)
         break
       case 'guess':
         await this.#handleGuess(connection, playerId, msg.text)
@@ -540,6 +568,71 @@ export class GameRoom extends Server<Env> {
 
     await this.#save()
     this.#broadcastState()
+  }
+
+  // --- kicking -----------------------------------------------------------
+
+  #kickVoters(target: string) {
+    const s = this.#state
+    return (s.kickVotes[target] ?? []).filter(id => id !== target && this.#isActive(s.players[id]))
+  }
+
+  async #voteKick(playerId: string, target: unknown, want: unknown) {
+    const s = this.#state
+    const player = s.players[target as string]
+    if (typeof target !== 'string' || target === playerId || !player?.connected || !this.#isActive(s.players[playerId]))
+      return
+
+    if (this.#activeCount() < MIN_PLAYERS_TO_VOTE_KICK) return
+
+    const votes = s.kickVotes[target] ?? []
+    const has = votes.includes(playerId)
+    if (want === true && !has) s.kickVotes[target] = [...votes, playerId]
+    else if (want === false && has) s.kickVotes[target] = votes.filter(id => id !== playerId)
+    else return
+
+    const tally = this.#kickVoters(target).length
+    const needed = kickVotesNeeded(this.#activeCount())
+    if (want === true && tally >= needed) await this.#kick(player)
+    else if (want === true) {
+      this.#log('warning', 'kickRequested', {
+        name: s.players[playerId]?.name ?? '',
+        target: player.name,
+        votes: tally,
+        needed,
+      })
+    }
+
+    await this.#scheduleAlarm()
+    await this.#save()
+    this.#broadcastState()
+  }
+
+  #closeKicked(connection: Connection) {
+    this.#send(connection, { t: 'kicked' })
+    connection.close(KICKED_CLOSE_CODE, 'kicked')
+  }
+
+  /** Remove a player for good. The caller saves and broadcasts. */
+  async #kick(player: StoredPlayer) {
+    const s = this.#state
+    s.banned.push(player.id)
+    delete s.reactions[player.id]
+    for (const [target, voters] of Object.entries(s.kickVotes))
+      s.kickVotes[target] = voters.filter(id => id !== player.id)
+    for (const conn of this.#connectionsOf(player.id)) this.#closeKicked(conn)
+
+    const wasDrawer = s.drawerId === player.id
+    await this.#leave(player, true)
+    if (s.phase === 'finished' || s.phase === 'lobby') return
+
+    if (wasDrawer) {
+      s.pause = null
+      s.pauseVotes = []
+      if (s.phase === 'choosing') await this.#startTurn()
+      else if (s.phase === 'drawing') await this.#endRound()
+    } else if (s.phase === 'drawing')
+      await this.#endRoundIfEveryoneGuessed()
   }
 
   // --- pausing -----------------------------------------------------------

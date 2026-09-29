@@ -7,10 +7,10 @@
 
 const PORT = process.env.REALTIME_PORT ?? '8799'
 const ROOM = `test-${crypto.randomUUID().slice(0, 8)}`
-const BASE = `ws://127.0.0.1:${PORT}/parties/game-room/${ROOM}`
+const BASE = `ws://127.0.0.1:${PORT}/parties/game-room`
 
 /** Mirrors `AWAY_GRACE_MS` in the protocol. */
-const AWAY_GRACE_MS = 30_000
+const AWAY_GRACE_MS = 60_000
 
 let failures = 0
 
@@ -19,8 +19,8 @@ function check(label, ok, detail = '') {
   if (!ok) failures++
 }
 
-function connect(playerId, name) {
-  const ws = new WebSocket(`${BASE}?playerId=${playerId}&name=${name}`)
+function connect(playerId, name, room = ROOM) {
+  const ws = new WebSocket(`${BASE}/${room}?playerId=${playerId}&name=${name}`)
   ws.inbox = []
   ws.addEventListener('message', (e) => {
     try {
@@ -50,6 +50,76 @@ async function waitFor(ws, pred, ms = 4000) {
 }
 
 const send = (ws, msg) => ws.send(JSON.stringify(msg))
+
+/** A kicked socket is told so before the server closes it; the close frame itself can lag. */
+async function waitKicked(ws, ms = 4000) {
+  return Boolean(await waitFor(ws, m => m.t === 'kicked', ms))
+}
+
+async function kicking() {
+  const room = `kick-${crypto.randomUUID().slice(0, 8)}`
+  const h = await connect('kick-h', 'Hana', room)
+  await waitFor(h, m => m.t === 'welcome')
+  const p = await connect('kick-p', 'Pia', room)
+  const q = await connect('kick-q', 'Quin', room)
+  const r = await connect('kick-r', 'Rex', room)
+  await waitFor(h, m => m.t === 'state' && m.state.players.length === 4)
+  const inRoom = (m, id) => m.state.players.some(pl => pl.id === id)
+
+  h.inbox.length = 0
+  send(p, { t: 'kick', target: 'kick-r', want: true })
+  const oneVote = await waitFor(h, m => m.t === 'state' && m.state.kickVotes['kick-r']?.length === 1)
+  check('a kick vote is tallied in the state', Boolean(oneVote))
+  const asked = h.inbox.find(m => m.t === 'log' && m.key === 'kickRequested')
+  check('the chat hears who wants to kick whom', asked?.params?.target === 'Rex' && asked?.params?.needed === 2,
+    JSON.stringify(asked?.params))
+
+  h.inbox.length = 0
+  send(p, { t: 'kick', target: 'kick-r', want: false })
+  const withdrawn = await waitFor(h, m => m.t === 'state' && !m.state.kickVotes['kick-r'])
+  check('a kick vote can be taken back', Boolean(withdrawn))
+
+  h.inbox.length = 0
+  send(p, { t: 'kick', target: 'kick-r', want: true })
+  send(q, { t: 'kick', target: 'kick-r', want: true })
+  check('a majority kicks the player', await waitKicked(r))
+  const gone = await waitFor(h, m => m.t === 'state' && !inRoom(m, 'kick-r'))
+  check('a kicked player leaves the roster', Boolean(gone))
+  check('the room hears about the kick', h.inbox.some(m => m.t === 'log' && m.key === 'kicked'))
+
+  const r2 = await connect('kick-r', 'Rex', room)
+  check('a kicked player cannot come back', await waitKicked(r2))
+  check('a kicked player gets no welcome', !r2.inbox.some(m => m.t === 'welcome'))
+
+  send(h, { t: 'kick', target: 'kick-q', want: true })
+  check('the host\'s vote alone does not kick', !(await waitKicked(q, 600)))
+  send(p, { t: 'kick', target: 'kick-q', want: true })
+  check('the host needs a majority like everyone else', await waitKicked(q))
+
+  h.inbox.length = 0
+  send(h, { t: 'kick', target: 'kick-p', want: true })
+  send(p, { t: 'kick', target: 'kick-h', want: true })
+  const lone = await waitFor(h, m => m.t === 'state' && Object.keys(m.state.kickVotes).length, 600)
+  check('nobody can vote to kick with two players', !lone)
+
+  const s = await connect('kick-s', 'Sol', room)
+  await waitFor(h, m => m.t === 'state' && inRoom(m, 'kick-s'))
+  h.inbox.length = 0
+  send(h, { t: 'start' })
+  const choosing = await waitFor(h, m => m.t === 'state' && m.state.phase === 'choosing')
+  const drawer = choosing?.state?.drawerId
+  h.inbox.length = 0
+  const others = [[h, 'kick-h'], [p, 'kick-p'], [s, 'kick-s']].filter(([, id]) => id !== drawer)
+  for (const [ws] of others) send(ws, { t: 'kick', target: drawer, want: true })
+
+  const watcher = others[0][0]
+  const moved = await waitFor(watcher, m => m.t === 'state' && m.state.phase === 'choosing' && m.state.drawerId !== drawer)
+  check('kicking the drawer moves the turn on', Boolean(moved), moved?.state?.drawerId)
+  if (drawer === 'kick-h')
+    check('kicking the host hands the room over', moved?.state?.hostId && moved.state.hostId !== 'kick-h')
+
+  for (const ws of [h, p, s]) ws.close()
+}
 
 async function main() {
   const a = await connect('player-a', 'Alice')
@@ -300,6 +370,8 @@ async function main() {
 
   a.close()
   await sleep(200)
+
+  await kicking()
 
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`)
   process.exit(failures === 0 ? 0 : 1)

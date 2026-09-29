@@ -71,7 +71,12 @@
     "guessed": "Ha indovinato la parola",
     "leader": "In testa",
     "showAll": "Mostra tutti i giocatori",
-    "away": "Assente per un momento"
+    "away": "Assente per un momento",
+    "actions": "Azioni per {name}",
+    "kick": "Vota per espellere {name} ({votes}/{needed})",
+    "kickLocked": "Per votare un'espulsione servono {n} giocatori",
+    "unkick": "Ritira il tuo voto di espulsione",
+    "kickVotes": "{n} voto per espellere | {n} voti per espellere"
   },
   "log": {
     "joined": "{name} è entrato in partita",
@@ -94,7 +99,10 @@
     "guessOnHold": "La partita è in pausa — le risposte contano di nuovo alla ripresa",
     "choosing": "{name} sta scegliendo una parola…",
     "pauseRequested": "{name} vuole mettere in pausa ({votes}/{needed})",
-    "resumeRequested": "{name} vuole riprendere ({votes}/{needed})"
+    "resumeRequested": "{name} vuole riprendere ({votes}/{needed})",
+    "kickRequested": "{name} ha votato per espellere {target} ({votes}/{needed})",
+    "kicked": "{name} è stato espulso dalla stanza",
+    "newHost": "Ora {name} è l'host"
   },
   "home": {
     "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",
@@ -147,5 +155,10 @@
     "dislike": "Non mi piace",
     "likeCount": "Nessun mi piace | 1 mi piace | {n} mi piace",
     "dislikeCount": "Nessun non mi piace | 1 non mi piace | {n} non mi piace"
+  },
+  "kicked": {
+    "title": "Sei stato rimosso da questa stanza",
+    "description": "Gli altri giocatori hanno votato per espellerti, quindi non puoi rientrare in questa stanza.",
+    "home": "Torna alla home"
   }
 }

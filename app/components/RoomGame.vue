@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { useDrauu } from '@vueuse/integrations/useDrauu'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, LANGUAGES, votesNeeded, wordLengths } from '#shared/utils/protocol'
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  kickVotesNeeded,
+  LANGUAGES,
+  MIN_PLAYERS_TO_VOTE_KICK,
+  votesNeeded,
+  wordLengths,
+} from '#shared/utils/protocol'
 
 const paletteColors = [
   '#FFFFFF', '#c1c1c1', '#ef130b', '#ff7100', '#ffe400', '#00cc00', '#00ff91', '#00b2ff', '#231fd3', '#a300ba', '#df69a7', '#ffac8e', '#a0522d',
@@ -26,7 +34,7 @@ const { undo, redo, clear, canUndo, canRedo, brush } = drauu
 const game = useGameSocket(gameId)
 const {
   state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you,
-  hasGuessed, paused, votedPause, customWords, choices,
+  hasGuessed, paused, votedPause, customWords, choices, kicked,
 } = game
 
 const sync = useDrawingSync(drauu, game)
@@ -54,14 +62,22 @@ const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !p
 
 const drawerName = computed(() => state.value?.players.find(p => p.id === state.value?.drawerId)?.name ?? '')
 
+const activeCount = computed(() => state.value?.players.filter(p => p.connected && !p.away).length ?? 0)
+
 const canVotePause = computed(() => phase.value === 'drawing' || phase.value === 'intermission')
-const pauseTally = computed(() => {
-  const connectedCount = state.value?.players.filter(p => p.connected && !p.away).length ?? 0
-  return {
-    votes: state.value?.pauseVotes.length ?? 0,
-    needed: votesNeeded(connectedCount, paused.value),
-  }
-})
+const pauseTally = computed(() => ({
+  votes: state.value?.pauseVotes.length ?? 0,
+  needed: votesNeeded(activeCount.value, paused.value),
+}))
+
+const kickRule = computed(() => ({
+  needed: kickVotesNeeded(activeCount.value),
+  locked: activeCount.value < MIN_PLAYERS_TO_VOTE_KICK,
+}))
+
+function voteKick(target: string, want: boolean) {
+  game.send({ t: 'kick', target, want })
+}
 
 function togglePause() {
   game.send({ t: 'pause', want: !votedPause.value })
@@ -205,7 +221,21 @@ defineShortcuts({
 </script>
 
 <template>
+  <main v-if="kicked" class="min-h-dvh grid place-items-center px-4 py-8">
+    <SketchFrame :radius="22" :strokeWidth="3" class="w-full max-w-md p-6 sm:p-8 flex flex-col items-center gap-4">
+      <UIcon name="i-lucide-user-x" class="size-12 text-error" />
+      <h1 class="font-display font-extrabold text-2xl text-center">
+        {{ $t('kicked.title') }}
+      </h1>
+      <p class="text-muted text-center">
+        {{ $t('kicked.description') }}
+      </p>
+      <UButton to="/" size="xl" color="secondary" icon="i-lucide-house" class="min-h-11" :label="$t('kicked.home')" />
+    </SketchFrame>
+  </main>
+
   <main
+    v-else
     class="flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
       overscroll-y-contain lg:gap-5 lg:h-auto lg:min-h-dvh lg:overflow-visible
       phone-landscape:grid phone-landscape:grid-cols-[auto_auto_minmax(0,1fr)]
@@ -261,8 +291,9 @@ defineShortcuts({
     </header>
 
     <PlayerStrip
-      :players="leaderboard" :drawerId="state?.drawerId" :you="you"
-      class="lg:hidden phone-landscape:col-start-3 phone-landscape:row-start-4" />
+      :players="leaderboard" :drawerId="state?.drawerId" :you="you" :kickVotes="state?.kickVotes" :kick="kickRule"
+      class="lg:hidden phone-landscape:col-start-3 phone-landscape:row-start-4"
+      @kick="voteKick" />
 
     <SketchFrame
       v-if="phase === 'lobby' || phase === 'finished'" :radius="20" :strokeWidth="3"
@@ -304,8 +335,9 @@ defineShortcuts({
         lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_22rem]
         2xl:grid-cols-[15rem_minmax(0,1fr)_24rem] phone-landscape:contents">
       <PlayerList
-        :players="leaderboard" :drawerId="state?.drawerId" :you="you"
-        class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1" />
+        :players="leaderboard" :drawerId="state?.drawerId" :you="you" :kickVotes="state?.kickVotes" :kick="kickRule"
+        class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1"
+        @kick="voteKick" />
 
       <div class="flex flex-col gap-2 shrink-0 lg:gap-4 lg:order-2 phone-landscape:contents">
         <div

@@ -14,6 +14,7 @@ import {
   isFreehand,
   isLanguage,
   isOpaque,
+  kickVotesNeeded,
   LANGUAGES,
   maskWord,
   normalizeGuess,
@@ -247,5 +248,19 @@ describe('wordLengths', () => {
 
   it('is empty when there is no word', () => {
     expect(wordLengths('')).toEqual([])
+  })
+})
+
+describe('kickVotesNeeded', () => {
+  it('takes a majority of the players other than the target', () => {
+    expect(kickVotesNeeded(3)).toBe(2)
+    expect(kickVotesNeeded(4)).toBe(2)
+    expect(kickVotesNeeded(5)).toBe(3)
+    expect(kickVotesNeeded(8)).toBe(4)
+  })
+
+  it('never asks for fewer than one vote', () => {
+    expect(kickVotesNeeded(0)).toBe(1)
+    expect(kickVotesNeeded(1)).toBe(1)
   })
 })

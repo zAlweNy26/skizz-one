@@ -6,6 +6,12 @@ const props = defineProps<{
   players: GamePlayer[]
   drawerId?: string | null
   you: string
+  kickVotes?: Record<string, string[]>
+  kick?: { needed: number, locked: boolean }
+}>()
+
+defineEmits<{
+  kick: [target: string, want: boolean]
 }>()
 
 const leaders = computed(() => leaderIds(props.players))
@@ -57,7 +63,9 @@ const leaders = computed(() => leaderIds(props.players))
       </UButton>
 
       <template #body>
-        <PlayerList :players="players" :drawerId="drawerId" :you="you" />
+        <PlayerList
+          :players="players" :drawerId="drawerId" :you="you" :kickVotes="kickVotes" :kick="kick"
+          @kick="(target, want) => $emit('kick', target, want)" />
       </template>
     </UDrawer>
   </div>
