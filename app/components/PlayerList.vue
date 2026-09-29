@@ -42,7 +42,7 @@ function kickLabel(player: GamePlayer) {
           ? 'var(--color-tangerine-200)'
           : player.guessed ? 'color-mix(in oklab, var(--ui-color-success-300) 55%, var(--paper))' : 'var(--paper)'"
         :strokeWidth="2" :roughness="1"
-        class="flex-1 min-w-0 flex items-center gap-2 py-1.5 ps-2 pe-3 transition-opacity"
+        class="flex-1 min-w-0 flex items-center gap-3 py-2.5 ps-3 pe-4 transition-opacity"
         :class="{
           'opacity-55': !player.connected || player.away,
           'text-(--ink-fixed)': player.id === drawerId || player.guessed,
@@ -62,7 +62,7 @@ function kickLabel(player: GamePlayer) {
             </span>
           </UTooltip>
         </span>
-        <div class="min-w-0 grow">
+        <div class="min-w-0 grow flex flex-col gap-0.5">
           <p class="text-sm font-semibold truncate leading-tight">
             {{ player.name }}
             <UBadge
@@ -93,7 +93,6 @@ function kickLabel(player: GamePlayer) {
           :aria-label="kickLabel(player)" :aria-pressed="votedKick(player)"
           @click="emit('kick', player.id, !votedKick(player))" />
       </UTooltip>
-      <span v-else-if="kick" class="shrink-0 size-11" aria-hidden="true" />
     </div>
   </aside>
 </template>

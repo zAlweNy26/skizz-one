@@ -357,8 +357,9 @@ defineShortcuts({
     <section
       class="flex flex-col flex-1 min-h-0 w-full gap-2
         lg:grid lg:flex-none lg:gap-5 lg:items-start
-        lg:grid-cols-[min-content_minmax(0,1fr)] xl:grid-cols-[min-content_minmax(0,1fr)_22rem]
-        2xl:grid-cols-[min-content_minmax(0,1fr)_24rem] phone-landscape:contents">
+        lg:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))]
+        xl:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))_22rem]
+        2xl:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))_24rem] phone-landscape:contents">
       <PlayerList
         :players="leaderboard" :drawerId="state?.drawerId" :you="you" :kickVotes="state?.kickVotes" :kick="kickRule"
         class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1"
