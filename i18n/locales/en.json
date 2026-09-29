@@ -109,6 +109,10 @@
     "madeBy": "Made by {name}",
     "sourceCode": "Source code on GitHub"
   },
+  "join": {
+    "title": "Ready to draw?",
+    "room": "Joining room {code}"
+  },
   "pause": {
     "pause": "Pause",
     "resume": "Resume",

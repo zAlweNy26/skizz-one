@@ -76,7 +76,7 @@ Two Workers, one shared protocol:
   imports this by **relative path** and it must stay dependency-free. Any
   protocol change touches both `realtime/src/game-room.ts` and the client.
 
-Client side of a room (`app/pages/room/[code].vue`):
+Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.vue`):
 
 - `useGameSocket` wraps `PartySocket`, owns game state/chat, and exposes the raw
   `ServerMessage` stream as an event hook. Player identity is a `playerId` in
@@ -87,8 +87,10 @@ Client side of a room (`app/pages/room/[code].vue`):
   snap to the committed SVG. Erase/bucket (`OPAQUE_MODES`), undo/redo/clear
   resync the whole canvas instead of streaming. The canvas `viewBox` is fixed
   at `CANVAS_WIDTH`×`CANVAS_HEIGHT`, so coordinates are portable across devices.
-- `nickname` route middleware sends nameless visitors to `/` with the room code
-  prefilled.
+- The page itself is a join gate: it asks for a name (prefilled from localStorage)
+  and only mounts `RoomGame.vue` once the tab has joined that room. Joined rooms
+  live in sessionStorage (`useJoinedRooms`), so a refresh or entering from `/`
+  skips the gate.
 
 ## Conventions
 

@@ -109,6 +109,10 @@
     "madeBy": "Creato da {name}",
     "sourceCode": "Codice sorgente su GitHub"
   },
+  "join": {
+    "title": "Pronto a disegnare?",
+    "room": "Stai entrando nella stanza {code}"
+  },
   "pause": {
     "pause": "Pausa",
     "resume": "Riprendi",

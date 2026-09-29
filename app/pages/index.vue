@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { randomUUID } from 'uncrypto'
 import { useSchemaOrg } from '#imports'
-import { MAX_NAME_LENGTH } from '#shared/utils/protocol'
 
 const { t } = useI18n()
 const nickname = useNickname()
+const joinedRooms = useJoinedRooms()
 
 const invitedCode = useRouteQuery('code', '', { transform: String })
 
@@ -12,7 +12,6 @@ const name = ref(nickname.value || randomNickname())
 const code = ref(invitedCode.value)
 
 const trimmedName = computed(() => name.value.trim())
-const nameError = computed(() => (trimmedName.value ? false : t('home.nameRequired')))
 
 /** Accepts a bare code or a whole pasted link, old `/?code=` style included. */
 const roomCode = computed(() => {
@@ -28,6 +27,7 @@ const roomCode = computed(() => {
 function enter(room: string) {
   if (!trimmedName.value || !room) return
   nickname.value = trimmedName.value
+  if (!joinedRooms.value.includes(room)) joinedRooms.value.push(room)
   return navigateTo(`/room/${encodeURIComponent(room)}`)
 }
 
@@ -86,29 +86,7 @@ useSchemaOrg([
         </header>
 
         <SketchFrame :radius="22" :strokeWidth="3" class="w-full p-6 sm:p-8 flex flex-col gap-6">
-          <div class="flex items-center gap-4">
-            <SketchFrame
-              shape="circle" fill="var(--color-tangerine-200)" :strokeWidth="2.5"
-              class="shrink-0 p-2 rotate-3">
-              <UAvatar
-                :src="`https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(trimmedName)}`"
-                size="3xl" :alt="trimmedName" class="bg-transparent" />
-            </SketchFrame>
-            <UFormField
-              :label="$t('home.name')" :error="nameError" class="grow"
-              :ui="{ label: 'font-display text-base' }">
-              <UFieldGroup class="w-full">
-                <UInput
-                  v-model="name" size="lg" class="w-full" autofocus :maxlength="MAX_NAME_LENGTH"
-                  @keyup.enter="invitedCode ? enter(roomCode) : createRoom()" />
-                <UTooltip :text="$t('home.randomName')">
-                  <UButton
-                    color="neutral" variant="soft" size="lg" icon="i-lucide-dices"
-                    :aria-label="$t('home.randomName')" @click="name = randomNickname()" />
-                </UTooltip>
-              </UFieldGroup>
-            </UFormField>
-          </div>
+          <NameField v-model="name" @submit="invitedCode ? enter(roomCode) : createRoom()" />
 
           <UButton
             v-if="!invitedCode" block size="xl" color="secondary" icon="i-lucide-sparkles"
