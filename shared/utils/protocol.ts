@@ -119,6 +119,9 @@ export function votesNeeded(connected: number, paused: boolean) {
   return paused ? Math.floor(connected / 2) + 1 : connected
 }
 
+/** A guesser's thumbs up or down on the current drawing. Feedback for the drawer only; it never scores. */
+export type Reaction = 'like' | 'dislike'
+
 export interface GamePlayer {
   id: string
   name: string
@@ -152,6 +155,8 @@ export interface GameState {
   pauseVotes: string[]
   /** Time left on the frozen countdown, or null when not paused. */
   remainingMs: number | null
+  /** Guessers' reactions to this turn's drawing, by player id. */
+  reactions: Record<string, Reaction>
 }
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'
@@ -183,6 +188,8 @@ export type ClientMessage
     | { t: 'settings', settings: Partial<RoomSettings> }
     | { t: 'pause', want: boolean }
     | { t: 'choose', index: number }
+  /** `null` takes the reaction back. */
+    | { t: 'react', reaction: Reaction | null }
     | { t: 'ping' }
 
 export type ServerMessage

@@ -375,6 +375,9 @@ defineShortcuts({
               :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices"
               :drawerName="drawerName" :players="leaderboard" :you="you"
               @choose="game.send({ t: 'choose', index: $event })" />
+            <DrawingReactions
+              v-if="phase === 'drawing' && state" :reactions="state.reactions" :isDrawer="isDrawer" :you="you"
+              @react="game.send({ t: 'react', reaction: $event })" />
             <svg
               ref="sketch"
               class="size-full"

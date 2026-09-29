@@ -24,6 +24,7 @@ function game(extra: Partial<GameState> = {}): GameState {
     paused: false,
     pauseVotes: [],
     remainingMs: null,
+    reactions: {},
     ...extra,
   }
 }

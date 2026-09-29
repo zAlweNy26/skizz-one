@@ -137,5 +137,12 @@
     "title": "Partita finita — un'altra?",
     "winner": "Vince {name}!",
     "youWin": "Hai vinto!"
+  },
+  "reactions": {
+    "label": "Valuta il disegno",
+    "like": "Mi piace",
+    "dislike": "Non mi piace",
+    "likeCount": "Nessun mi piace | 1 mi piace | {n} mi piace",
+    "dislikeCount": "Nessun non mi piace | 1 non mi piace | {n} non mi piace"
   }
 }

@@ -8,6 +8,7 @@ import type {
   LogKey,
   LogLevel,
   LogParams,
+  Reaction,
   RoomSettings,
   RoundPhase,
   ServerMessage,
@@ -92,6 +93,7 @@ interface RoomState {
   pauseVotes: string[]
   /** The countdown frozen by a vote: which alarm to re-arm, and with how long. */
   pause: { kind: AlarmKind, remainingMs: number } | null
+  reactions: Record<string, Reaction>
 }
 
 interface ConnState {
@@ -122,6 +124,7 @@ function initialState(): RoomState {
     pausedMs: null,
     pauseVotes: [],
     pause: null,
+    reactions: {},
   }
 }
 
@@ -202,6 +205,7 @@ export class GameRoom extends Server<Env> {
       paused: s.pause !== null,
       pauseVotes: this.#pauseVoters(),
       remainingMs: s.pause?.remainingMs ?? null,
+      reactions: s.reactions,
     }
   }
 
@@ -403,6 +407,9 @@ export class GameRoom extends Server<Env> {
       case 'choose':
         await this.#chooseWord(playerId, msg.index)
         break
+      case 'react':
+        await this.#react(playerId, msg.reaction)
+        break
       case 'guess':
         await this.#handleGuess(connection, playerId, msg.text)
         break
@@ -521,6 +528,18 @@ export class GameRoom extends Server<Env> {
       const other = s.players[id]
       if (other?.guessed || id === s.drawerId) conn.send(payload)
     }
+  }
+
+  async #react(playerId: string, reaction: unknown) {
+    const s = this.#state
+    if (s.phase !== 'drawing' || playerId === s.drawerId || !s.players[playerId]) return
+
+    if (reaction === 'like' || reaction === 'dislike') s.reactions[playerId] = reaction
+    else if (reaction === null) delete s.reactions[playerId]
+    else return
+
+    await this.#save()
+    this.#broadcastState()
   }
 
   // --- pausing -----------------------------------------------------------
@@ -707,6 +726,7 @@ export class GameRoom extends Server<Env> {
     s.word = null
     s.choices = pickWords(s.language, WORD_CHOICES, s.usedWords, s.customWords)
     s.revealed = []
+    s.reactions = {}
     this.#canvas = ''
     this.#saveCanvas()
     s.pausedMs = null

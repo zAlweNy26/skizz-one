@@ -113,6 +113,7 @@ async function main() {
   const drawer = choosing?.state?.drawerId
   const drawerWs = drawer === 'player-a' ? a : b
   const watcherWs = drawer === 'player-a' ? b : a
+  const watcherId = drawer === 'player-a' ? 'player-b' : 'player-a'
   const choices = await waitFor(drawerWs, m => m.t === 'choices')
   check('the drawer is offered three words', choices?.words?.length === 3, JSON.stringify(choices?.words))
   check('the watcher is offered nothing', !watcherWs.inbox.some(m => m.t === 'choices'))
@@ -212,6 +213,21 @@ async function main() {
   await sleep(400)
   const overheard = c.inbox.find(m => m.t === 'chat')
   check('a player still guessing sees none of it', !overheard, overheard ? JSON.stringify(overheard) : '')
+
+  // --- reacting to the drawing ------------------------------------------
+  for (const ws of [a, b, c]) ws.inbox.length = 0
+  const pointsBefore = JSON.stringify(scored?.state?.players?.map(p => p.points))
+  send(watcherWs, { t: 'react', reaction: 'like' })
+  const liked = await waitFor(drawerWs, m => m.t === 'state' && m.state.reactions[watcherId] === 'like')
+  check('the drawer sees a like', Boolean(liked), JSON.stringify(liked?.state?.reactions))
+  check('a reaction does not score', JSON.stringify(liked?.state?.players?.map(p => p.points)) === pointsBefore)
+  send(watcherWs, { t: 'react', reaction: null })
+  const unliked = await waitFor(drawerWs, m => m.t === 'state' && !(watcherId in m.state.reactions))
+  check('a reaction can be taken back', Boolean(unliked))
+  drawerWs.inbox.length = 0
+  send(drawerWs, { t: 'react', reaction: 'like' })
+  await sleep(400)
+  check('the drawer cannot react to their own drawing', !drawerWs.inbox.some(m => m.t === 'state'))
 
   // --- pausing takes everyone -------------------------------------------
   for (const ws of [a, b, c]) ws.inbox.length = 0

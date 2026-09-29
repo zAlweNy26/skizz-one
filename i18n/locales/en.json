@@ -137,5 +137,12 @@
     "title": "Game over — ready for another?",
     "winner": "{name} wins!",
     "youWin": "You win!"
+  },
+  "reactions": {
+    "label": "Rate the drawing",
+    "like": "I like it",
+    "dislike": "I don't like it",
+    "likeCount": "No likes | 1 like | {n} likes",
+    "dislikeCount": "No dislikes | 1 dislike | {n} dislikes"
   }
 }
