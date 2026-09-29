@@ -189,6 +189,20 @@ async function main() {
   check('the watcher is offered nothing', !watcherWs.inbox.some(m => m.t === 'choices'))
   check('no word is set while choosing', choosing?.state?.hint === '', choosing?.state?.hint)
 
+  check('the drawer can swap the words once', choices?.canReroll === true)
+  send(watcherWs, { t: 'reroll' })
+  check('only the drawer can swap the words', !(await waitFor(watcherWs, m => m.t === 'choices', 500)))
+
+  drawerWs.inbox.length = 0
+  send(drawerWs, { t: 'reroll' })
+  const rerolled = await waitFor(drawerWs, m => m.t === 'choices')
+  check('the drawer gets three new words', rerolled?.words?.length === 3
+  && rerolled.words.every(w => !choices.words.includes(w)), JSON.stringify(rerolled?.words))
+  check('the swap is used up', rerolled?.canReroll === false)
+  drawerWs.inbox.length = 0
+  send(drawerWs, { t: 'reroll' })
+  check('a second swap is ignored', !(await waitFor(drawerWs, m => m.t === 'choices', 500)))
+
   send(watcherWs, { t: 'choose', index: 0 })
   check('only the drawer can choose', !(await waitFor(watcherWs, m => m.t === 'turn', 500)))
 
@@ -200,7 +214,7 @@ async function main() {
   const watcherTurn = drawer === 'player-a' ? turnB : turnA
 
   check('drawer receives the word', typeof drawerTurn?.word === 'string' && drawerTurn.word.length > 0)
-  check('the word is the one chosen', drawerTurn?.word === choices?.words?.[1], drawerTurn?.word)
+  check('the word is the one chosen', drawerTurn?.word === rerolled?.words?.[1], drawerTurn?.word)
   check('watcher receives NO word', watcherTurn?.word === undefined, JSON.stringify(watcherTurn?.word))
   check('watcher gets a masked hint', /^_+$/.test((watcherTurn?.hint ?? '').replace(/ /g, '')), watcherTurn?.hint)
   check(

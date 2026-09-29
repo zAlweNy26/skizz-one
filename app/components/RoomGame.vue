@@ -34,7 +34,7 @@ const { undo, redo, clear, canUndo, canRedo, brush } = drauu
 const game = useGameSocket(gameId)
 const {
   state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you,
-  hasGuessed, paused, votedPause, customWords, choices, kicked,
+  hasGuessed, paused, votedPause, customWords, choices, canReroll, kicked,
 } = game
 
 const sync = useDrawingSync(drauu, game)
@@ -386,9 +386,9 @@ defineShortcuts({
           :class="{ 'phone-landscape:hidden': phase === 'lobby' }">
           <div class="relative aspect-4/3 rounded-sm overflow-hidden bg-white">
             <CanvasOverlay
-              :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices"
+              :phase="phase" :paused="paused" :isDrawer="isDrawer" :choices="choices" :canReroll="canReroll"
               :drawerName="drawerName" :players="leaderboard" :you="you"
-              @choose="game.send({ t: 'choose', index: $event })" />
+              @choose="game.send({ t: 'choose', index: $event })" @reroll="game.send({ t: 'reroll' })" />
             <DrawingReactions
               v-if="phase === 'drawing' && state" :reactions="state.reactions" :isDrawer="isDrawer" :you="you"
               @react="game.send({ t: 'react', reaction: $event })" />

@@ -35,6 +35,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const customWords = ref<string[]>([])
   /** Words on offer while you are the drawer choosing one. */
   const choices = ref<string[]>([])
+  const canReroll = ref(false)
 
   const messageHook = createEventHook<ServerMessage>()
 
@@ -75,6 +76,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
         break
       case 'choices':
         choices.value = msg.words
+        canReroll.value = msg.canReroll
         break
       case 'customWords':
         customWords.value = msg.words
@@ -189,6 +191,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     endsAt,
     customWords,
     choices,
+    canReroll,
     players,
     leaderboard,
     isDrawer,

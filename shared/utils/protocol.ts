@@ -205,6 +205,8 @@ export type ClientMessage
   /** `null` takes the reaction back. */
     | { t: 'react', reaction: Reaction | null }
     | { t: 'kick', target: string, want: boolean }
+  /** Swap the words on offer for new ones, once per turn. */
+    | { t: 'reroll' }
     | { t: 'ping' }
 
 export type ServerMessage
@@ -218,7 +220,7 @@ export type ServerMessage
     | { t: 'chat', sender: string, text: string, private?: boolean }
     | { t: 'customWords', words: string[] }
   /** Sent only to the drawer while they pick the turn's word. */
-    | { t: 'choices', words: string[] }
+    | { t: 'choices', words: string[], canReroll: boolean }
   /** Sent to a kicked player just before their socket is closed. */
     | { t: 'kicked' }
     | { t: 'pong' }

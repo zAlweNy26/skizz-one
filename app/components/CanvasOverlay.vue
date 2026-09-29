@@ -6,6 +6,7 @@ const props = defineProps<{
   paused: boolean
   isDrawer: boolean
   choices: string[]
+  canReroll: boolean
   drawerName: string
   /** Already sorted, best score first. */
   players: GamePlayer[]
@@ -14,6 +15,7 @@ const props = defineProps<{
 
 defineEmits<{
   choose: [index: number]
+  reroll: []
 }>()
 
 const { t } = useI18n()
@@ -64,6 +66,9 @@ const STEP_DELAY = [360, 180, 0]
           <span class="font-bouncy font-bold text-lg lg:text-2xl">{{ choice }}</span>
         </SketchFrame>
       </div>
+      <UButton
+        v-if="canReroll" color="neutral" variant="soft" size="lg" icon="i-lucide-refresh-cw" class="min-h-11"
+        :label="$t('choose.reroll')" @click="$emit('reroll')" />
     </template>
     <template v-else>
       <UIcon name="i-lucide-pencil" class="size-10 text-primary lg:size-12" />

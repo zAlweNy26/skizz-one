@@ -142,7 +142,8 @@
   },
   "choose": {
     "title": "Pick a word to draw",
-    "waiting": "{name} is choosing a word…"
+    "waiting": "{name} is choosing a word…",
+    "reroll": "Other words"
   },
   "finished": {
     "title": "Game over — ready for another?",

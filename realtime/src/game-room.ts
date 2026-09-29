@@ -80,6 +80,8 @@ interface RoomState {
   word: string | null
   /** Words offered to the drawer while choosing. */
   choices: string[]
+  /** The drawer already swapped this turn's choices. */
+  rerolled: boolean
   /** Indices of the word's letters that hints have revealed this turn. */
   revealed: number[]
   usedWords: string[]
@@ -121,6 +123,7 @@ function initialState(): RoomState {
     endsAt: null,
     word: null,
     choices: [],
+    rerolled: false,
     revealed: [],
     usedWords: [],
     order: [],
@@ -325,7 +328,7 @@ export class GameRoom extends Server<Env> {
     }
 
     if (s.drawerId === playerId && s.phase === 'choosing')
-      this.#send(connection, { t: 'choices', words: s.choices })
+      this.#sendChoices(connection)
 
     this.#broadcastState()
   }
@@ -431,6 +434,9 @@ export class GameRoom extends Server<Env> {
         break
       case 'choose':
         await this.#chooseWord(playerId, msg.index)
+        break
+      case 'reroll':
+        await this.#reroll(playerId)
         break
       case 'react':
         await this.#react(playerId, msg.reaction)
@@ -818,6 +824,7 @@ export class GameRoom extends Server<Env> {
     s.phase = 'choosing'
     s.word = null
     s.choices = pickWords(s.language, WORD_CHOICES, s.usedWords, s.customWords)
+    s.rerolled = false
     s.revealed = []
     s.reactions = {}
     this.#canvas = ''
@@ -831,11 +838,25 @@ export class GameRoom extends Server<Env> {
     await this.#save()
 
     this.#broadcast({ t: 'canvas', svg: '' })
-    for (const conn of this.#connectionsOf(s.drawerId))
-      this.#send(conn, { t: 'choices', words: s.choices })
+    for (const conn of this.#connectionsOf(s.drawerId)) this.#sendChoices(conn)
 
     this.#log('info', 'choosing', { name: s.players[s.drawerId]?.name ?? '' })
     this.#broadcastState()
+  }
+
+  #sendChoices(connection: Connection) {
+    const s = this.#state
+    this.#send(connection, { t: 'choices', words: s.choices, canReroll: !s.rerolled })
+  }
+
+  async #reroll(playerId: string) {
+    const s = this.#state
+    if (s.phase !== 'choosing' || playerId !== s.drawerId || s.rerolled || s.pause) return
+
+    s.choices = pickWords(s.language, WORD_CHOICES, [...s.usedWords, ...s.choices], s.customWords)
+    s.rerolled = true
+    await this.#save()
+    for (const conn of this.#connectionsOf(playerId)) this.#sendChoices(conn)
   }
 
   async #chooseWord(playerId: string, index: unknown) {

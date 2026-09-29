@@ -142,7 +142,8 @@
   },
   "choose": {
     "title": "Scegli una parola da disegnare",
-    "waiting": "{name} sta scegliendo una parola…"
+    "waiting": "{name} sta scegliendo una parola…",
+    "reroll": "Altre parole"
   },
   "finished": {
     "title": "Partita finita — un'altra?",
