@@ -191,6 +191,10 @@ useSchemaOrg([
           <ULink to="/changelog" raw class="underline underline-offset-4 whitespace-nowrap">
             {{ $t('home.changelog') }}
           </ULink>
+          ·
+          <ULink to="/credits" raw class="underline underline-offset-4 whitespace-nowrap">
+            {{ $t('home.credits') }}
+          </ULink>
         </p>
       </template>
     </UFooter>

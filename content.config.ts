@@ -9,6 +9,10 @@ export default defineContentConfig({
         updated: z.date(),
       }),
     }),
+    credits: defineCollection({
+      type: 'page',
+      source: 'credits/*.md',
+    }),
     changelog: defineCollection({
       type: 'page',
       source: 'changelog/**/*.md',

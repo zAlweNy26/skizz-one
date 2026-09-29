@@ -131,7 +131,8 @@
     "inGame": "round {round}/{total}",
     "disclaimer": "Names, drawings and chat messages are created by players. SkizzOne doesn't review them and isn't responsible for them.",
     "terms": "Terms of service",
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "credits": "Credits"
   },
   "join": {
     "title": "Ready to draw?",
