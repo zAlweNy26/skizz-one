@@ -78,7 +78,7 @@ useSchemaOrg([
     applicationCategory: 'GameApplication',
     operatingSystem: 'Any',
     image: 'https://skizz.app/og-image.png',
-    offers: { price: 0 },
+    offers: { price: 0, priceCurrency: 'EUR' },
   }),
 ])
 </script>

@@ -237,5 +237,18 @@
   "changelog": {
     "title": "Novità",
     "description": "Cosa c'è di nuovo in SkizzOne, versione per versione."
+  },
+  "nuxtSiteConfig": {
+    "description": "Gioco multigiocatore gratuito di disegno e indovinelli. Crea una stanza, condividi il link e fai a turno a disegnare e indovinare con gli amici. Senza registrazione, senza download."
+  },
+  "error": {
+    "notFound": {
+      "title": "Pagina non trovata",
+      "description": "Questa pagina non esiste. Forse il link contiene un errore, oppure la stanza è stata chiusa."
+    },
+    "generic": {
+      "title": "Qualcosa è andato storto",
+      "description": "Si è verificato un errore imprevisto. Riprova dalla home."
+    }
   }
 }

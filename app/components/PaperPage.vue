@@ -4,7 +4,7 @@ const props = defineProps<{ title?: string, description?: string, wide?: boolean
 useSeoMeta({
   title: () => props.title,
   description: () => props.description,
-  ogTitle: () => props.title,
+  ogTitle: () => props.title && `${props.title} | SkizzOne`,
   ogDescription: () => props.description,
 })
 </script>

@@ -35,6 +35,9 @@ export default defineNuxtConfig({
         { property: 'og:title', content: siteTitle },
         { property: 'og:description', content: siteDescription },
         { property: 'og:image', content: 'https://skizz.app/og-image.png' },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:image:alt', content: 'SkizzOne' },
         { name: 'twitter:card', content: 'summary_large_image' },
         {
           name: 'viewport',

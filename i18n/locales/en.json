@@ -237,5 +237,18 @@
   "changelog": {
     "title": "Changelog",
     "description": "What's new in SkizzOne, version by version."
+  },
+  "nuxtSiteConfig": {
+    "description": "Free multiplayer drawing and guessing game. Create a room, share the link and take turns drawing and guessing with friends. No sign-up, no download."
+  },
+  "error": {
+    "notFound": {
+      "title": "Page not found",
+      "description": "This page doesn't exist. Maybe the link has a typo, or the room was closed."
+    },
+    "generic": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. Try again from the home page."
+    }
   }
 }
