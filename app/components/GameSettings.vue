@@ -11,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits<{ save: [settings: RoomSettings] }>()
 
 const open = ref(false)
+const isDesktop = useIsDesktop()
 
 const languageItems = (Object.keys(LANGUAGES) as Language[]).map(value => ({ value, label: LANGUAGES[value] }))
 
@@ -49,8 +50,8 @@ function save() {
 <template>
   <UModal v-model:open="open" :title="$t('settings.title')" :ui="{ body: 'flex flex-col gap-5' }">
     <UButton
-      color="neutral" variant="soft" size="xl" icon="i-lucide-settings-2"
-      :label="$t('settings.open')" />
+      color="neutral" variant="soft" :size="isDesktop ? 'xl' : 'lg'" icon="i-lucide-settings-2"
+      :label="isDesktop ? $t('settings.open') : undefined" :aria-label="$t('settings.open')" />
 
     <template #body>
       <USwitch

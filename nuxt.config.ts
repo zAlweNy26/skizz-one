@@ -204,6 +204,7 @@ export default defineNuxtConfig({
         'partysocket',
         'roughjs',
         'unique-names-generator',
+        'uqr',
       ],
     },
   },

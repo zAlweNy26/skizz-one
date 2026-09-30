@@ -142,6 +142,9 @@ async function shareGame() {
   })
 }
 
+const qrOpen = ref(false)
+const isDesktop = useIsDesktop()
+
 const wakeLock = useWakeLock()
 watch(phase, (now) => {
   if (!wakeLock.isSupported.value) return
@@ -165,6 +168,7 @@ const menuItems = computed(() => [
         }]
       : []),
     { label: t('header.share'), icon: 'i-lucide-share-2', onSelect: shareGame },
+    { label: t('qr.open'), icon: 'i-lucide-qr-code', onSelect: () => { qrOpen.value = true } },
     {
       label: muted.value ? t('sound.unmute') : t('sound.mute'),
       icon: muted.value ? 'i-lucide-volume-x' : 'i-lucide-volume-2',
@@ -348,12 +352,17 @@ defineShortcuts({
           </li>
         </ul>
       </div>
-      <div v-if="isHost && state" class="flex flex-wrap items-center gap-3">
-        <GameSettings
-          :state="state" :customWords="customWords" @save="game.send({ t: 'settings', settings: $event })" />
+      <div class="flex flex-wrap items-center gap-3">
         <UButton
-          color="secondary" size="xl" icon="i-lucide-rocket"
-          :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
+          color="neutral" variant="soft" :size="isDesktop ? 'xl' : 'lg'" icon="i-lucide-qr-code"
+          :label="isDesktop ? $t('qr.open') : undefined" :aria-label="$t('qr.open')" @click="qrOpen = true" />
+        <template v-if="isHost && state">
+          <GameSettings
+            :state="state" :customWords="customWords" @save="game.send({ t: 'settings', settings: $event })" />
+          <UButton
+            color="secondary" :size="isDesktop ? 'xl' : 'lg'" icon="i-lucide-rocket"
+            :label="$t('lobby.start')" @click="game.send({ t: 'start' })" />
+        </template>
       </div>
     </SketchFrame>
 
@@ -518,6 +527,7 @@ defineShortcuts({
         :entries="chat" :isDrawer="isDrawer" :hasGuessed="hasGuessed"
         :drawing="phase === 'drawing'" :paused="paused" @guess="game.send({ t: 'guess', text: $event })" />
     </section>
+    <RoomQrCode v-model:open="qrOpen" :code="gameId" />
   </main>
 </template>
 

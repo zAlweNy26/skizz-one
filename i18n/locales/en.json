@@ -18,6 +18,12 @@
     "description": "Share this link with your friends to join the game!",
     "text": "Come draw and guess with me on SkizzOne!"
   },
+  "qr": {
+    "open": "Show QR code",
+    "title": "Scan to join",
+    "description": "Point a phone camera at the code to join this game.",
+    "alt": "QR code for game {code}"
+  },
   "lobby": {
     "title": "Waiting to start",
     "host": "You are the host. Set the game up and start when everyone has joined.",

@@ -18,6 +18,12 @@
     "description": "Condividi questo link con i tuoi amici per farli entrare!",
     "text": "Vieni a disegnare e indovinare con me su SkizzOne!"
   },
+  "qr": {
+    "open": "Mostra codice QR",
+    "title": "Inquadra per entrare",
+    "description": "Inquadra il codice con la fotocamera del telefono per entrare in questa partita.",
+    "alt": "Codice QR della partita {code}"
+  },
   "lobby": {
     "title": "In attesa di iniziare",
     "host": "Sei l'host. Configura la partita e avviala quando sono entrati tutti.",
