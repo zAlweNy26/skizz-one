@@ -10,6 +10,7 @@ import {
   editDistance,
   hintBudget,
   hintRevealAt,
+  isColorLimit,
   isDrawingMessage,
   isFreehand,
   isLanguage,
@@ -19,6 +20,8 @@ import {
   LANGUAGES,
   maskWord,
   normalizeGuess,
+  PALETTE,
+  pickTurnColors,
   POINT_STRIDE,
   quantize,
   votesNeeded,
@@ -275,5 +278,29 @@ describe('kickVotesNeeded', () => {
   it('never asks for fewer than one vote', () => {
     expect(kickVotesNeeded(0)).toBe(1)
     expect(kickVotesNeeded(1)).toBe(1)
+  })
+})
+
+describe('turn colours', () => {
+  it('picks the requested number of distinct palette colours', () => {
+    const colors = pickTurnColors(5)
+    expect(colors).toHaveLength(5)
+    expect(new Set(colors).size).toBe(5)
+    for (const color of colors) expect(PALETTE).toContain(color)
+  })
+
+  it('never offers white', () => {
+    expect(pickTurnColors(PALETTE.length)).not.toContain('#FFFFFF')
+  })
+
+  it('leaves the palette whole when unlimited', () => {
+    expect(pickTurnColors(0)).toEqual([])
+  })
+
+  it('accepts only the offered limits', () => {
+    expect(isColorLimit(3)).toBe(true)
+    expect(isColorLimit(0)).toBe(true)
+    expect(isColorLimit(4)).toBe(false)
+    expect(isColorLimit('3')).toBe(false)
   })
 })

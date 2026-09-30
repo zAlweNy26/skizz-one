@@ -30,6 +30,7 @@ import {
   hintBudget,
   hintRevealAt,
   HINTS,
+  isColorLimit,
   isDrawingMessage,
   isLanguage,
   KICKED_CLOSE_CODE,
@@ -41,6 +42,7 @@ import {
   MIN_PLAYERS_TO_VOTE_KICK,
   normalizeGuess,
   PAUSABLE_PHASES,
+  pickTurnColors,
   PUBLIC_ROOM_CAP,
   ROOM_FULL_CLOSE_CODE,
   ROUNDS,
@@ -108,6 +110,11 @@ interface RoomState {
   hints: number
   customWords: string[]
   public: boolean
+  noUndo: boolean
+  noEraser: boolean
+  colorLimit: number
+  /** Colours the current drawer may use; empty when unlimited. */
+  colors: string[]
   hostId: string | null
   drawerId: string | null
   endsAt: number | null
@@ -179,6 +186,10 @@ function initialState(): RoomState {
     hints: HINTS.default,
     customWords: [],
     public: false,
+    noUndo: false,
+    noEraser: false,
+    colorLimit: 0,
+    colors: [],
     hostId: null,
     drawerId: null,
     endsAt: null,
@@ -329,6 +340,10 @@ export class GameRoom extends Server<Env> {
       })),
       awards: s.phase === 'finished' ? this.#awards() : [],
       public: s.public,
+      noUndo: s.noUndo,
+      noEraser: s.noEraser,
+      colorLimit: s.colorLimit,
+      colors: s.colors,
     }
   }
 
@@ -670,6 +685,9 @@ export class GameRoom extends Server<Env> {
     s.hints = clampSetting(settings.hints, HINTS) ?? s.hints
     if (Array.isArray(settings.customWords)) s.customWords = cleanCustomWords(settings.customWords)
     if (typeof settings.public === 'boolean') s.public = settings.public
+    if (typeof settings.noUndo === 'boolean') s.noUndo = settings.noUndo
+    if (typeof settings.noEraser === 'boolean') s.noEraser = settings.noEraser
+    if (isColorLimit(settings.colorLimit)) s.colorLimit = settings.colorLimit
 
     await this.#save()
     if (languageChanged) this.#log('info', 'languageChanged', { language: LANGUAGES[s.language] })
@@ -1031,6 +1049,7 @@ export class GameRoom extends Server<Env> {
     s.choices = pickWords(s.language, WORD_CHOICES, s.usedWords, s.customWords)
     s.rerolled = false
     s.revealed = []
+    s.colors = []
     s.reactions = {}
     this.#canvas = ''
     this.#saveCanvas()
@@ -1079,6 +1098,7 @@ export class GameRoom extends Server<Env> {
     s.word = word
     s.choices = []
     s.revealed = []
+    s.colors = pickTurnColors(s.colorLimit)
     s.usedWords.push(word)
     s.endsAt = Date.now() + this.#drawMs()
 

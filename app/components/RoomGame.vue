@@ -6,15 +6,11 @@ import {
   kickVotesNeeded,
   LANGUAGES,
   MIN_PLAYERS_TO_VOTE_KICK,
+  PALETTE,
   PUBLIC_ROOM_CAP,
   votesNeeded,
   wordLengths,
 } from '#shared/utils/protocol'
-
-const paletteColors = [
-  '#FFFFFF', '#c1c1c1', '#ef130b', '#ff7100', '#ffe400', '#00cc00', '#00ff91', '#00b2ff', '#231fd3', '#a300ba', '#df69a7', '#ffac8e', '#a0522d',
-  '#000000', '#505050', '#740b07', '#c23800', '#e8a200', '#004619', '#00785d', '#00569e', '#0e0865', '#550069', '#873554', '#cc774d', '#63300d',
-]
 
 const toast = useToast()
 const { t } = useI18n()
@@ -66,6 +62,16 @@ const { muted } = useSounds({ onMessage: game.onMessage, you, state, secondsLeft
 
 const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
+
+const noUndo = computed(() => state.value?.noUndo ?? false)
+const noEraser = computed(() => state.value?.noEraser ?? false)
+const paletteColors = computed<readonly string[]>(() => (state.value?.colors.length ? state.value.colors : PALETTE))
+
+watch([canDraw, paletteColors, noEraser], () => {
+  if (!canDraw.value) return
+  if (!paletteColors.value.includes(brush.value.color)) brush.value.color = paletteColors.value[0]!
+  if (noEraser.value && brush.value.mode === 'eraseLine') brush.value.mode = 'draw'
+}, { immediate: true })
 useEventListener(sketch, 'touchmove', (event: TouchEvent) => {
   if (canDraw.value) event.preventDefault()
 }, { passive: false })
@@ -122,6 +128,9 @@ const settingsSummary = computed(() => {
     ...(s.customWordCount
       ? [{ icon: 'i-lucide-list-plus', label: t('settings.customWordTotal', s.customWordCount) }]
       : []),
+    ...(s.noUndo ? [{ icon: 'i-lucide-undo-2', label: t('settings.noUndo') }] : []),
+    ...(s.noEraser ? [{ icon: 'i-lucide-eraser', label: t('settings.noEraser') }] : []),
+    ...(s.colorLimit ? [{ icon: 'i-lucide-palette', label: t('settings.colorCount', s.colorLimit) }] : []),
   ]
 })
 
@@ -183,19 +192,19 @@ const menuItems = computed(() => [
 ])
 
 function localUndo() {
-  if (!canDraw.value || !canUndo.value) return
+  if (!canDraw.value || noUndo.value || !canUndo.value) return
   undo()
   sync.syncCanvas()
 }
 
 function localRedo() {
-  if (!canDraw.value || !canRedo.value) return
+  if (!canDraw.value || noUndo.value || !canRedo.value) return
   redo()
   sync.syncCanvas()
 }
 
 function localClear() {
-  if (!canDraw.value) return
+  if (!canDraw.value || noUndo.value) return
   clear()
   sync.syncCanvas()
 }
@@ -206,13 +215,17 @@ const modeTools = [
   { key: 'E', mode: 'eraseLine', icon: 'i-lucide-eraser', label: 'canvas.tools.eraseLine', cursor: 'cursor-eraser' },
 ] as const
 
+const drawTools = computed(() => (noEraser.value ? modeTools.filter(tool => tool.mode !== 'eraseLine') : modeTools))
+
 const canvasCursor = computed(() => modeTools.find(tool => tool.mode === brush.value.mode)?.cursor ?? 'cursor-pencil')
 
-const actionTools = computed(() => [
-  { key: 'U', icon: 'i-lucide-undo-2', label: 'canvas.tools.undo', color: 'neutral', disabled: !canUndo.value, run: localUndo },
-  { key: 'R', icon: 'i-lucide-redo-2', label: 'canvas.tools.redo', color: 'neutral', disabled: !canRedo.value, run: localRedo },
-  { key: 'D', icon: 'i-lucide-trash-2', label: 'canvas.tools.clear', color: 'error', disabled: false, run: localClear },
-] as const)
+const actionTools = computed(() => noUndo.value
+  ? []
+  : [
+      { key: 'U', icon: 'i-lucide-undo-2', label: 'canvas.tools.undo', color: 'neutral', disabled: !canUndo.value, run: localUndo },
+      { key: 'R', icon: 'i-lucide-redo-2', label: 'canvas.tools.redo', color: 'neutral', disabled: !canRedo.value, run: localRedo },
+      { key: 'D', icon: 'i-lucide-trash-2', label: 'canvas.tools.clear', color: 'error', disabled: false, run: localClear },
+    ] as const)
 
 const timerTone = computed(() => paused.value
   ? 'warning'
@@ -241,7 +254,7 @@ useHead({
 defineShortcuts({
   b: () => { if (canDraw.value) brush.value.mode = 'draw' },
   f: () => { if (canDraw.value) brush.value.mode = 'bucket' },
-  e: () => { if (canDraw.value) brush.value.mode = 'eraseLine' },
+  e: () => { if (canDraw.value && !noEraser.value) brush.value.mode = 'eraseLine' },
   u: localUndo,
   r: localRedo,
   d: localClear,
@@ -414,6 +427,8 @@ defineShortcuts({
               {{ secondsLeft }}
             </span>
           </SketchFrame>
+          <DrawingRules
+            v-if="phase === 'drawing' && state" :noUndo="noUndo" :noEraser="noEraser" :colors="state.colors" />
         </div>
 
         <SketchFrame
@@ -495,7 +510,7 @@ defineShortcuts({
           </UDrawer>
 
           <div class="flex gap-1.5 lg:gap-2 phone-landscape:flex-col phone-landscape:gap-1">
-            <UTooltip v-for="tool in modeTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
+            <UTooltip v-for="tool in drawTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
               <UButton
                 size="lg" color="neutral" variant="soft" :active="brush.mode === tool.mode"
                 activeColor="primary" activeVariant="solid" class="relative" square :icon="tool.icon"
@@ -506,7 +521,7 @@ defineShortcuts({
               </UButton>
             </UTooltip>
           </div>
-          <div class="flex gap-1.5 lg:gap-2 phone-landscape:flex-col phone-landscape:gap-1">
+          <div v-if="actionTools.length" class="flex gap-1.5 lg:gap-2 phone-landscape:flex-col phone-landscape:gap-1">
             <UTooltip v-for="tool in actionTools" :key="tool.key" :text="$t(tool.label)" :kbds="[tool.key]">
               <UButton
                 size="lg" variant="soft" :color="tool.color" class="relative" square :icon="tool.icon"

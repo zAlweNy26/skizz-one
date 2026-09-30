@@ -94,6 +94,29 @@ export const HINTS = { min: 0, max: 5, default: 2 } as const
 export const MAX_CUSTOM_WORDS = 200
 export const MAX_CUSTOM_WORD_LENGTH = 30
 
+/** The drawer's colours, as hex. */
+export const PALETTE = [
+  '#FFFFFF', '#c1c1c1', '#ef130b', '#ff7100', '#ffe400', '#00cc00', '#00ff91', '#00b2ff', '#231fd3', '#a300ba', '#df69a7', '#ffac8e', '#a0522d',
+  '#000000', '#505050', '#740b07', '#c23800', '#e8a200', '#004619', '#00785d', '#00569e', '#0e0865', '#550069', '#873554', '#cc774d', '#63300d',
+] as const
+
+/** Colours a turn can be limited to; 0 leaves the whole palette. */
+export const COLOR_LIMITS = [0, 2, 3, 5] as const
+
+export function isColorLimit(value: unknown): value is typeof COLOR_LIMITS[number] {
+  return COLOR_LIMITS.includes(value as typeof COLOR_LIMITS[number])
+}
+
+/** `limit` distinct random colours from the palette, never white; none when unlimited. */
+export function pickTurnColors(limit: number, random = Math.random): string[] {
+  const pool: string[] = PALETTE.filter(color => color !== '#FFFFFF')
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j]!, pool[i]!]
+  }
+  return pool.slice(0, limit)
+}
+
 export interface RoomSettings {
   language: Language
   /** Seconds per turn. */
@@ -103,6 +126,11 @@ export interface RoomSettings {
   customWords: string[]
   /** Listed on the home page for anyone to join. */
   public: boolean
+  /** Undo, redo and clear are off. */
+  noUndo: boolean
+  noEraser: boolean
+  /** One of `COLOR_LIMITS`. */
+  colorLimit: number
 }
 
 /** Round `value` into `[min, max]`, or null if it isn't a number at all. */
@@ -204,6 +232,11 @@ export interface GameState {
   /** Set once the game is over. */
   awards: Award[]
   public: boolean
+  noUndo: boolean
+  noEraser: boolean
+  colorLimit: number
+  /** The only colours this turn's drawer may use; empty when unlimited. */
+  colors: string[]
 }
 
 /** Seats in a public room; newcomers beyond it are turned away. */

@@ -49,7 +49,16 @@
     "cancel": "Cancel",
     "public": "Public room",
     "publicHelp": "Anyone can find it on the home page and join.",
-    "publicBadge": "Public"
+    "publicBadge": "Public",
+    "rules": "Drawing rules",
+    "noUndo": "No undo",
+    "noUndoHelp": "Undo, redo and clear are off: every stroke stays.",
+    "noEraser": "No eraser",
+    "noEraserHelp": "The eraser is off.",
+    "colorLimit": "Colours per turn",
+    "colorLimitHelp": "Each turn the drawer gets only this many random colours.",
+    "allColors": "All colours",
+    "colorCount": "{n} colour | {n} colours"
   },
   "canvas": {
     "color": "Colour {color}",

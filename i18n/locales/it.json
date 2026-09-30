@@ -49,7 +49,16 @@
     "cancel": "Annulla",
     "public": "Stanza pubblica",
     "publicHelp": "Chiunque può trovarla nella home e unirsi.",
-    "publicBadge": "Pubblica"
+    "publicBadge": "Pubblica",
+    "rules": "Regole di disegno",
+    "noUndo": "Niente annulla",
+    "noUndoHelp": "Annulla, ripristina e cancella sono disattivati: ogni tratto resta.",
+    "noEraser": "Niente gomma",
+    "noEraserHelp": "La gomma è disattivata.",
+    "colorLimit": "Colori per turno",
+    "colorLimitHelp": "A ogni turno chi disegna riceve solo questo numero di colori a caso.",
+    "allColors": "Tutti i colori",
+    "colorCount": "{n} colore | {n} colori"
   },
   "canvas": {
     "color": "Colore {color}",

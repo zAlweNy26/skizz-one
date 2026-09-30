@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import type { GameState, Language, RoomSettings } from '#shared/utils/protocol'
-import { DRAW_TIME, HINTS, LANGUAGES, MAX_CUSTOM_WORDS, ROUNDS, splitCustomWords } from '#shared/utils/protocol'
+import {
+  COLOR_LIMITS,
+  DRAW_TIME,
+  HINTS,
+  LANGUAGES,
+  MAX_CUSTOM_WORDS,
+  ROUNDS,
+  splitCustomWords,
+} from '#shared/utils/protocol'
 
 const props = defineProps<{
   state: GameState
@@ -10,16 +18,24 @@ const props = defineProps<{
 
 const emit = defineEmits<{ save: [settings: RoomSettings] }>()
 
+const { t } = useI18n()
 const open = ref(false)
 const isDesktop = useIsDesktop()
 
 const languageItems = (Object.keys(LANGUAGES) as Language[]).map(value => ({ value, label: LANGUAGES[value] }))
+const colorLimitItems = computed(() => COLOR_LIMITS.map((value: number) => ({
+  value,
+  label: value ? t('settings.colorCount', value) : t('settings.allColors'),
+})))
 
 const language = ref<Language>(props.state.language)
 const drawTime = ref(props.state.drawTime)
 const totalRounds = ref(props.state.totalRounds)
 const hints = ref(props.state.hints)
 const isPublic = ref(props.state.public)
+const noUndo = ref(props.state.noUndo)
+const noEraser = ref(props.state.noEraser)
+const colorLimit = ref(props.state.colorLimit)
 const wordsText = ref('')
 
 watch(open, (now) => {
@@ -29,6 +45,9 @@ watch(open, (now) => {
   totalRounds.value = props.state.totalRounds
   hints.value = props.state.hints
   isPublic.value = props.state.public
+  noUndo.value = props.state.noUndo
+  noEraser.value = props.state.noEraser
+  colorLimit.value = props.state.colorLimit
   wordsText.value = props.customWords.join(', ')
 })
 
@@ -42,6 +61,9 @@ function save() {
     hints: hints.value,
     customWords: words.value,
     public: isPublic.value,
+    noUndo: noUndo.value,
+    noEraser: noEraser.value,
+    colorLimit: colorLimit.value,
   })
   open.value = false
 }
@@ -87,6 +109,20 @@ function save() {
           v-model="wordsText" :rows="4" autoresize :maxrows="8" size="lg" class="w-full"
           :placeholder="$t('settings.customWordsPlaceholder')" />
       </UFormField>
+
+      <fieldset class="flex flex-col gap-4">
+        <legend class="mb-3 font-display font-bold text-lg">
+          {{ $t('settings.rules') }}
+        </legend>
+        <USwitch
+          v-model="noUndo" size="xl" :label="$t('settings.noUndo')" :description="$t('settings.noUndoHelp')" />
+        <USwitch
+          v-model="noEraser" size="xl" :label="$t('settings.noEraser')" :description="$t('settings.noEraserHelp')" />
+        <UFormField :label="$t('settings.colorLimit')" :help="$t('settings.colorLimitHelp')">
+          <USelect
+            v-model="colorLimit" :items="colorLimitItems" icon="i-lucide-palette" size="lg" class="w-full" />
+        </UFormField>
+      </fieldset>
     </template>
 
     <template #footer="{ close }">
