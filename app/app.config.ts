@@ -46,7 +46,8 @@ export default defineAppConfig({
     },
     select: {
       slots: {
-        base: 'rounded-sketch sketch-field',
+        base: 'rounded-sketch sketch-field cursor-pointer disabled:cursor-not-allowed',
+        item: 'cursor-pointer data-disabled:cursor-not-allowed',
       },
       variants: {
         size: {
@@ -91,6 +92,34 @@ export default defineAppConfig({
       compoundVariants: [
         { highlight: true, class: 'ring-2' },
       ],
+    },
+    tabs: {
+      slots: {
+        trigger: 'cursor-pointer',
+      },
+    },
+    checkbox: {
+      slots: {
+        root: 'cursor-pointer has-disabled:cursor-not-allowed',
+        base: 'cursor-pointer',
+        label: 'cursor-pointer',
+        description: 'cursor-pointer',
+      },
+    },
+    radioGroup: {
+      slots: {
+        item: 'cursor-pointer has-disabled:cursor-not-allowed',
+        base: 'cursor-pointer',
+        label: 'cursor-pointer',
+        description: 'cursor-pointer',
+      },
+    },
+    switch: {
+      slots: {
+        base: 'cursor-pointer',
+        label: 'cursor-pointer',
+        description: 'cursor-pointer',
+      },
     },
     avatar: {
       variants: {

@@ -50,7 +50,6 @@
     "public": "Stanza pubblica",
     "publicHelp": "Chiunque può trovarla nella home e unirsi.",
     "publicBadge": "Pubblica",
-    "rules": "Regole di disegno",
     "noUndo": "Niente annulla",
     "noUndoHelp": "Annulla, ripristina e cancella sono disattivati: ogni tratto resta.",
     "noEraser": "Niente gomma",
@@ -58,7 +57,23 @@
     "colorLimit": "Colori per turno",
     "colorLimitHelp": "A ogni turno chi disegna riceve solo questo numero di colori a caso.",
     "allColors": "Tutti i colori",
-    "colorCount": "{n} colore | {n} colori"
+    "colorCount": "{n} colore | {n} colori",
+    "chaos": "Caos",
+    "tabs": {
+      "game": "Partita",
+      "words": "Parole",
+      "rules": "Regole"
+    },
+    "modes": {
+      "title": "Come volete disegnare?",
+      "classic": "Classica",
+      "classicHelp": "Disegno libero, senza regole.",
+      "custom": "Personalizzata",
+      "customHelp": "Scegli tu le regole di ogni turno.",
+      "chaos": "Caos",
+      "chaosHelp": "Una regola a caso a ogni turno."
+    },
+    "customRules": "Disattiva"
   },
   "canvas": {
     "color": "Colore {color}",
@@ -122,7 +137,10 @@
     "kicked": "{name} è stato espulso dalla stanza",
     "newHost": "Ora {name} è l'host",
     "canvasFull": "La tela è piena: annulla o cancella per continuare a disegnare",
-    "slowDown": "Rallenta: stai inviando messaggi troppo in fretta"
+    "slowDown": "Rallenta: stai inviando messaggi troppo in fretta",
+    "chaosNoUndo": "🎲 Caos: niente annulla in questo turno!",
+    "chaosNoEraser": "🎲 Caos: niente gomma in questo turno!",
+    "chaosColors": "🎲 Caos: solo {n} colori in questo turno!"
   },
   "home": {
     "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",

@@ -83,6 +83,15 @@ export function isLanguage(value: unknown): value is Language {
   return typeof value === 'string' && Object.hasOwn(LANGUAGES, value)
 }
 
+/** The first word language among the browser's preferred ones (BCP 47 tags), else the default. */
+export function preferredLanguage(tags: readonly string[]): Language {
+  for (const tag of tags) {
+    const code = tag.toLowerCase().split('-')[0]
+    if (isLanguage(code)) return code
+  }
+  return DEFAULT_LANGUAGE
+}
+
 /** Seconds a drawer gets per turn. */
 export const DRAW_TIME = { min: 10, max: 240, default: 80 } as const
 
@@ -117,6 +126,36 @@ export function pickTurnColors(limit: number, random = Math.random): string[] {
   return pool.slice(0, limit)
 }
 
+/** Rules a Chaos turn draws one of. */
+export const CHAOS_RULES = ['noUndo', 'noEraser', 'colors'] as const
+
+export type ChaosRule = typeof CHAOS_RULES[number]
+
+/** What the drawer may use this turn. */
+export interface TurnRules {
+  noUndo: boolean
+  noEraser: boolean
+  /** The only colours allowed; empty when unlimited. */
+  colors: string[]
+}
+
+export const NO_RULES: TurnRules = { noUndo: false, noEraser: false, colors: [] }
+
+/** A turn's rules: the room's own, or under Chaos a single random one. */
+export function drawTurnRules(
+  room: Pick<RoomSettings, 'noUndo' | 'noEraser' | 'colorLimit' | 'chaos'>,
+  random = Math.random,
+): { rules: TurnRules, chaos: ChaosRule | null } {
+  if (!room.chaos) {
+    const colors = pickTurnColors(room.colorLimit, random)
+    return { rules: { noUndo: room.noUndo, noEraser: room.noEraser, colors }, chaos: null }
+  }
+  const chaos = CHAOS_RULES[Math.floor(random() * CHAOS_RULES.length)]!
+  const limits = COLOR_LIMITS.filter(limit => limit > 0)
+  const colors = chaos === 'colors' ? pickTurnColors(limits[Math.floor(random() * limits.length)]!, random) : []
+  return { rules: { noUndo: chaos === 'noUndo', noEraser: chaos === 'noEraser', colors }, chaos }
+}
+
 export interface RoomSettings {
   language: Language
   /** Seconds per turn. */
@@ -131,6 +170,8 @@ export interface RoomSettings {
   noEraser: boolean
   /** One of `COLOR_LIMITS`. */
   colorLimit: number
+  /** Each turn draws one random rule; the three above are ignored. */
+  chaos: boolean
 }
 
 /** Round `value` into `[min, max]`, or null if it isn't a number at all. */
@@ -235,8 +276,9 @@ export interface GameState {
   noUndo: boolean
   noEraser: boolean
   colorLimit: number
-  /** The only colours this turn's drawer may use; empty when unlimited. */
-  colors: string[]
+  chaos: boolean
+  /** In force for the current turn. */
+  rules: TurnRules
 }
 
 /** Seats in a public room; newcomers beyond it are turned away. */
@@ -266,6 +308,7 @@ export type LogKey
     | 'close' | 'guessed' | 'timeUp' | 'winner' | 'winnerByAHair' | 'gameOver'
     | 'paused' | 'resumed' | 'guessOnHold' | 'choosing' | 'pauseRequested' | 'resumeRequested'
     | 'kickRequested' | 'kicked' | 'newHost' | 'canvasFull' | 'slowDown'
+    | 'chaosNoUndo' | 'chaosNoEraser' | 'chaosColors'
 
 /** Values interpolated into a log message, e.g. `{ name: 'Bob' }`. */
 export type LogParams = Record<string, string | number>

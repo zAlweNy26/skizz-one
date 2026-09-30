@@ -6,6 +6,7 @@ import {
   kickVotesNeeded,
   LANGUAGES,
   MIN_PLAYERS_TO_VOTE_KICK,
+  NO_RULES,
   PALETTE,
   PUBLIC_ROOM_CAP,
   votesNeeded,
@@ -63,9 +64,10 @@ const { muted } = useSounds({ onMessage: game.onMessage, you, state, secondsLeft
 const phase = computed(() => state.value?.phase ?? 'lobby')
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
 
-const noUndo = computed(() => state.value?.noUndo ?? false)
-const noEraser = computed(() => state.value?.noEraser ?? false)
-const paletteColors = computed<readonly string[]>(() => (state.value?.colors.length ? state.value.colors : PALETTE))
+const rules = computed(() => state.value?.rules ?? NO_RULES)
+const noUndo = computed(() => rules.value.noUndo)
+const noEraser = computed(() => rules.value.noEraser)
+const paletteColors = computed<readonly string[]>(() => (rules.value.colors.length ? rules.value.colors : PALETTE))
 
 watch([canDraw, paletteColors, noEraser], () => {
   if (!canDraw.value) return
@@ -116,6 +118,17 @@ function togglePause() {
 
 const lengths = computed(() => wordLengths(word.value ?? hint.value))
 
+const ruleBadges = computed(() => {
+  const s = state.value
+  if (!s) return []
+  if (s.chaos) return [{ icon: 'i-lucide-dices', label: t('settings.chaos') }]
+  return [
+    ...(s.noUndo ? [{ icon: 'i-lucide-undo-2', label: t('settings.noUndo') }] : []),
+    ...(s.noEraser ? [{ icon: 'i-lucide-eraser', label: t('settings.noEraser') }] : []),
+    ...(s.colorLimit ? [{ icon: 'i-lucide-palette', label: t('settings.colorCount', s.colorLimit) }] : []),
+  ]
+})
+
 const settingsSummary = computed(() => {
   const s = state.value
   if (!s) return []
@@ -128,9 +141,7 @@ const settingsSummary = computed(() => {
     ...(s.customWordCount
       ? [{ icon: 'i-lucide-list-plus', label: t('settings.customWordTotal', s.customWordCount) }]
       : []),
-    ...(s.noUndo ? [{ icon: 'i-lucide-undo-2', label: t('settings.noUndo') }] : []),
-    ...(s.noEraser ? [{ icon: 'i-lucide-eraser', label: t('settings.noEraser') }] : []),
-    ...(s.colorLimit ? [{ icon: 'i-lucide-palette', label: t('settings.colorCount', s.colorLimit) }] : []),
+    ...ruleBadges.value,
   ]
 })
 
@@ -428,7 +439,7 @@ defineShortcuts({
             </span>
           </SketchFrame>
           <DrawingRules
-            v-if="phase === 'drawing' && state" :noUndo="noUndo" :noEraser="noEraser" :colors="state.colors" />
+            v-if="phase === 'drawing'" :noUndo="noUndo" :noEraser="noEraser" :colors="rules.colors" />
         </div>
 
         <SketchFrame
@@ -463,7 +474,7 @@ defineShortcuts({
           class="flex flex-wrap items-center justify-between gap-2 p-1.5 lg:gap-4 lg:p-3
             phone-landscape:flex-col phone-landscape:flex-nowrap phone-landscape:gap-1
             phone-landscape:col-start-1 phone-landscape:row-span-full phone-landscape:self-center">
-          <div class="max-lg:hidden grid grid-cols-13 gap-1">
+          <div class="max-lg:hidden grid gap-1" :class="rules.colors.length ? 'grid-flow-col' : 'grid-cols-13'">
             <UButton
               v-for="(color, index) in paletteColors" :key="index" color="neutral" variant="outline"
               :active="brush.color === color" activeVariant="solid" size="xs" square icon="i-lucide-check"

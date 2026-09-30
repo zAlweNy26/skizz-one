@@ -14,6 +14,7 @@ import type {
   RoomSettings,
   RoundPhase,
   ServerMessage,
+  TurnRules,
 } from '#shared/utils/protocol'
 import { getServerByName, Server } from 'partyserver'
 import { RateLimiter } from '#realtime/rate-limit'
@@ -26,6 +27,7 @@ import {
   DEFAULT_LANGUAGE,
   DRAW_TIME,
   DRAWER_GRACE_MS,
+  drawTurnRules,
   editDistance,
   hintBudget,
   hintRevealAt,
@@ -40,9 +42,9 @@ import {
   MAX_AVATAR_LENGTH,
   MAX_NAME_LENGTH,
   MIN_PLAYERS_TO_VOTE_KICK,
+  NO_RULES,
   normalizeGuess,
   PAUSABLE_PHASES,
-  pickTurnColors,
   PUBLIC_ROOM_CAP,
   ROOM_FULL_CLOSE_CODE,
   ROUNDS,
@@ -50,6 +52,8 @@ import {
   WORD_CHOICES,
 } from '#shared/utils/protocol'
 import { sanitizeSvg } from '#shared/utils/svg'
+
+const CHAOS_LOGS = { noUndo: 'chaosNoUndo', noEraser: 'chaosNoEraser', colors: 'chaosColors' } as const
 
 /** Pause between the word reveal and the next turn. */
 const INTERMISSION_MS = 5_000
@@ -113,8 +117,8 @@ interface RoomState {
   noUndo: boolean
   noEraser: boolean
   colorLimit: number
-  /** Colours the current drawer may use; empty when unlimited. */
-  colors: string[]
+  chaos: boolean
+  rules: TurnRules
   hostId: string | null
   drawerId: string | null
   endsAt: number | null
@@ -189,7 +193,8 @@ function initialState(): RoomState {
     noUndo: false,
     noEraser: false,
     colorLimit: 0,
-    colors: [],
+    chaos: false,
+    rules: NO_RULES,
     hostId: null,
     drawerId: null,
     endsAt: null,
@@ -343,7 +348,8 @@ export class GameRoom extends Server<Env> {
       noUndo: s.noUndo,
       noEraser: s.noEraser,
       colorLimit: s.colorLimit,
-      colors: s.colors,
+      chaos: s.chaos,
+      rules: s.rules,
     }
   }
 
@@ -471,7 +477,11 @@ export class GameRoom extends Server<Env> {
       existing.avatar = avatar
       delete existing.awaySince
     } else {
-      if (s.order.length === 0 && url.searchParams.get('public') === '1') s.public = true
+      if (s.order.length === 0) {
+        if (url.searchParams.get('public') === '1') s.public = true
+        const language = url.searchParams.get('lang')
+        if (isLanguage(language)) s.language = language
+      }
       s.players[playerId] = {
         id: playerId,
         name,
@@ -688,6 +698,7 @@ export class GameRoom extends Server<Env> {
     if (typeof settings.noUndo === 'boolean') s.noUndo = settings.noUndo
     if (typeof settings.noEraser === 'boolean') s.noEraser = settings.noEraser
     if (isColorLimit(settings.colorLimit)) s.colorLimit = settings.colorLimit
+    if (typeof settings.chaos === 'boolean') s.chaos = settings.chaos
 
     await this.#save()
     if (languageChanged) this.#log('info', 'languageChanged', { language: LANGUAGES[s.language] })
@@ -1049,7 +1060,7 @@ export class GameRoom extends Server<Env> {
     s.choices = pickWords(s.language, WORD_CHOICES, s.usedWords, s.customWords)
     s.rerolled = false
     s.revealed = []
-    s.colors = []
+    s.rules = NO_RULES
     s.reactions = {}
     this.#canvas = ''
     this.#saveCanvas()
@@ -1098,7 +1109,8 @@ export class GameRoom extends Server<Env> {
     s.word = word
     s.choices = []
     s.revealed = []
-    s.colors = pickTurnColors(s.colorLimit)
+    const { rules, chaos } = drawTurnRules(s)
+    s.rules = rules
     s.usedWords.push(word)
     s.endsAt = Date.now() + this.#drawMs()
 
@@ -1122,6 +1134,7 @@ export class GameRoom extends Server<Env> {
     }
 
     this.#log('info', 'drawing', { name: s.players[s.drawerId]?.name ?? '' })
+    if (chaos) this.#log('warning', CHAOS_LOGS[chaos], { n: rules.colors.length })
     this.#broadcastState()
   }
 

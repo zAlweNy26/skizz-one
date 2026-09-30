@@ -22,7 +22,7 @@ const labels = computed(() => [
 <template>
   <UTooltip v-if="labels.length" :text="labels.join(' · ')">
     <SketchFrame
-      :radius="12" :strokeWidth="2.5" class="flex items-center gap-2 shrink-0 px-2.5 py-1.5 lg:px-3 lg:py-2"
+      :radius="12" :strokeWidth="2.5" class="pop-in flex items-center gap-2 shrink-0 px-2.5 py-1.5 lg:px-3 lg:py-2"
       tabindex="0">
       <span v-for="rule in banned" :key="rule.icon" class="relative grid place-content-center" aria-hidden="true">
         <UIcon :name="rule.icon" class="size-5" />

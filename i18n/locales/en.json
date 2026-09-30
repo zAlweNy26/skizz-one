@@ -50,7 +50,6 @@
     "public": "Public room",
     "publicHelp": "Anyone can find it on the home page and join.",
     "publicBadge": "Public",
-    "rules": "Drawing rules",
     "noUndo": "No undo",
     "noUndoHelp": "Undo, redo and clear are off: every stroke stays.",
     "noEraser": "No eraser",
@@ -58,7 +57,23 @@
     "colorLimit": "Colours per turn",
     "colorLimitHelp": "Each turn the drawer gets only this many random colours.",
     "allColors": "All colours",
-    "colorCount": "{n} colour | {n} colours"
+    "colorCount": "{n} colour | {n} colours",
+    "chaos": "Chaos",
+    "tabs": {
+      "game": "Game",
+      "words": "Words",
+      "rules": "Rules"
+    },
+    "modes": {
+      "title": "How do you want to draw?",
+      "classic": "Classic",
+      "classicHelp": "Draw freely, no rules.",
+      "custom": "Custom",
+      "customHelp": "Pick the rules for every turn.",
+      "chaos": "Chaos",
+      "chaosHelp": "One random rule each turn."
+    },
+    "customRules": "Turn off"
   },
   "canvas": {
     "color": "Colour {color}",
@@ -122,7 +137,10 @@
     "kicked": "{name} was kicked from the room",
     "newHost": "{name} is now the host",
     "canvasFull": "The canvas is full: undo or clear to keep drawing",
-    "slowDown": "Slow down: you're sending messages too fast"
+    "slowDown": "Slow down: you're sending messages too fast",
+    "chaosNoUndo": "🎲 Chaos: no undo this turn!",
+    "chaosNoEraser": "🎲 Chaos: no eraser this turn!",
+    "chaosColors": "🎲 Chaos: only {n} colours this turn!"
   },
   "home": {
     "tagline": "Draw, guess, laugh. Pick a name and jump in.",

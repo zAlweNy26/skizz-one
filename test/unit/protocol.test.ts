@@ -7,6 +7,7 @@ import {
   cleanCustomWords,
   dequantize,
   DRAW_TIME,
+  drawTurnRules,
   editDistance,
   hintBudget,
   hintRevealAt,
@@ -23,6 +24,7 @@ import {
   PALETTE,
   pickTurnColors,
   POINT_STRIDE,
+  preferredLanguage,
   quantize,
   votesNeeded,
   wordLengths,
@@ -302,5 +304,45 @@ describe('turn colours', () => {
     expect(isColorLimit(0)).toBe(true)
     expect(isColorLimit(4)).toBe(false)
     expect(isColorLimit('3')).toBe(false)
+  })
+})
+
+describe('drawTurnRules', () => {
+  const room = { noUndo: true, noEraser: false, colorLimit: 3, chaos: false }
+
+  it('uses the room rules when Chaos is off', () => {
+    const { rules, chaos } = drawTurnRules(room)
+    expect(chaos).toBeNull()
+    expect(rules.noUndo).toBe(true)
+    expect(rules.noEraser).toBe(false)
+    expect(rules.colors).toHaveLength(3)
+  })
+
+  it('draws exactly one rule under Chaos and ignores the room rules', () => {
+    for (let i = 0; i < 50; i++) {
+      const { rules, chaos } = drawTurnRules({ ...room, chaos: true })
+      const active = [rules.noUndo, rules.noEraser, rules.colors.length > 0].filter(Boolean)
+      expect(active).toHaveLength(1)
+      expect(chaos).not.toBeNull()
+    }
+  })
+
+  it('limits a Chaos colour turn to 2, 3 or 5 colours', () => {
+    const colorsDrawn = () => 0.9
+    const { rules, chaos } = drawTurnRules({ ...room, chaos: true }, colorsDrawn)
+    expect(chaos).toBe('colors')
+    expect([2, 3, 5]).toContain(rules.colors.length)
+  })
+})
+
+describe('preferredLanguage', () => {
+  it('takes the first supported browser language, region or not', () => {
+    expect(preferredLanguage(['it-IT', 'en-US'])).toBe('it')
+    expect(preferredLanguage(['fr-FR', 'IT'])).toBe('it')
+  })
+
+  it('falls back to English', () => {
+    expect(preferredLanguage(['fr-FR', 'de'])).toBe('en')
+    expect(preferredLanguage([])).toBe('en')
   })
 })

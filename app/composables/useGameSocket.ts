@@ -1,8 +1,8 @@
 import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessage } from '#shared/utils/protocol'
-import { createEventHook, useDocumentVisibility, useIntervalFn, useLocalStorage, useTimeoutFn } from '@vueuse/core'
+import { createEventHook, useDocumentVisibility, useIntervalFn, useLocalStorage, usePreferredLanguages, useTimeoutFn } from '@vueuse/core'
 import PartySocket from 'partysocket'
 import { randomUUID } from 'uncrypto'
-import { KICKED_CLOSE_CODE, ROOM_FULL_CLOSE_CODE } from '#shared/utils/protocol'
+import { KICKED_CLOSE_CODE, preferredLanguage, ROOM_FULL_CLOSE_CODE } from '#shared/utils/protocol'
 
 /** A line in the chat panel. System lines keep their i18n key rather than text. */
 export type ChatEntry
@@ -21,6 +21,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const avatar = useAvatarSeed()
   /** Set by quick play: the room is created public if it doesn't exist yet. */
   const createPublic = useRoute().query.public === '1'
+  /** Sets the word language of a room this tab creates. */
+  const languages = usePreferredLanguages()
 
   const socket = shallowRef<PartySocket>()
   const connected = ref(false)
@@ -146,7 +148,13 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       protocol: window.location.protocol === 'https:' ? 'wss' : 'ws',
       party: 'game-room',
       room,
-      query: () => ({ token: token.value, name: nickname.value, avatar: avatar.value, ...(createPublic ? { public: '1' } : {}) }),
+      query: () => ({
+        token: token.value,
+        name: nickname.value,
+        avatar: avatar.value,
+        lang: preferredLanguage(languages.value),
+        ...(createPublic ? { public: '1' } : {}),
+      }),
     })
 
     ws.addEventListener('open', () => {
