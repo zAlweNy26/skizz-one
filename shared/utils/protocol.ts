@@ -1,3 +1,6 @@
+/** Bump when a change breaks clients or servers built before it; the room turns other versions away. */
+export const PROTOCOL_VERSION = 1
+
 /** SVG user-space the canvas is drawn in. */
 export const CANVAS_WIDTH = 1600
 export const CANVAS_HEIGHT = 1200
@@ -32,6 +35,9 @@ export const KICKED_CLOSE_CODE = 4003
 
 /** WebSocket close code for a newcomer turned away from a full public room. */
 export const ROOM_FULL_CLOSE_CODE = 4004
+
+/** WebSocket close code for a client built for another `PROTOCOL_VERSION`. */
+export const OUTDATED_CLOSE_CODE = 4005
 
 /** Active players a room needs before anyone can vote to kick. */
 export const MIN_PLAYERS_TO_VOTE_KICK = 3
@@ -353,6 +359,8 @@ export type ServerMessage
     | { t: 'kicked' }
   /** Sent to a newcomer turned away from a full public room just before their socket is closed. */
     | { t: 'roomFull' }
+  /** Sent to a client built for another `PROTOCOL_VERSION` just before its socket is closed. */
+    | { t: 'outdated' }
     | { t: 'pong' }
 
 const DRAWING_MESSAGES = new Set(['strokeStart', 'draw', 'preview', 'commit', 'canvas'])

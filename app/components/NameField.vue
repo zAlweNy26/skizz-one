@@ -7,7 +7,10 @@ const name = defineModel<string>({ required: true })
 const { t } = useI18n()
 const avatar = useAvatarSeed()
 const trimmedName = computed(() => name.value.trim())
-const nameError = computed(() => (trimmedName.value ? false : t('home.nameRequired')))
+const nameError = computed(() => {
+  const problem = nameProblem(name.value)
+  return problem ? t(problem) : false
+})
 </script>
 
 <template>

@@ -2,6 +2,7 @@ import type { ClientMessage, GameState, LobbyMessage, ServerMessage } from '#sha
 import type { FakeWebSocket } from '#test/realtime/runtime'
 import { vi } from 'vitest'
 import worker, { GameRoom, Lobby } from '#realtime/index'
+import { PROTOCOL_VERSION } from '#shared/utils/protocol'
 import { FakeNamespace } from '#test/realtime/runtime'
 
 export const ROOM = 'a1b2c3d4'
@@ -104,6 +105,8 @@ interface JoinOptions {
   public?: boolean
   lang?: string
   origin?: string
+  /** `PROTOCOL_VERSION` unless given; null leaves it out. */
+  version?: string | null
 }
 
 /** A realtime worker with its Durable Objects, driven the way workerd drives them, on a fake clock. */
@@ -169,6 +172,8 @@ export function createWorld(vars: { ALLOWED_ORIGINS?: string } = {}) {
       const room = options.room ?? ROOM
       const token = options.token ?? `token-${name}`
       const params = new URLSearchParams({ token, name })
+      const version = options.version === undefined ? String(PROTOCOL_VERSION) : options.version
+      if (version !== null) params.set('v', version)
       if (options.avatar) params.set('avatar', options.avatar)
       if (options.public) params.set('public', '1')
       if (options.lang) params.set('lang', options.lang)

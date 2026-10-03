@@ -146,6 +146,7 @@
     "tagline": "Draw, guess, laugh. Pick a name and jump in.",
     "name": "Your name",
     "nameRequired": "Pick a name first",
+    "nameBlocked": "Pick another name: this one isn't allowed",
     "randomName": "Random name",
     "randomAvatar": "New avatar",
     "create": "Create a room",
@@ -214,6 +215,11 @@
     "title": "You were removed from this room",
     "description": "The other players voted you out, so you can't rejoin this room.",
     "home": "Back to the home page"
+  },
+  "outdated": {
+    "title": "SkizzOne has been updated",
+    "description": "Reload to get the new version and jump back into the game. If this shows up again, the update is still rolling out: try again in a moment.",
+    "reload": "Reload"
   },
   "roomFull": {
     "title": "This room is full",

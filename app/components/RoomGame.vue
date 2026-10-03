@@ -32,14 +32,22 @@ const { undo, redo, clear, canUndo, canRedo, brush } = drauu
 const game = useGameSocket(gameId)
 const {
   state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you,
-  hasGuessed, paused, votedPause, customWords, choices, canReroll, kicked, full,
+  hasGuessed, paused, votedPause, customWords, choices, canReroll, kicked, full, outdated,
 } = game
 
 /** Why this tab can't be in the room, as the i18n group that explains it. */
 const turnedAway = computed(() => {
   if (kicked.value) return 'kicked'
+  if (outdated.value) return 'outdated'
   return full.value ? 'roomFull' : null
 })
+
+/** Fetch the new build past the service worker's cache, then load it. */
+async function reloadApp() {
+  const registration = await navigator.serviceWorker?.getRegistration()
+  await registration?.update().catch(() => {})
+  location.reload()
+}
 
 const sync = useDrawingSync(drauu, game)
 
@@ -276,6 +284,7 @@ defineShortcuts({
   <main v-if="turnedAway" class="min-h-dvh grid place-items-center px-4 py-8">
     <SketchFrame :radius="22" :strokeWidth="3" class="w-full max-w-md p-6 sm:p-8 flex flex-col items-center gap-4">
       <UIcon v-if="kicked" name="i-lucide-user-x" class="size-12 text-error" />
+      <UIcon v-else-if="outdated" name="i-lucide-sparkles" class="size-12 text-secondary" />
       <UIcon v-else name="i-lucide-users" class="size-12 text-warning" />
       <h1 class="font-display font-extrabold text-2xl text-center">
         {{ $t(`${turnedAway}.title`) }}
@@ -284,7 +293,10 @@ defineShortcuts({
         {{ $t(`${turnedAway}.description`, { n: PUBLIC_ROOM_CAP }) }}
       </p>
       <UButton
-        to="/" size="xl" color="secondary" icon="i-lucide-house"
+        v-if="outdated" size="xl" color="secondary" icon="i-lucide-refresh-cw"
+        :label="$t('outdated.reload')" @click="reloadApp()" />
+      <UButton
+        v-else to="/" size="xl" color="secondary" icon="i-lucide-house"
         :label="$t(`${turnedAway}.home`)" />
     </SketchFrame>
   </main>

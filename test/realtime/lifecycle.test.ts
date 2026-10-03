@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DRAW_TIME, MAX_NAME_LENGTH } from '#shared/utils/protocol'
+import { DRAW_TIME, MAX_NAME_LENGTH, OUTDATED_CLOSE_CODE, PROTOCOL_VERSION } from '#shared/utils/protocol'
 import { createWorld, ROOM, seat } from '#test/realtime/harness'
 
 describe('joining', () => {
@@ -71,7 +71,7 @@ describe('joining', () => {
     expect(nameless.closed?.code).toBe(1008)
     expect(nameless.all('welcome')).toEqual([])
 
-    const res = await world.request(`/parties/game-room/${ROOM}?name=Alice`)
+    const res = await world.request(`/parties/game-room/${ROOM}?name=Alice&v=${PROTOCOL_VERSION}`)
     expect(res.webSocket?.closed?.code).toBe(1008)
   })
 
@@ -84,6 +84,18 @@ describe('joining', () => {
     expect(again.id).toBe(bob.id)
     expect(again.state!.players.map(p => p.name)).toEqual(['Alice', 'Robert'])
     expect(alice.state!.players).toHaveLength(2)
+  })
+
+  it('tells a client built for another protocol version to reload, without seating it', async () => {
+    const world = createWorld()
+    const alice = await world.join('Alice')
+    for (const version of [null, '0', String(PROTOCOL_VERSION + 1)]) {
+      const stale = await world.join('Stale', { version })
+      expect(stale.last('outdated')).toBeDefined()
+      expect(stale.closed?.code).toBe(OUTDATED_CLOSE_CODE)
+      expect(stale.all('welcome')).toEqual([])
+    }
+    expect(alice.state!.players.map(p => p.name)).toEqual(['Alice'])
   })
 
   it('ignores frames it cannot read', async () => {

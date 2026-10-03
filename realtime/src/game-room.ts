@@ -20,6 +20,7 @@ import { getServerByName, Server } from 'partyserver'
 import { RateLimiter } from '#realtime/rate-limit'
 import { drawerShare, guessPoints, standings } from '#realtime/scoring'
 import { pickWords } from '#realtime/words'
+import { maskProfanity } from '#shared/utils/profanity'
 import {
   AWAY_GRACE_MS,
   clampSetting,
@@ -44,7 +45,9 @@ import {
   MIN_PLAYERS_TO_VOTE_KICK,
   NO_RULES,
   normalizeGuess,
+  OUTDATED_CLOSE_CODE,
   PAUSABLE_PHASES,
+  PROTOCOL_VERSION,
   PUBLIC_ROOM_CAP,
   ROOM_FULL_CLOSE_CODE,
   ROUNDS,
@@ -447,8 +450,14 @@ export class GameRoom extends Server<Env> {
 
   async onConnect(connection: Connection, ctx: ConnectionContext) {
     const url = new URL(ctx.request.url)
+    if (url.searchParams.get('v') !== String(PROTOCOL_VERSION)) {
+      this.#send(connection, { t: 'outdated' })
+      connection.close(OUTDATED_CLOSE_CODE, 'outdated client')
+      return
+    }
+
     const playerId = await this.#playerIdFor(url)
-    const name = (url.searchParams.get('name') ?? '').trim().slice(0, MAX_NAME_LENGTH).trim()
+    const name = maskProfanity((url.searchParams.get('name') ?? '').trim().slice(0, MAX_NAME_LENGTH).trim())
     const avatar = (url.searchParams.get('avatar') ?? '').trim().slice(0, MAX_AVATAR_LENGTH) || name
 
     if (!playerId || !name) {

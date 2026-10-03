@@ -12,9 +12,10 @@ const joined = computed(() => validCode.value && Boolean(nickname.value.trim())
 
 const name = ref(nickname.value || randomNickname())
 const trimmedName = computed(() => name.value.trim())
+const nameOk = computed(() => !nameProblem(name.value))
 
 function join() {
-  if (!trimmedName.value || !validCode.value) return
+  if (!nameOk.value || !validCode.value) return
   nickname.value = trimmedName.value
   if (!joinedRooms.value.includes(roomCode.value)) joinedRooms.value.push(roomCode.value)
 }
@@ -58,7 +59,7 @@ function join() {
 
         <UButton
           block size="xl" color="secondary" icon="i-lucide-log-in"
-          :label="$t('home.join')" :disabled="!trimmedName" @click="join()" />
+          :label="$t('home.join')" :disabled="!nameOk" @click="join()" />
       </SketchFrame>
     </div>
   </main>

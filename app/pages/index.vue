@@ -14,6 +14,7 @@ const name = ref(nickname.value || randomNickname())
 const code = ref(invitedCode.value)
 
 const trimmedName = computed(() => name.value.trim())
+const nameOk = computed(() => !nameProblem(name.value))
 
 /** Accepts a bare code or a whole pasted link, old `/?code=` style included. */
 const roomCode = computed(() => {
@@ -36,7 +37,7 @@ function join() {
 }
 
 function enter(room: string, isPublic = false) {
-  if (!trimmedName.value || !room) return
+  if (!nameOk.value || !room) return
   nickname.value = trimmedName.value
   if (!joinedRooms.value.includes(room)) joinedRooms.value.push(room)
   return navigateTo({ path: `/room/${encodeURIComponent(room)}`, query: isPublic ? { public: '1' } : undefined })
@@ -110,11 +111,11 @@ useSchemaOrg([
 
           <UButton
             v-if="!invitedCode" block size="xl" color="secondary" icon="i-lucide-sparkles"
-            :label="$t('home.create')" :disabled="!trimmedName" @click="createRoom()" />
+            :label="$t('home.create')" :disabled="!nameOk" @click="createRoom()" />
 
           <UButton
             v-if="!invitedCode" block size="xl" color="primary" variant="soft" icon="i-lucide-zap"
-            :label="$t('home.quickPlay')" :disabled="!trimmedName" @click="quickPlay()" />
+            :label="$t('home.quickPlay')" :disabled="!nameOk" @click="quickPlay()" />
 
           <USeparator v-if="!invitedCode" :label="$t('home.or')" :ui="{ label: 'font-display' }" />
 
@@ -128,7 +129,7 @@ useSchemaOrg([
               <UButton
                 :label="$t('home.join')" icon="i-lucide-log-in"
                 :color="invitedCode ? 'secondary' : 'primary'" :variant="invitedCode ? 'solid' : 'soft'"
-                :disabled="!trimmedName || !validCode" @click="join()" />
+                :disabled="!nameOk || !validCode" @click="join()" />
             </UFieldGroup>
           </UFormField>
         </SketchFrame>
@@ -156,7 +157,7 @@ useSchemaOrg([
               </div>
               <UButton
                 size="lg" color="primary" variant="soft" icon="i-lucide-log-in" class="shrink-0"
-                :label="$t('home.join')" :disabled="!trimmedName" @click="enter(room.id)" />
+                :label="$t('home.join')" :disabled="!nameOk" @click="enter(room.id)" />
             </li>
           </ul>
         </SketchFrame>

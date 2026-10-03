@@ -89,8 +89,17 @@ Two Workers, one shared protocol:
   `ServerMessage`), shared constants, and pure helpers (guess normalisation,
   masking, quantisation). The worker imports it as `#shared/utils/protocol`
   too, resolved by the `paths` in `realtime/tsconfig.json` (which esbuild
-  follows when Wrangler bundles), so it must stay dependency-free. Any
-  protocol change touches both `realtime/src/game-room.ts` and the client.
+  follows when Wrangler bundles), so it must stay dependency-free: it can't
+  import other `shared/` files either, since esbuild resolves `#shared/` from
+  the importing file's tsconfig. Any protocol change touches both
+  `realtime/src/game-room.ts` and the client; bump `PROTOCOL_VERSION` when
+  it would break a client or worker built before it, so the room tells stale
+  tabs to reload instead of talking past them.
+- **`shared/utils/profanity.ts`** — the name filter: the join forms refuse a
+  blocked name and the worker masks one that gets through. `BLOCKLIST` is a
+  short English and Italian list kept to whole words, so real names and
+  innocent words that contain one (`Scunthorpe`, `Dick Smith`) pass; matching
+  sees through accents, stretched letters and leetspeak. Chat isn't filtered.
 
 Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.vue`):
 

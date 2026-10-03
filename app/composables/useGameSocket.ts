@@ -2,7 +2,13 @@ import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessa
 import { createEventHook, useDocumentVisibility, useIntervalFn, useLocalStorage, usePreferredLanguages, useTimeoutFn } from '@vueuse/core'
 import PartySocket from 'partysocket'
 import { randomUUID } from 'uncrypto'
-import { KICKED_CLOSE_CODE, preferredLanguage, ROOM_FULL_CLOSE_CODE } from '#shared/utils/protocol'
+import {
+  KICKED_CLOSE_CODE,
+  OUTDATED_CLOSE_CODE,
+  preferredLanguage,
+  PROTOCOL_VERSION,
+  ROOM_FULL_CLOSE_CODE,
+} from '#shared/utils/protocol'
 
 /** A line in the chat panel. System lines keep their i18n key rather than text. */
 export type ChatEntry
@@ -33,6 +39,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const kicked = ref(false)
   /** A public room with no seat left turned you away; the socket stays closed. */
   const full = ref(false)
+  /** The room speaks a newer protocol than this build; the socket stays closed until a reload. */
+  const outdated = ref(false)
 
   /** The word — only ever populated when you are the drawer. */
   const word = ref<string | null>(null)
@@ -109,6 +117,9 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       case 'roomFull':
         turnAway()
         break
+      case 'outdated':
+        expire()
+        break
       case 'chat':
         chat.value.push({
           sender: msg.sender,
@@ -149,6 +160,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       party: 'game-room',
       room,
       query: () => ({
+        v: String(PROTOCOL_VERSION),
         token: token.value,
         name: nickname.value,
         avatar: avatar.value,
@@ -164,6 +176,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       connected.value = false
       if (event.code === KICKED_CLOSE_CODE) leave()
       else if (event.code === ROOM_FULL_CLOSE_CODE) turnAway()
+      else if (event.code === OUTDATED_CLOSE_CODE) expire()
     })
     ws.addEventListener('message', (event: MessageEvent) => {
       wakeProbe.stop()
@@ -188,6 +201,11 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     close()
   }
 
+  function expire() {
+    outdated.value = true
+    close()
+  }
+
   function close() {
     ping.pause()
     wakeProbe.stop()
@@ -208,6 +226,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     chat,
     kicked,
     full,
+    outdated,
     word,
     hint,
     endsAt,

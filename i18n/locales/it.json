@@ -146,6 +146,7 @@
     "tagline": "Disegna, indovina, ridi. Scegli un nome e gioca.",
     "name": "Il tuo nome",
     "nameRequired": "Scegli prima un nome",
+    "nameBlocked": "Scegli un altro nome: questo non è consentito",
     "randomName": "Nome casuale",
     "randomAvatar": "Nuovo avatar",
     "create": "Crea una stanza",
@@ -214,6 +215,11 @@
     "title": "Sei stato rimosso da questa stanza",
     "description": "Gli altri giocatori hanno votato per espellerti, quindi non puoi rientrare in questa stanza.",
     "home": "Torna alla home"
+  },
+  "outdated": {
+    "title": "SkizzOne è stato aggiornato",
+    "description": "Ricarica per avere la nuova versione e tornare in partita. Se ricompare, l'aggiornamento è ancora in corso: riprova tra un attimo.",
+    "reload": "Ricarica"
   },
   "roomFull": {
     "title": "Questa stanza è piena",
