@@ -7,7 +7,8 @@
     "moduleResolution": "Bundler",
     "paths": {
       "#shared/*": ["../shared/*"],
-      "#realtime/*": ["./src/*"]
+      "#realtime/*": ["./src/*"],
+      "#test/*": ["../test/*"]
     },
     "resolveJsonModule": true,
     "types": ["@cloudflare/workers-types/2023-07-01"],
@@ -20,6 +21,6 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "../shared/utils/protocol.ts"],
+  "include": ["src/**/*.ts", "../shared/utils/protocol.ts", "../test/realtime/**/*.ts"],
   "exclude": ["node_modules"]
 }

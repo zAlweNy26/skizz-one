@@ -96,16 +96,13 @@ first, then the app.
 ## Tests
 
 ```bash
-bun run test        # unit + nuxt
-bun run test:e2e    # playwright
+bun run test           # unit + realtime + nuxt
+bun run test:realtime  # the GameRoom and Lobby Durable Objects
+bun run test:e2e       # playwright
 ```
 
-The game room has its own end-to-end check that drives two real WebSocket
-clients through a round — it asserts the drawing actually reaches the watcher,
-that a non-drawer cannot draw, and that the word never leaks. It needs the
-worker running:
-
-```bash
-bun run dev:realtime --port 8799   # in one terminal
-bun run test:realtime              # in another
-```
+The realtime tests run the worker in Node against a small fake of the workerd
+runtime (sockets, storage, alarms) on a fake clock, so whole games, the away
+grace and hibernation play out in milliseconds. They check, among other
+things, that the drawing reaches the watchers, that only the drawer can draw,
+and that the word never leaks.

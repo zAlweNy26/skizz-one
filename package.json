@@ -9,7 +9,6 @@
     "dev:app": "nuxi dev",
     "dev:realtime": "wrangler dev --config realtime/wrangler.jsonc",
     "deploy:realtime": "wrangler deploy --config realtime/wrangler.jsonc",
-    "test:realtime": "node realtime/test/sync.e2e.mjs",
     "generate": "nuxi generate",
     "preview": "nuxi preview",
     "postinstall": "nuxi prepare",
@@ -20,6 +19,7 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:unit": "vitest --project unit",
+    "test:realtime": "vitest --project realtime",
     "test:nuxt": "vitest --project nuxt",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"

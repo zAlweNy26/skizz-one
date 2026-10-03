@@ -28,17 +28,22 @@ bun run fallow               # dead code / unused deps check (.fallowrc.json)
 bunx nuxi typecheck          # app typecheck (vue-tsc)
 bunx tsc -p realtime         # realtime worker typecheck (separate tsconfig)
 
-bun run test                 # vitest: unit + nuxt projects (coverage is on by default)
+bun run test                 # vitest: unit, realtime and nuxt projects (coverage is on by default)
 bun run test:unit            # node-only tests in test/unit/
+bun run test:realtime        # GameRoom/Lobby Durable Object tests in test/realtime/
 bun run test:nuxt            # tests needing the Nuxt env (happy-dom) in test/nuxt/
 bunx vitest run test/unit/protocol.test.ts        # single file
 bunx vitest run --project unit -t "quantisation"  # tests matching a name
 bun run test:e2e             # playwright (test/e2e/)
-
-# Realtime protocol e2e: two real WebSocket clients through a round.
-bun run dev:realtime --port 8799   # terminal 1
-bun run test:realtime              # terminal 2
 ```
+
+`test/realtime/` runs the realtime worker in Node: `runtime.ts` fakes the
+workerd pieces partyserver uses (hibernatable sockets, storage, alarms,
+`cloudflare:workers`), and `harness.ts` drives the worker's `fetch` and the
+Durable Objects' `webSocketMessage`/`webSocketClose`/`alarm` on a fake clock.
+`world.advance(ms)` fires due alarms in order; `world.hibernate()` drops a
+room's in-memory object so the next event rebuilds it from storage. The fakes
+follow partyserver's internals, so check them when upgrading partyserver.
 
 `realtime/.dev.vars` overrides `ALLOWED_ORIGINS` for `wrangler dev` so the
 local app on :3000 can connect; `realtime/wrangler.jsonc` only allows
@@ -99,8 +104,9 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
 ## Conventions
 
 - **Imports:** no relative imports. Use `~/` for `app/`, `#shared/` for
-  `shared/` and `#realtime/` for `realtime/src/`; the worker gets them from
-  `realtime/tsconfig.json` `paths`, unit tests from `vitest.config.ts`. Only
+  `shared/`, `#realtime/` for `realtime/src/` and `#test/` for `test/`; the
+  worker gets them from `realtime/tsconfig.json` `paths`, tests from
+  `vitest.config.ts`. Only
   `nuxt.config.ts` (loaded before Nuxt's aliases exist) and
   `app/assets/css/lint.css` (read by `@shadcn/lint`) stay relative.
 - **i18n:** UI language is per player (`@nuxtjs/i18n`, `no_prefix`, locales in
