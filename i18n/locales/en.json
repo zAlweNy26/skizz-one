@@ -168,7 +168,8 @@
     "disclaimer": "Names, drawings and chat messages are created by players. SkizzOne doesn't review them and isn't responsible for them.",
     "terms": "Terms of service",
     "changelog": "Changelog",
-    "credits": "Credits"
+    "credits": "Credits",
+    "stats": "Stats"
   },
   "join": {
     "title": "Ready to draw?",
@@ -256,5 +257,30 @@
       "title": "Something went wrong",
       "description": "An unexpected error occurred. Try again from the home page."
     }
+  },
+  "stats": {
+    "title": "SkizzOne in numbers",
+    "description": "How games have been going lately. Anonymous counts only: no names, no chat.",
+    "days": "Last {n} days",
+    "loading": "Counting games…",
+    "empty": "No games in this period yet. Go start one!",
+    "error": "The numbers can't be loaded right now. Try again later.",
+    "games": "Games played",
+    "rematchRate": "Played again",
+    "completedShare": "Played to the end",
+    "avgPlayers": "Players per game",
+    "avgMinutes": "Minutes per game",
+    "turnsTitle": "How {n} turns ended",
+    "turns": {
+      "guessed": "Everyone guessed",
+      "timeUp": "Time ran out",
+      "drawerGone": "Drawer left",
+      "drawerKicked": "Drawer kicked"
+    },
+    "hardest": "Hardest words",
+    "easiest": "Easiest words",
+    "noWords": "Not enough turns yet.",
+    "footnote": "Updated every 10 minutes. \"Played again\" counts new games started from a finished one; words need 3 turns to be ranked.",
+    "guessedHint": "Share of guessers who got it"
   }
 }

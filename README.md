@@ -75,6 +75,17 @@ Every push to `main` runs CI and, once it passes, deploys both Workers
 `CLOUDFLARE_ACCOUNT_ID`. Deploys never overlap: while one runs, only the newest
 waiting push is kept.
 
+The public `/stats` page reads the game events the realtime worker writes to
+Workers Analytics Engine. Give the app worker read access once, with an API
+token that has only "Account Analytics: Read":
+
+```bash
+bunx wrangler secret put NUXT_ANALYTICS_ACCOUNT_ID --name skizz
+bunx wrangler secret put NUXT_ANALYTICS_API_TOKEN --name skizz
+```
+
+Secrets survive deploys. Without them, `/stats` shows its empty state.
+
 To deploy by hand, `skizz-realtime` must exist before the app's service binding
 can resolve:
 

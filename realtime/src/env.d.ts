@@ -7,6 +7,8 @@ declare global {
     GameRoom: DurableObjectNamespace<GameRoom>
     /** The public room directory; only the `global` instance is used. */
     Lobby: DurableObjectNamespace<Lobby>
+    /** Game events; their columns are listed in `realtime/src/analytics.ts`. */
+    ANALYTICS?: AnalyticsEngineDataset
     /** Comma-separated origins allowed to open a socket. Unset means any. */
     ALLOWED_ORIGINS?: string
   }

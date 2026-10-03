@@ -21,6 +21,7 @@ export default defineNuxtConfig({
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
     '@nuxtjs/seo',
+    'nuxt-security',
   ],
 
   ssr: false,
@@ -78,6 +79,13 @@ export default defineNuxtConfig({
     reactive: true,
   },
 
+  icon: {
+    provider: 'none',
+    serverBundle: false,
+    fallbackToApi: false,
+    clientBundle: { scan: true },
+  },
+
   content: {
     experimental: {
       sqliteConnector: 'native',
@@ -103,6 +111,11 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    /** Read access to the realtime worker's Analytics Engine dataset, set as Worker secrets in production. */
+    analytics: {
+      accountId: '',
+      apiToken: '',
+    },
     public: {
       realtimeHost: '',
       version,
@@ -120,6 +133,13 @@ export default defineNuxtConfig({
         realtimeHost: 'localhost:8787',
       },
     },
+    security: {
+      headers: {
+        contentSecurityPolicy: {
+          'connect-src': ['\'self\'', 'ws://localhost:8787'],
+        },
+      },
+    },
   },
 
   $production: {
@@ -129,6 +149,31 @@ export default defineNuxtConfig({
         'prerender:config': function (config) {
           delete config.entry
         },
+      },
+    },
+  },
+
+  security: {
+    rateLimiter: false,
+    requestSizeLimiter: false,
+    xssValidator: false,
+    corsHandler: false,
+    removeLoggers: false,
+    headers: {
+      crossOriginEmbedderPolicy: false,
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      strictTransportSecurity: { maxAge: 31536000, includeSubdomains: false },
+      contentSecurityPolicy: {
+        'default-src': ['\'self\''],
+        'script-src': ['\'self\'', '\'nonce-{{nonce}}\''],
+        'style-src': ['\'self\'', '\'unsafe-inline\'', 'https://fonts.googleapis.com'],
+        'font-src': ['\'self\'', 'https://fonts.gstatic.com'],
+        'img-src': ['\'self\'', 'data:', 'blob:', 'https://api.dicebear.com'],
+        'connect-src': ['\'self\''],
+        'media-src': ['\'self\''],
+        'worker-src': ['\'self\''],
+        'manifest-src': ['\'self\''],
+        'frame-ancestors': ['\'none\''],
       },
     },
   },
@@ -179,11 +224,6 @@ export default defineNuxtConfig({
           urlPattern: /^https:\/\/api\.dicebear\.com\/.*/,
           handler: 'CacheFirst',
           options: { cacheName: 'avatars', expiration: { maxEntries: 200 }, cacheableResponse: { statuses: [0, 200] } },
-        },
-        {
-          urlPattern: /\/api\/_nuxt_icon\/.*/,
-          handler: 'StaleWhileRevalidate',
-          options: { cacheName: 'icons' },
         },
       ],
     },

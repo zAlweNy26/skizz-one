@@ -168,7 +168,8 @@
     "disclaimer": "Nomi, disegni e messaggi in chat sono creati dai giocatori. SkizzOne non li controlla e non ne è responsabile.",
     "terms": "Termini di servizio",
     "changelog": "Novità",
-    "credits": "Crediti"
+    "credits": "Crediti",
+    "stats": "Statistiche"
   },
   "join": {
     "title": "Pronto a disegnare?",
@@ -256,5 +257,30 @@
       "title": "Qualcosa è andato storto",
       "description": "Si è verificato un errore imprevisto. Riprova dalla home."
     }
+  },
+  "stats": {
+    "title": "SkizzOne in numeri",
+    "description": "Come stanno andando le partite. Solo conteggi anonimi: niente nomi, niente chat.",
+    "days": "Ultimi {n} giorni",
+    "loading": "Contiamo le partite…",
+    "empty": "Ancora nessuna partita in questo periodo. Iniziane una!",
+    "error": "Al momento non riusciamo a caricare i numeri. Riprova più tardi.",
+    "games": "Partite giocate",
+    "rematchRate": "Rigiocate",
+    "completedShare": "Giocate fino in fondo",
+    "avgPlayers": "Giocatori per partita",
+    "avgMinutes": "Minuti per partita",
+    "turnsTitle": "Come sono finiti {n} turni",
+    "turns": {
+      "guessed": "Indovinato da tutti",
+      "timeUp": "Tempo scaduto",
+      "drawerGone": "Chi disegnava è uscito",
+      "drawerKicked": "Chi disegnava è stato espulso"
+    },
+    "hardest": "Parole più difficili",
+    "easiest": "Parole più facili",
+    "noWords": "Non ci sono ancora abbastanza turni.",
+    "footnote": "Aggiornato ogni 10 minuti. \"Rigiocate\" conta le nuove partite avviate da una finita; una parola entra in classifica dopo 3 turni.",
+    "guessedHint": "Quota di chi indovinava che ci è riuscito"
   }
 }

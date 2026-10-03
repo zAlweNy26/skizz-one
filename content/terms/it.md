@@ -1,7 +1,7 @@
 ---
 title: Termini di servizio
 description: Le regole per giocare a SkizzOne e chi è responsabile dei contenuti condivisi dai giocatori.
-updated: 2026-09-29
+updated: 2026-10-03
 ---
 
 SkizzOne è un gioco online gratuito di disegno e indovinelli. Giocando accetti questi termini. Se non li accetti, non usare il gioco.
@@ -28,7 +28,7 @@ I giocatori di una stanza possono votare per allontanare chi non rispetta queste
 
 ## I tuoi dati
 
-SkizzOne non chiede mai un indirizzo email o una password. Il tuo nome, un ID giocatore casuale e le tue preferenze sono salvati nel tuo browser. Disegni, messaggi in chat e punteggi restano sul server di gioco solo finché la stanza è in uso e vengono eliminati quando tutti se ne sono andati. Gli avatar sono generati da DiceBear a partire dal tuo nome e il gioco è ospitato su Cloudflare, che tratta dati tecnici come gli indirizzi IP per erogarlo.
+SkizzOne non chiede mai un indirizzo email o una password. Il tuo nome, un ID giocatore casuale e le tue preferenze sono salvati nel tuo browser. Disegni, messaggi in chat e punteggi restano sul server di gioco solo finché la stanza è in uso e vengono eliminati quando tutti se ne sono andati. Gli avatar sono generati da DiceBear a partire dal tuo nome e il gioco è ospitato su Cloudflare, che tratta dati tecnici come gli indirizzi IP per erogarlo. Per migliorare il gioco vengono conservate statistiche anonime sulle partite, come quante iniziano e finiscono, le loro impostazioni e quali parole vengono indovinate, e vengono registrati gli errori del tuo browser insieme alla pagina e alla versione del browser. Nessuno di questi dati contiene il tuo nome, il tuo ID giocatore o i tuoi messaggi.
 
 ## Nessuna garanzia
 

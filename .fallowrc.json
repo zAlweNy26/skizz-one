@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
-  "entry": ["preset/entry.ts", "app/assets/css/lint.css"],
+  "entry": ["preset/entry.ts", "app/assets/css/lint.css", "i18n/i18n.config.ts"],
   "usedClassMembers": [
     {
       "extends": "Server",

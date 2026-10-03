@@ -1,9 +1,8 @@
 <script setup lang="ts">
-const { locale } = useI18n()
+const { d } = useI18n()
 const page = await useLocalisedPage('terms')
 
-const updated = computed(() => page.value
-  && new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }).format(new Date(page.value.updated)))
+const updated = computed(() => page.value && d(new Date(page.value.updated), 'long'))
 </script>
 
 <template>

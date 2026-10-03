@@ -1,4 +1,5 @@
 import type { Connection, ConnectionContext, WSMessage } from 'partyserver'
+import type { GameEvent } from '#realtime/analytics'
 import type {
   Award,
   ClientMessage,
@@ -16,7 +17,9 @@ import type {
   ServerMessage,
   TurnRules,
 } from '#shared/utils/protocol'
+import type { TurnEnd } from '#shared/utils/stats'
 import { getServerByName, Server } from 'partyserver'
+import { dataPoint } from '#realtime/analytics'
 import { RateLimiter } from '#realtime/rate-limit'
 import { drawerShare, guessPoints, standings } from '#realtime/scoring'
 import { pickWords } from '#realtime/words'
@@ -154,6 +157,8 @@ interface RoomState {
   stats: GameStats
   /** When the last seat was freed; null while anyone is connected. */
   emptySince: number | null
+  /** When the running game started; null outside a game. */
+  gameStartedAt: number | null
 }
 
 /** What this game's awards are drawn from. */
@@ -219,6 +224,7 @@ function initialState(): RoomState {
     banned: [],
     stats: emptyStats(),
     emptySince: null,
+    gameStartedAt: null,
   }
 }
 
@@ -368,6 +374,10 @@ export class GameRoom extends Server<Env> {
       ...(picasso ? [{ key: 'picasso' as const, playerId: picasso[0], value: picasso[1] }] : []),
     ]
     return awards.filter(a => s.players[a.playerId] && !s.banned.includes(a.playerId))
+  }
+
+  #track(e: GameEvent) {
+    this.env.ANALYTICS?.writeDataPoint(dataPoint(this.name, e))
   }
 
   #broadcastState() {
@@ -598,7 +608,7 @@ export class GameRoom extends Server<Env> {
     if (s.phase === 'lobby') this.#pruneDeparted()
 
     if (IN_GAME_PHASES.includes(s.phase) && this.#seated().length < 2) {
-      await this.#finishGame()
+      await this.#finishGame(false)
       return
     }
 
@@ -876,7 +886,7 @@ export class GameRoom extends Server<Env> {
       s.pause = null
       s.pauseVotes = []
       if (s.phase === 'choosing') await this.#startTurn()
-      else if (s.phase === 'drawing') await this.#endRound()
+      else if (s.phase === 'drawing') await this.#endRound('drawerKicked')
     } else if (s.phase === 'drawing')
       await this.#endRoundIfEveryoneGuessed()
   }
@@ -1014,6 +1024,7 @@ export class GameRoom extends Server<Env> {
 
   async #startGame() {
     const s = this.#state
+    const rematch = s.phase === 'finished'
     s.round = 0
     s.turnIndex = -1
     s.usedWords = []
@@ -1023,6 +1034,19 @@ export class GameRoom extends Server<Env> {
     for (const p of Object.values(s.players)) p.points = 0
     s.stats = emptyStats()
     await this.#startTurn()
+    if (s.phase !== 'choosing') return
+
+    s.gameStartedAt = Date.now()
+    await this.#save()
+    this.#track({
+      event: 'game_started',
+      language: s.language,
+      public: s.public,
+      rematch,
+      players: this.#activeCount(),
+      rounds: s.totalRounds,
+      drawTime: s.drawTime,
+    })
   }
 
   #nextDrawerIndex(): number | null {
@@ -1057,7 +1081,7 @@ export class GameRoom extends Server<Env> {
 
     const round = next <= s.turnIndex || s.turnIndex === -1 ? s.round + 1 : s.round
     if (round > s.totalRounds) {
-      await this.#finishGame()
+      await this.#finishGame(true)
       return
     }
 
@@ -1156,12 +1180,22 @@ export class GameRoom extends Server<Env> {
       .filter(p => this.#isActive(p) && p!.id !== s.drawerId)
 
     if (guessers.length > 0 && guessers.every(p => p!.guessed))
-      await this.#endRound()
+      await this.#endRound('guessed')
   }
 
-  async #endRound() {
+  async #endRound(reason: TurnEnd) {
     const s = this.#state
     const word = s.word ?? ''
+    const remaining = s.endsAt === null ? (s.pausedMs ?? 0) : Math.max(0, s.endsAt - Date.now())
+    this.#track({
+      event: 'turn_ended',
+      language: s.language,
+      reason,
+      word,
+      guessers: s.order.filter(id => id !== s.drawerId && s.players[id]?.connected).length,
+      correct: Object.values(s.players).filter(p => p.guessed).length,
+      ms: this.#drawMs() - remaining,
+    })
     const likes = Object.values(s.reactions).filter(r => r === 'like').length
     if (s.drawerId && likes > (s.stats.mostLiked?.likes ?? 0))
       s.stats.mostLiked = { playerId: s.drawerId, likes }
@@ -1179,8 +1213,19 @@ export class GameRoom extends Server<Env> {
     this.#broadcast({ t: 'roundEnd', word, state: this.#publicState() })
   }
 
-  async #finishGame() {
+  async #finishGame(completed: boolean) {
     const s = this.#state
+    if (s.gameStartedAt !== null) {
+      this.#track({
+        event: 'game_finished',
+        language: s.language,
+        completed,
+        players: this.#activeCount(),
+        rounds: completed ? s.totalRounds : s.round,
+        ms: Date.now() - s.gameStartedAt,
+      })
+    }
+    s.gameStartedAt = null
     s.phase = 'finished'
     s.drawerId = null
     s.word = null
@@ -1248,11 +1293,11 @@ export class GameRoom extends Server<Env> {
           break
         }
         this.#log('warning', 'timeUp')
-        await this.#endRound()
+        await this.#endRound('timeUp')
         break
       case 'grace':
         this.#log('warning', 'drawerGone')
-        await this.#endRound()
+        await this.#endRound('drawerGone')
         break
       case 'intermission':
         await this.#startTurn()

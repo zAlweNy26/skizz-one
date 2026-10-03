@@ -28,6 +28,12 @@
       "new_sqlite_classes": ["Lobby"]
     }
   ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "ANALYTICS",
+      "dataset": "skizz_games"
+    }
+  ],
   "observability": {
     "enabled": true
   },

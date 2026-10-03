@@ -3,6 +3,9 @@
   "routes": [
     { "pattern": "skizz.app", "custom_domain": true }
   ],
+  "observability": {
+    "enabled": true
+  },
   "services": [
     {
       "binding": "REALTIME",

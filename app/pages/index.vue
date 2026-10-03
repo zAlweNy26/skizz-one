@@ -60,6 +60,7 @@ const footerUi = {
 const footerLinks = computed(() => [
   { label: t('home.terms'), to: '/terms' },
   { label: t('home.changelog'), to: '/changelog' },
+  { label: t('home.stats'), to: '/stats' },
   { label: t('home.credits'), to: '/credits' },
 ])
 

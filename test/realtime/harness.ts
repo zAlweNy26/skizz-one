@@ -111,7 +111,9 @@ interface JoinOptions {
 
 /** A realtime worker with its Durable Objects, driven the way workerd drives them, on a fake clock. */
 export function createWorld(vars: { ALLOWED_ORIGINS?: string } = {}) {
-  const env = { ...vars } as unknown as Env
+  const events: AnalyticsEngineDataPoint[] = []
+  const analytics = { writeDataPoint: (point: AnalyticsEngineDataPoint) => events.push(point) }
+  const env = { ...vars, ANALYTICS: analytics } as unknown as Env
   const rooms = new FakeNamespace(state => new GameRoom(state as never, env))
   const lobbies = new FakeNamespace(state => new Lobby(state as never, env))
   Object.assign(env, { GameRoom: rooms, Lobby: lobbies })
@@ -163,6 +165,8 @@ export function createWorld(vars: { ALLOWED_ORIGINS?: string } = {}) {
   return {
     rooms,
     advance,
+    /** Analytics Engine data points written so far, oldest first. */
+    events,
 
     request(path: string, origin?: string) {
       return connect(path, origin)

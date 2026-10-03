@@ -100,6 +100,25 @@ Two Workers, one shared protocol:
   short English and Italian list kept to whole words, so real names and
   innocent words that contain one (`Scunthorpe`, `Dick Smith`) pass; matching
   sees through accents, stretched letters and leetspeak. Chat isn't filtered.
+- **Security headers** — `nuxt-security` (`security` in `nuxt.config.ts`)
+  sets an enforced CSP with a per-response nonce on the page shell, plus
+  the other security headers. Its request middleware (rate limiter, XSS
+  validator, size limiter, CORS) and COEP are off. A new third-party origin
+  (script, image, font, fetch) must be added to the matching directive, or
+  the browser blocks it.
+- **Observability** — both workers have Workers Logs on. Browser errors go
+  through `app/plugins/error-report.client.ts` (production only) to
+  `server/api/errors.post.ts`, which logs them as `type: client-error` with
+  the room code stripped from the path.
+- **Analytics** — `GameRoom` writes `game_started`, `game_finished` and
+  `turn_ended` events to the `ANALYTICS` Analytics Engine dataset
+  (`skizz_games`); columns are listed in `realtime/src/analytics.ts`. The
+  public `/stats` page reads them through `server/api/stats.get.ts`
+  (`server/utils/analytics.ts` runs the SQL, `shared/utils/stats.ts`
+  summarises it, cached 10 minutes). The app needs the
+  `NUXT_ANALYTICS_ACCOUNT_ID` and `NUXT_ANALYTICS_API_TOKEN` Worker secrets;
+  without them `/stats` shows its empty state. Never write player names,
+  ids, tokens or chat into an event.
 
 Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.vue`):
 
@@ -184,6 +203,10 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
     `components.json` → `app/assets/css/lint.css`, a lint-only copy of the
     stylesheet stack, because it can't resolve Nuxt UI's `#build/ui.css` alias.
     Add new design tokens to `theme.css`, never to `lint.css`.
+  - Icons are bundled at build time (`icon` in `nuxt.config.ts`); nothing is
+    fetched. Write each name as a full `i-lucide-…` literal in a `.vue` file so
+    the scan finds it: a name built at runtime or only in a `.ts` file isn't
+    bundled and renders blank. Only Lucide (`@iconify-json/lucide`) is installed.
   - Panels are drawn with `SketchFrame.vue` (roughjs). Text goes on paper, not on the bordeaux stage.
   - Phones are first-class. Below `lg` the room is one non-scrolling screen
     (`h-dvh`): top bar with a "⋯" menu, `PlayerStrip` (bottom sheet for the
