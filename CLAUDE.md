@@ -45,6 +45,12 @@ Durable Objects' `webSocketMessage`/`webSocketClose`/`alarm` on a fake clock.
 room's in-memory object so the next event rebuilds it from storage. The fakes
 follow partyserver's internals, so check them when upgrading partyserver.
 
+CI (`.github/workflows/ci.yml`) runs lint, `fallow dead-code`/`dupes`, both
+typechecks, vitest and Playwright on every pull request; `fallow health` is
+reported but never fails the run. Playwright builds the app with Nitro's
+`node-server` preset (`playwright.config.ts`), since a `cloudflare_module`
+build can't run in Node.
+
 `realtime/.dev.vars` overrides `ALLOWED_ORIGINS` for `wrangler dev` so the
 local app on :3000 can connect; `realtime/wrangler.jsonc` only allows
 `https://skizz.app`, which is what deploys.
@@ -183,7 +189,9 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
 
 ## Deploy
 
-Deploy `skizz-realtime` first (`bun run deploy:realtime`), then the app with
+Every push to `main` deploys once CI passes (`.github/workflows/deploy.yml`,
+which needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository
+secrets). By hand: deploy `skizz-realtime` first (`bun run deploy:realtime`), then the app with
 `bun run build && bunx wrangler deploy --cwd .output`. Don't use `nuxthub deploy`
 for the app: it doesn't upload `wrangler.jsonc`, so the `REALTIME` service
 binding is lost.
