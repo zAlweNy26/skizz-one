@@ -150,8 +150,11 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
   never sends display text for announcements — it sends a `LogKey` + params and
   each client renders `log.<key>`. Add new keys to every locale file.
 - **Adding a word language:** add it to `LANGUAGES` in the protocol and a list
-  file in `realtime/src/words/`. Words: concrete, drawable, lowercase, no
-  apostrophes or hyphens.
+  file in `realtime/src/words/`. Words: concrete, drawable, lowercase (German
+  nouns too), letters and single spaces only: write `arc-en-ciel` as
+  `arc en ciel`. `normalizeGuess` reads hyphens and apostrophes as spaces and
+  matches `ß`/`ss` and `œ`/`oe`, so players can type either.
+  `test/unit/words.test.ts` checks every list.
 - **Style:** enforced by eslint (`eslint.config.mjs`) and auto-applied to every
   file Claude edits by the PostToolUse hook in `.claude/settings.json`:
   - 2-space indent, single quotes, no semicolons.

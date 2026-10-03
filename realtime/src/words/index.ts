@@ -1,9 +1,12 @@
 import type { Language } from '#shared/utils/protocol'
+import de from '#realtime/words/de'
 import en from '#realtime/words/en'
+import es from '#realtime/words/es'
+import fr from '#realtime/words/fr'
 import it from '#realtime/words/it'
 
 /** Word lists for rounds, one per language. */
-export const WORDS: Record<Language, readonly string[]> = { en, it }
+export const WORDS: Record<Language, readonly string[]> = { en, it, fr, de, es }
 
 /** How much likelier a custom word is to come up than a built-in one. */
 export const CUSTOM_WORD_WEIGHT = 2

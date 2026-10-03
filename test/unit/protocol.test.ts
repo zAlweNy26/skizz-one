@@ -118,6 +118,20 @@ describe('guess normalisation', () => {
 
   it('ignores accents', () => {
     expect(normalizeGuess('café')).toBe(normalizeGuess('cafe'))
+    expect(normalizeGuess('pingüino')).toBe(normalizeGuess('pinguino'))
+    expect(normalizeGuess('Känguru')).toBe(normalizeGuess('kanguru'))
+  })
+
+  it('matches ß with ss and œ with oe', () => {
+    expect(normalizeGuess('Strauß')).toBe(normalizeGuess('strauss'))
+    expect(normalizeGuess('nœud papillon')).toBe(normalizeGuess('noeud papillon'))
+  })
+
+  it('reads hyphens and apostrophes as spaces', () => {
+    expect(normalizeGuess('arc-en-ciel')).toBe('arc en ciel')
+    expect(normalizeGuess('feu d\'artifice')).toBe('feu d artifice')
+    expect(normalizeGuess('U-Boot')).toBe('u boot')
+    expect(normalizeGuess(' - ')).toBe('')
   })
 })
 
@@ -225,8 +239,9 @@ describe('room settings', () => {
   })
 
   it('tidies custom words and drops the unguessable ones', () => {
-    expect(cleanCustomWords(['  Pizza ', 'ice   cream', 'pizza', 'rock-n-roll', 'l\'ape', 'caffè', 42, '']))
+    expect(cleanCustomWords(['  Pizza ', 'ice   cream', 'pizza', 'r2d2', 'caffè', 42, '', '-']))
       .toEqual(['pizza', 'ice cream', 'caffè'])
+    expect(cleanCustomWords(['arc-en-ciel', 'l\'ape'])).toEqual(['arc en ciel', 'l ape'])
     expect(cleanCustomWords('pizza')).toEqual([])
   })
 })
@@ -338,11 +353,14 @@ describe('drawTurnRules', () => {
 describe('preferredLanguage', () => {
   it('takes the first supported browser language, region or not', () => {
     expect(preferredLanguage(['it-IT', 'en-US'])).toBe('it')
-    expect(preferredLanguage(['fr-FR', 'IT'])).toBe('it')
+    expect(preferredLanguage(['pt-BR', 'IT'])).toBe('it')
+    expect(preferredLanguage(['fr-CA'])).toBe('fr')
+    expect(preferredLanguage(['de-AT'])).toBe('de')
+    expect(preferredLanguage(['es-419'])).toBe('es')
   })
 
   it('falls back to English', () => {
-    expect(preferredLanguage(['fr-FR', 'de'])).toBe('en')
+    expect(preferredLanguage(['pt-BR', 'nl'])).toBe('en')
     expect(preferredLanguage([])).toBe('en')
   })
 })

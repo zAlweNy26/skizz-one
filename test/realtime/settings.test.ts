@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { WORDS } from '#realtime/words'
 import { DRAW_TIME, HINTS, ROUNDS } from '#shared/utils/protocol'
 import { createWorld, seat, startDrawing } from '#test/realtime/harness'
 
@@ -41,7 +42,7 @@ describe('settings', () => {
   it('cleans custom words and shows them to the host alone', async () => {
     const world = createWorld()
     const [alice, bob] = await seat(world, 'Alice', 'Bob')
-    await alice.send({ t: 'settings', settings: { customWords: ['Zeppelin', 'rock-n-roll', 'zeppelin', '  ice   cream '] } })
+    await alice.send({ t: 'settings', settings: { customWords: ['Zeppelin', 'r2d2', 'zeppelin', '  ice   cream '] } })
 
     expect(bob.state!.customWordCount).toBe(2)
     expect(alice.last('customWords')?.words).toEqual(['zeppelin', 'ice cream'])
@@ -72,6 +73,15 @@ describe('settings', () => {
     expect(alice.state!.phase).toBe('finished')
     await alice.send({ t: 'settings', settings: { drawTime: 30 } })
     expect(alice.state!.drawTime).toBe(30)
+  })
+
+  it('deals words in the room\'s language', async () => {
+    const world = createWorld()
+    const [alice] = await seat(world, 'Alice', 'Bob')
+    await alice.send({ t: 'settings', settings: { language: 'de' } })
+    expect(alice.state!.language).toBe('de')
+    await alice.send({ t: 'start' })
+    for (const word of alice.last('choices')!.words) expect(WORDS.de).toContain(word)
   })
 
   it('deals custom words into the choices', async () => {

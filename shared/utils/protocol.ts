@@ -79,6 +79,9 @@ export const POINT_STRIDE = 3
 export const LANGUAGES = {
   en: 'English',
   it: 'Italiano',
+  fr: 'Français',
+  de: 'Deutsch',
+  es: 'Español',
 } as const
 
 export type Language = keyof typeof LANGUAGES
@@ -192,7 +195,7 @@ export function cleanCustomWords(words: unknown): string[] {
   const clean = new Set<string>()
   for (const raw of words) {
     if (typeof raw !== 'string') continue
-    const word = raw.trim().toLowerCase().replace(/\s+/g, ' ')
+    const word = raw.toLowerCase().replace(/[-'’]/g, ' ').replace(/\s+/g, ' ').trim()
     if (word && word.length <= MAX_CUSTOM_WORD_LENGTH && /^[\p{L}\p{M} ]+$/u.test(word)) clean.add(word)
     if (clean.size >= MAX_CUSTOM_WORDS) break
   }
@@ -400,14 +403,18 @@ export function wordLengths(text: string) {
   return text.split(/\s+/).filter(Boolean).map(w => [...w].length)
 }
 
-/** Normalise a guess for comparison: case, accents and spacing are ignored. */
+/** Normalise a guess for comparison: case, accents, spacing, `ß`/`ss`, `œ`/`oe`, hyphens and apostrophes don't count. */
 export function normalizeGuess(text: string) {
   return text
-    .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
+    .replace(/ß/g, 'ss')
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
+    .replace(/[-'’]/g, ' ')
     .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /** Levenshtein distance, capped at `max + 1`. */
