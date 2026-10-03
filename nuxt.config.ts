@@ -18,7 +18,6 @@ export default defineNuxtConfig({
     '@nuxt/scripts',
     '@nuxt/test-utils',
     '@vueuse/nuxt',
-    '@nuxthub/core',
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
     '@nuxtjs/seo',
@@ -187,12 +186,6 @@ export default defineNuxtConfig({
           options: { cacheName: 'icons' },
         },
       ],
-    },
-  },
-
-  hub: {
-    kv: {
-      driver: 'cloudflare-kv-binding',
     },
   },
 

@@ -3,12 +3,6 @@
   "routes": [
     { "pattern": "skizz.app", "custom_domain": true }
   ],
-  "kv_namespaces": [
-    {
-      "binding": "KV",
-      "id": "ff91b50cf1de4e1a827fdc2f6f486f07"
-    }
-  ],
   "services": [
     {
       "binding": "REALTIME",

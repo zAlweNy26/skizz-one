@@ -95,11 +95,6 @@ domain, a preview URL) there and redeploy `skizz-realtime`.
 When a change touches `shared/utils/protocol.ts`, deploy `skizz-realtime`
 first, then the app.
 
-> **Note on `nuxthub deploy`:** the NuxtHub CLI does not upload `wrangler.jsonc`,
-> and `@nuxthub/core` 0.10.8 has no `hub.bindings` option to declare the service
-> binding instead. Deploy the app with `wrangler deploy`, or verify after a
-> NuxtHub deploy that the `REALTIME` binding actually landed.
-
 ## Tests
 
 ```bash

@@ -193,6 +193,4 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
 Every push to `main` deploys once CI passes (`.github/workflows/deploy.yml`,
 which needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository
 secrets). By hand: deploy `skizz-realtime` first (`bun run deploy:realtime`), then the app with
-`bun run build && bunx wrangler deploy --cwd .output`. Don't use `nuxthub deploy`
-for the app: it doesn't upload `wrangler.jsonc`, so the `REALTIME` service
-binding is lost.
+`bun run build && bunx wrangler deploy --cwd .output`.
