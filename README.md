@@ -69,7 +69,14 @@ bunx wrangler dev -c .output/server/wrangler.json -c realtime/wrangler.jsonc
 
 ## Deploy
 
-`skizz-realtime` must exist before the app's service binding can resolve:
+Every push to `main` runs CI and, once it passes, deploys both Workers
+(`.github/workflows/deploy.yml`). It needs two repository secrets:
+`CLOUDFLARE_API_TOKEN` (with permission to edit Workers) and
+`CLOUDFLARE_ACCOUNT_ID`. Deploys never overlap: while one runs, only the newest
+waiting push is kept.
+
+To deploy by hand, `skizz-realtime` must exist before the app's service binding
+can resolve:
 
 ```bash
 bun run deploy:realtime
