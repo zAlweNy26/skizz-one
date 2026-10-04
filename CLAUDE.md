@@ -51,7 +51,10 @@ typechecks, vitest and Playwright on every pull request (root `*.md` and dot
 folders alone don't trigger it, nor a deploy); `fallow health` is
 reported but never fails the run. Playwright builds the app with Nitro's
 `node-server` preset (`playwright.config.ts`), since a `cloudflare_module`
-build can't run in Node.
+build can't run in Node, and starts its own realtime worker on port 8799
+(any origin allowed) that the e2e build's client and CSP point at.
+`test/e2e/game.spec.ts` plays a turn between two browser contexts and fails
+on any console error or CSP violation.
 
 `realtime/.dev.vars` overrides `ALLOWED_ORIGINS` for `wrangler dev` so the
 local app on :3000 can connect; `realtime/wrangler.jsonc` only allows
