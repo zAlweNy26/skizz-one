@@ -168,6 +168,12 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/room/Game
   (`LANGUAGES` in the protocol, lists in `realtime/src/words/`). The server
   never sends display text for announcements — it sends a `LogKey` + params and
   each client renders `log.<key>`. Add new keys to every locale file.
+- **Changelog:** each release adds `content/changelog/{en,it}/<version>.md`
+  (same content in both locales) and bumps `version` in `package.json`. When
+  an entry cites a UI name (page, button, tab, mode, award, menu item), put
+  it in double quotes with the exact label from that locale's
+  `i18n/locales/*.json`: `The "Create a room" and "Quick play" buttons`,
+  `La pagina "Novità"`. Front-matter values must not start with a quote.
 - **Adding a word language:** add it to `LANGUAGES` in the protocol and a list
   file in `realtime/src/words/`. Words: concrete, drawable, lowercase (German
   nouns too), letters and single spaces only: write `arc-en-ciel` as
