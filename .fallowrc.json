@@ -1,10 +1,26 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
-  "entry": ["preset/entry.ts", "app/assets/css/lint.css", "i18n/i18n.config.ts"],
+  "entry": [
+    "preset/entry.ts",
+    "app/assets/css/lint.css",
+    "i18n/i18n.config.ts"
+  ],
   "usedClassMembers": [
     {
       "extends": "Server",
-      "members": ["options", "getConnectionTags", "onConnect", "onMessage", "onClose", "onError", "onAlarm", "onRequest", "onStart", "update", "listing"]
+      "members": [
+        "options",
+        "getConnectionTags",
+        "onConnect",
+        "onMessage",
+        "onClose",
+        "onError",
+        "onAlarm",
+        "onRequest",
+        "onStart",
+        "update",
+        "listing"
+      ]
     }
   ],
   "ignoreDependencies": [
@@ -13,5 +29,16 @@
     "playwright-core",
     "@vueuse/router",
     "vue"
-  ]
+  ],
+  "health": {
+    "thresholdOverrides": [
+      {
+        "files": [
+          "app/**/*.vue"
+        ],
+        "maxCrap": 60,
+        "reason": "Components are exercised by the Playwright tests, not unit coverage, so their CRAP scores are estimates that assume no tests at all."
+      }
+    ]
+  }
 }

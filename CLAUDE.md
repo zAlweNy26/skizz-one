@@ -49,7 +49,11 @@ follow partyserver's internals, so check them when upgrading partyserver.
 CI (`.github/workflows/ci.yml`) runs lint, `fallow dead-code`/`dupes`, both
 typechecks, vitest and Playwright on every pull request (root `*.md` and dot
 folders alone don't trigger it, nor a deploy); `fallow health` is
-reported but never fails the run. Playwright builds the app with Nitro's
+reported but never fails the run, while `fallow audit` fails a pull request
+only on complexity, dead code or duplication it introduces against its base
+branch. `.fallowrc.json` raises the CRAP threshold for `.vue` files to 60,
+since components are tested through Playwright and their CRAP is estimated
+as if untested; the complexity limits are the same everywhere. Playwright builds the app with Nitro's
 `node-server` preset (`playwright.config.ts`), since a `cloudflare_module`
 build can't run in Node, and starts its own realtime worker on port 8799
 (any origin allowed) that the e2e build's client and CSP point at.
