@@ -403,7 +403,7 @@ export function wordLengths(text: string) {
   return text.split(/\s+/).filter(Boolean).map(w => [...w].length)
 }
 
-/** Normalise a guess for comparison: case, accents, spacing, `ß`/`ss`, `œ`/`oe`, hyphens and apostrophes don't count. */
+/** Normalise a guess: case, accents, spacing, `ß`/`ss`, `œ`/`oe`, hyphens and apostrophes don't count. */
 export function normalizeGuess(text: string) {
   return text
     .toLowerCase()

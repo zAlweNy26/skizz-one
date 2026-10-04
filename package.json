@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "fallow": "fallow",
+    "fallow:health": "vitest run && fallow health --coverage coverage/coverage-final.json",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",

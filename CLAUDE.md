@@ -25,6 +25,7 @@ Package manager is **bun**.
 bun run dev                  # app (:3000) + realtime worker (:8787) in parallel
 bun run lint / lint:fix      # eslint (@antfu/eslint-config + @shadcn/lint Tailwind rules)
 bun run fallow               # dead code / unused deps check (.fallowrc.json)
+bun run fallow:health        # complexity report, with CRAP scores from fresh vitest coverage
 bunx nuxi typecheck          # app typecheck (vue-tsc)
 bunx tsc -p realtime         # realtime worker typecheck (separate tsconfig)
 
@@ -74,7 +75,13 @@ Two Workers, one shared protocol:
   `GameRoom` Durable Object per room, reached at `/parties/game-room/:roomId`
   (routing uses the kebab-cased *binding* name). Owns turns, scoring, timers
   (DO alarms), pause votes, and the cached canvas. Hibernation is on; state is
-  persisted to DO storage and re-hydrated in the constructor. The secret word
+  persisted to DO storage and re-hydrated in the constructor. `game-room.ts`
+  is only the Durable Object shell (storage, sockets, rate limits, lobby
+  listing); the game is plain functions in `realtime/src/room/` that take the
+  `Room` interface from `context.ts`: `state.ts` (types and pure helpers),
+  `round.ts` (turns, hints, countdowns), `pause.ts`, `presence.ts` (joining,
+  leaving, away grace), `kick.ts` and `messages.ts` (one handler per client
+  message). Each module only imports the ones listed before it. The secret word
   never leaves the DO except in the drawer's copy of the `turn` message.
   `ALLOWED_ORIGINS` is the only origin gate (no CORS preflight for WS upgrades).
   A second DO, `Lobby` (`/parties/lobby/global`, one instance), lists public
