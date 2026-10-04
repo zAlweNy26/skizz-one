@@ -1,5 +1,5 @@
 import type { PublicRoom } from '#shared/utils/protocol'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { PUBLIC_ROOM_CAP } from '#shared/utils/protocol'
 import { pickQuickPlayRoom } from '~/utils/game'
 
@@ -8,18 +8,11 @@ function room(id: string, extra: Partial<PublicRoom> = {}): PublicRoom {
 }
 
 describe('pickQuickPlayRoom', () => {
-  it('prefers a room that has not started', () => {
-    const picked = pickQuickPlayRoom([room('playing', { phase: 'drawing', players: 6 }), room('waiting')])
-    expect(picked?.id).toBe('waiting')
-  })
-
-  it('prefers the fullest of equal rooms', () => {
-    expect(pickQuickPlayRoom([room('a', { players: 2 }), room('b', { players: 5 })])?.id).toBe('b')
-  })
-
-  it('prefers your language among rooms still waiting', () => {
-    const picked = pickQuickPlayRoom([room('en', { players: 6 }), room('it', { language: 'it' })], 'it')
-    expect(picked?.id).toBe('it')
+  it('picks any open room at random', () => {
+    const rooms = [room('waiting'), room('playing', { phase: 'drawing' })]
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.99)
+    expect(pickQuickPlayRoom(rooms)?.id).toBe('waiting')
+    expect(pickQuickPlayRoom(rooms)?.id).toBe('playing')
   })
 
   it('skips full and finished rooms', () => {

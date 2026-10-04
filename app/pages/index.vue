@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { randomUUID } from 'uncrypto'
 import { useSchemaOrg } from '#imports'
-import { isRoomCode, LANGUAGES, ROOM_CODE_LENGTH } from '#shared/utils/protocol'
+import { isRoomCode, ROOM_CODE_LENGTH } from '#shared/utils/protocol'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const { rooms, ready } = useLobby()
 const nickname = useNickname()
 const joinedRooms = useJoinedRooms()
@@ -31,6 +31,9 @@ const validCode = computed(() => isRoomCode(roomCode.value))
 const triedInvalid = ref(false)
 watch(code, () => triedInvalid.value = false)
 
+/** How long quick play waits for the public room list before creating a room. */
+const LOBBY_WAIT_MS = 3_000
+
 function join() {
   if (validCode.value) return enter(roomCode.value)
   if (roomCode.value) triedInvalid.value = true
@@ -47,8 +50,9 @@ function createRoom(isPublic = false) {
   return enter(randomUUID().replaceAll('-', '').slice(0, ROOM_CODE_LENGTH), isPublic)
 }
 
-function quickPlay() {
-  const room = pickQuickPlayRoom(rooms.value, locale.value)
+async function quickPlay() {
+  await until(ready).toBe(true, { timeout: LOBBY_WAIT_MS })
+  const room = pickQuickPlayRoom(rooms.value)
   return room ? enter(room.id) : createRoom(true)
 }
 
@@ -133,34 +137,6 @@ useSchemaOrg([
                 :disabled="!nameOk || !validCode" @click="join()" />
             </UFieldGroup>
           </UFormField>
-        </SketchFrame>
-
-        <SketchFrame
-          v-if="!invitedCode" as="section" :radius="22" :strokeWidth="3" class="w-full p-6 sm:p-8 flex flex-col gap-4"
-          aria-labelledby="public-rooms">
-          <h2 id="public-rooms" class="font-display font-bold text-xl">
-            {{ $t('home.publicRooms') }}
-          </h2>
-          <p v-if="!rooms.length" class="text-muted">
-            {{ ready ? $t('home.noRooms') : $t('home.loadingRooms') }}
-          </p>
-          <ul v-else v-auto-animate class="flex flex-col gap-3">
-            <li v-for="room in rooms" :key="room.id" class="flex items-center gap-3">
-              <div class="grow min-w-0">
-                <p class="font-display font-semibold truncate">
-                  {{ $t('home.roomOf', { name: room.hostName }) }}
-                </p>
-                <p class="text-sm text-muted truncate">
-                  {{ LANGUAGES[room.language] }} · {{ $t('home.playerCount', room.players) }} ·
-                  {{ room.phase === 'lobby' ? $t('home.waiting')
-                    : $t('home.inGame', { round: room.round, total: room.totalRounds }) }}
-                </p>
-              </div>
-              <UButton
-                size="lg" color="primary" variant="soft" icon="i-lucide-log-in" class="shrink-0"
-                :label="$t('home.join')" :disabled="!nameOk" @click="enter(room.id)" />
-            </li>
-          </ul>
         </SketchFrame>
       </div>
     </div>
