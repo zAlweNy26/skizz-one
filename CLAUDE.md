@@ -130,7 +130,7 @@ Two Workers, one shared protocol:
   without them `/stats` shows its empty state. Never write player names,
   ids, tokens or chat into an event.
 
-Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.vue`):
+Client side of a room (`app/pages/room/[code].vue` → `app/components/room/Game.vue`, i.e. `<RoomGame>`):
 
 - `useGameSocket` wraps `PartySocket`, owns game state/chat, and exposes the raw
   `ServerMessage` stream as an event hook. Player identity is a `playerId` in
@@ -141,8 +141,13 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
   snap to the committed SVG. Erase/bucket (`OPAQUE_MODES`), undo/redo/clear
   resync the whole canvas instead of streaming. The canvas `viewBox` is fixed
   at `CANVAS_WIDTH`×`CANVAS_HEIGHT`, so coordinates are portable across devices.
+- `RoomGame` owns the page grid (with its `phone-landscape:` placement
+  classes, kept on each child where it's used), the canvas and the socket
+  wiring. The pieces around it are `RoomHeader`, `RoomLobbyCard`, `WordCard`,
+  `DrawingToolbar` and `RoomTurnedAway`; the drawer's palette, tools, cursor
+  and keyboard shortcuts come from `useDrawingTools`.
 - The page itself is a join gate: it asks for a name (prefilled from localStorage)
-  and only mounts `RoomGame.vue` once the tab has joined that room. Joined rooms
+  and only mounts `RoomGame` once the tab has joined that room. Joined rooms
   live in sessionStorage (`useJoinedRooms`), so a refresh or entering from `/`
   skips the gate.
 
@@ -220,6 +225,10 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/RoomGame.
     fetched. Write each name as a full `i-lucide-…` literal in a `.vue` file so
     the scan finds it: a name built at runtime or only in a `.ts` file isn't
     bundled and renders blank. Only Lucide (`@iconify-json/lucide`) is installed.
+  - Components that share a name prefix live in a folder named after it, so
+    Nuxt keeps the full name: `components/room/Header.vue` is `<RoomHeader>`,
+    `components/drawing/Toolbar.vue` is `<DrawingToolbar>`. Add a new `Room…`,
+    `Drawing…` or `Player…` component to its folder.
   - Panels are drawn with `SketchFrame.vue` (roughjs). Text goes on paper, not on the bordeaux stage.
   - Phones are first-class. Below `lg` the room is one non-scrolling screen
     (`h-dvh`): top bar with a "⋯" menu, `PlayerStrip` (bottom sheet for the
