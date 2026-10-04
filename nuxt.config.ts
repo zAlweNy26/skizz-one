@@ -165,7 +165,7 @@ export default defineNuxtConfig({
       strictTransportSecurity: { maxAge: 31536000, includeSubdomains: false },
       contentSecurityPolicy: {
         'default-src': ['\'self\''],
-        'script-src': ['\'self\'', '\'nonce-{{nonce}}\''],
+        'script-src': ['\'self\'', '\'nonce-{{nonce}}\'', '\'wasm-unsafe-eval\''],
         'style-src': ['\'self\'', '\'unsafe-inline\'', 'https://fonts.googleapis.com'],
         'font-src': ['\'self\'', 'https://fonts.gstatic.com'],
         'img-src': ['\'self\'', 'data:', 'blob:', 'https://api.dicebear.com'],
