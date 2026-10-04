@@ -26,37 +26,52 @@ export type Sound
   = | 'your-turn' | 'turn-start' | 'guessed-self' | 'guessed-other' | 'tick'
     | 'turn-end' | 'game-over' | 'join' | 'leave'
 
+type Players = Map<string, GamePlayer>
+
+function byId(players: readonly GamePlayer[]): Players {
+  return new Map(players.map(p => [p.id, p]))
+}
+
+function startCues(prev: GameState, next: GameState, you: string): Sound[] {
+  const cues: Sound[] = []
+  if (next.phase === 'choosing' && next.drawerId === you && prev.drawerId !== you) cues.push('your-turn')
+  if (next.phase === 'drawing' && prev.phase !== 'drawing' && next.drawerId !== you) cues.push('turn-start')
+  return cues
+}
+
+function endCues(prev: GameState, next: GameState, after: Players): Sound[] {
+  const cues: Sound[] = []
+  if (prev.phase === 'drawing' && next.phase === 'intermission'
+    && prev.players.some(p => p.connected && p.id !== prev.drawerId && !after.get(p.id)?.guessed))
+    cues.push('turn-end')
+  if (next.phase === 'finished' && prev.phase !== 'finished') cues.push('game-over')
+  return cues
+}
+
+function guessCues(next: GameState, you: string, before: Players): Sound[] {
+  return next.players
+    .filter(p => p.guessed && before.get(p.id)?.guessed === false)
+    .map(p => (p.id === you ? 'guessed-self' : 'guessed-other'))
+}
+
+function presenceCue(player: GamePlayer, was: GamePlayer | undefined): Sound | null {
+  if (player.connected && !was?.connected) return 'join'
+  return !player.connected && was?.connected ? 'leave' : null
+}
+
+function presenceCues(prev: GameState, next: GameState, you: string, before: Players, after: Players): Sound[] {
+  const cues = next.players.filter(p => p.id !== you).map(p => presenceCue(p, before.get(p.id)))
+  const gone = prev.players.some(p => p.id !== you && p.connected && !after.has(p.id))
+  return [...cues.filter(cue => cue !== null), ...(gone ? ['leave' as const] : [])]
+}
+
 export function soundCues(prev: GameState, next: GameState, you: string): Sound[] {
-  const cues = new Set<Sound>()
-  const before = new Map(prev.players.map(p => [p.id, p]))
-  const after = new Map(next.players.map(p => [p.id, p]))
-
-  if (next.phase === 'choosing' && next.drawerId === you && prev.drawerId !== you)
-    cues.add('your-turn')
-  if (next.phase === 'drawing' && prev.phase !== 'drawing' && next.drawerId !== you)
-    cues.add('turn-start')
-
-  for (const p of next.players) {
-    const was = before.get(p.id)
-    if (p.guessed && was && !was.guessed) cues.add(p.id === you ? 'guessed-self' : 'guessed-other')
-  }
-
-  if (prev.phase === 'drawing' && next.phase === 'intermission') {
-    const missed = prev.players.some(p =>
-      p.connected && p.id !== prev.drawerId && !after.get(p.id)?.guessed)
-    if (missed) cues.add('turn-end')
-  }
-
-  if (next.phase === 'finished' && prev.phase !== 'finished') cues.add('game-over')
-
-  for (const p of next.players) {
-    if (p.id === you) continue
-    const was = before.get(p.id)
-    if (p.connected && !was?.connected) cues.add('join')
-    else if (!p.connected && was?.connected) cues.add('leave')
-  }
-  for (const p of prev.players)
-    if (p.id !== you && p.connected && !after.has(p.id)) cues.add('leave')
-
-  return [...cues]
+  const before = byId(prev.players)
+  const after = byId(next.players)
+  return [...new Set([
+    ...startCues(prev, next, you),
+    ...guessCues(next, you, before),
+    ...endCues(prev, next, after),
+    ...presenceCues(prev, next, you, before, after),
+  ])]
 }

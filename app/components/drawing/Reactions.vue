@@ -20,7 +20,19 @@ const options = computed(() => {
   return ([
     { reaction: 'like', icon: 'i-lucide-thumbs-up', color: 'success' },
     { reaction: 'dislike', icon: 'i-lucide-thumbs-down', color: 'error' },
-  ] as const).map(option => ({ ...option, count: all.filter(r => r === option.reaction).length }))
+  ] as const).map((option) => {
+    const count = all.filter(r => r === option.reaction).length
+    const picked = mine.value === option.reaction
+    return {
+      ...option,
+      count,
+      picked,
+      badgeColor: count ? option.color : 'neutral' as const,
+      buttonColor: picked ? option.color : 'neutral' as const,
+      variant: picked ? 'solid' as const : 'ghost' as const,
+      next: picked ? null : option.reaction,
+    }
+  })
 })
 </script>
 
@@ -31,19 +43,18 @@ const options = computed(() => {
       role="group" :aria-label="$t('reactions.label')">
       <template v-for="option in options" :key="option.reaction">
         <UBadge
-          v-if="isDrawer" variant="soft" :color="option.count ? option.color : 'neutral'" :icon="option.icon"
+          v-if="isDrawer" variant="soft" :color="option.badgeColor" :icon="option.icon"
           :size="isDesktop ? 'xl' : 'lg'" class="font-display font-bold tabular-nums"
           :aria-label="$t(`reactions.${option.reaction}Count`, option.count)">
           <span :key="option.count" class="pop-in">{{ option.count }}</span>
         </UBadge>
         <UButton
           v-else
-          :size="isDesktop ? 'md' : 'sm'" :color="mine === option.reaction ? option.color : 'neutral'"
-          :variant="mine === option.reaction ? 'solid' : 'ghost'"
+          :size="isDesktop ? 'md' : 'sm'" :color="option.buttonColor" :variant="option.variant"
           class="justify-center font-display font-bold tabular-nums"
           :icon="option.icon" :label="String(option.count)"
-          :aria-label="$t(`reactions.${option.reaction}`)" :aria-pressed="mine === option.reaction"
-          @click="$emit('react', mine === option.reaction ? null : option.reaction)" />
+          :aria-label="$t(`reactions.${option.reaction}`)" :aria-pressed="option.picked"
+          @click="$emit('react', option.next)" />
       </template>
     </SketchFrame>
   </div>

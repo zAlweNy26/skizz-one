@@ -50,10 +50,19 @@ const secondsLeft = computed(() => {
 const { muted } = useSounds({ onMessage: game.onMessage, you, state, secondsLeft })
 
 const phase = computed(() => state.value?.phase ?? 'lobby')
+const betweenGames = computed(() => phase.value === 'lobby' || phase.value === 'finished')
+const drawerId = computed(() => state.value?.drawerId)
+const kickVotes = computed(() => state.value?.kickVotes)
+const reactions = computed(() => (phase.value === 'drawing' ? state.value?.reactions : undefined))
+const lobbyCardClass = computed(() => (phase.value === 'lobby'
+  ? ['phone-landscape:canvas-landscape phone-landscape:col-start-2 phone-landscape:row-span-full',
+      'phone-landscape:content-center']
+  : 'phone-landscape:col-start-3 phone-landscape:row-start-2'))
 const canDraw = computed(() => isDrawer.value && phase.value === 'drawing' && !paused.value)
 const rules = computed(() => state.value?.rules ?? NO_RULES)
 const tools = useDrawingTools(drauu, sync, canDraw, rules)
 const { brush } = tools
+const sketchClass = computed(() => (canDraw.value ? [tools.cursor.value, 'touch-none'] : 'pointer-events-none'))
 
 useEventListener(sketch, 'touchmove', (event: TouchEvent) => {
   if (canDraw.value) event.preventDefault()
@@ -123,17 +132,13 @@ useHead({
       @pause="game.send({ t: 'pause', want: $event })" @openQr="qrOpen = true" />
 
     <PlayerStrip
-      :players="leaderboard" :drawerId="state?.drawerId" :you="you" :kickVotes="state?.kickVotes" :kick="kickRule"
+      :players="leaderboard" :drawerId="drawerId" :you="you" :kickVotes="kickVotes" :kick="kickRule"
       class="lg:hidden phone-landscape:col-start-3 phone-landscape:row-start-4"
       @kick="voteKick" />
 
     <RoomLobbyCard
-      v-if="state && (phase === 'lobby' || phase === 'finished')"
-      :state="state" :isHost="isHost" :customWords="customWords"
-      :class="phase === 'lobby'
-        ? ['phone-landscape:canvas-landscape phone-landscape:col-start-2 phone-landscape:row-span-full',
-           'phone-landscape:content-center']
-        : 'phone-landscape:col-start-3 phone-landscape:row-start-2'"
+      v-if="state && betweenGames"
+      :state="state" :isHost="isHost" :customWords="customWords" :class="lobbyCardClass"
       @settings="game.send({ t: 'settings', settings: $event })" @start="game.send({ t: 'start' })"
       @openQr="qrOpen = true" />
 
@@ -144,13 +149,13 @@ useHead({
         xl:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))_22rem]
         2xl:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))_24rem] phone-landscape:contents">
       <PlayerList
-        :players="leaderboard" :drawerId="state?.drawerId" :you="you" :kickVotes="state?.kickVotes" :kick="kickRule"
+        :players="leaderboard" :drawerId="drawerId" :you="you" :kickVotes="kickVotes" :kick="kickRule"
         class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1"
         @kick="voteKick" />
 
       <div class="flex flex-col gap-2 shrink-0 lg:gap-4 lg:order-2 phone-landscape:contents">
         <WordCard
-          v-if="phase !== 'lobby' && phase !== 'finished'"
+          v-if="!betweenGames"
           :state="state" :word="word" :hint="hint" :secondsLeft="secondsLeft"
           class="phone-landscape:col-start-3 phone-landscape:row-start-2" />
 
@@ -166,7 +171,7 @@ useHead({
               :drawerName="drawerName" :players="leaderboard" :you="you" :awards="state?.awards ?? []"
               @choose="game.send({ t: 'choose', index: $event })" @reroll="game.send({ t: 'reroll' })" />
             <DrawingReactions
-              v-if="phase === 'drawing' && state" :reactions="state.reactions" :isDrawer="isDrawer" :you="you"
+              v-if="reactions" :reactions="reactions" :isDrawer="isDrawer" :you="you"
               @react="game.send({ t: 'react', reaction: $event })" />
             <UButton
               v-if="hasDrawing" color="neutral" variant="outline" size="lg" icon="i-lucide-download"
@@ -175,7 +180,7 @@ useHead({
             <svg
               ref="sketch"
               class="size-full"
-              :class="canDraw ? [tools.cursor.value, 'touch-none'] : 'pointer-events-none'"
+              :class="sketchClass"
               :viewBox="`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`"
               preserveAspectRatio="xMidYMid meet" />
           </div>

@@ -7,6 +7,7 @@ const alias = {
   '#realtime': fileURLToPath(new URL('./realtime/src', import.meta.url)),
   '#test': fileURLToPath(new URL('./test', import.meta.url)),
   '~': fileURLToPath(new URL('./app', import.meta.url)),
+  '~~': fileURLToPath(new URL('.', import.meta.url)),
 }
 
 export default defineConfig({

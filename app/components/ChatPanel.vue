@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { LogLevel } from '#shared/utils/protocol'
 import type { ChatEntry } from '~/composables/useGameSocket'
 
 const props = defineProps<{
@@ -35,8 +36,20 @@ const placeholder = computed(() => ({
 
 const isDesktop = useIsDesktop()
 
+const LEVEL_CLASS: Record<LogLevel, string> = {
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+  info: 'text-muted',
+}
+
+function rowClass(entry: ChatEntry, index: number) {
+  if (!entry.system && entry.private) return 'bg-success/12'
+  return index % 2 ? 'bg-elevated' : ''
+}
+
 const shown = computed(() => {
-  const list = props.entries.map((entry, index) => ({ entry, index }))
+  const list = props.entries.map((entry, index) => ({ entry, index, class: rowClass(entry, index) }))
   return isDesktop.value ? list : list.reverse()
 })
 
@@ -72,25 +85,20 @@ function submit(event: KeyboardEvent) {
       ref="log" class="overflow-y-auto overscroll-contain grow min-h-0 flex flex-col gap-0.5 text-sm pe-1"
       role="log">
       <div
-        v-for="{ entry, index } in shown" :key="index" class="flex items-start gap-2 px-2 py-1 rounded-sketch"
-        :class="!entry.system && entry.private ? 'bg-success/12' : index % 2 ? 'bg-elevated' : ''">
-        <p
-          v-if="entry.system" class="font-display font-semibold"
-          :class="{
-            'text-success': entry.level === 'success',
-            'text-warning': entry.level === 'warning',
-            'text-error': entry.level === 'error',
-            'text-muted': entry.level === 'info',
-          }">
-          {{ $t(`log.${entry.key}`, entry.params ?? {}) }}
+        v-for="row in shown" :key="row.index" class="flex items-start gap-2 px-2 py-1 rounded-sketch"
+        :class="row.class">
+        <p v-if="row.entry.system" class="font-display font-semibold" :class="LEVEL_CLASS[row.entry.level]">
+          {{ $t(`log.${row.entry.key}`, row.entry.params ?? {}) }}
         </p>
         <p v-else class="min-w-0 break-words">
           <UIcon
-            v-if="entry.private" name="i-lucide-lock" class="size-3.5 me-1 align-middle text-success"
+            v-if="row.entry.private" name="i-lucide-lock" class="size-3.5 me-1 align-middle text-success"
             :aria-label="$t('chat.private')" />
-          <span class="font-bold" :class="entry.private ? 'text-success' : 'text-primary'">{{ entry.sender }}</span>
+          <span class="font-bold" :class="row.entry.private ? 'text-success' : 'text-primary'">
+            {{ row.entry.sender }}
+          </span>
           <span class="text-muted">: </span>
-          <span>{{ entry.text }}</span>
+          <span>{{ row.entry.text }}</span>
         </p>
       </div>
     </div>
