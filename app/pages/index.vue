@@ -112,11 +112,11 @@ useSchemaOrg([
 
           <UButton
             v-if="!invitedCode" block size="xl" color="secondary" icon="i-lucide-sparkles"
-            :label="$t('home.create')" :disabled="!nameOk" @click="createRoom()" />
+            :label="$t('home.create')" :disabled="!nameOk" loadingAuto @click="createRoom()" />
 
           <UButton
             v-if="!invitedCode" block size="xl" color="primary" variant="soft" icon="i-lucide-zap"
-            :label="$t('home.quickPlay')" :disabled="!nameOk" @click="quickPlay()" />
+            :label="$t('home.quickPlay')" :disabled="!nameOk" loadingAuto @click="quickPlay()" />
 
           <USeparator v-if="!invitedCode" :label="$t('home.or')" :ui="{ label: 'font-display' }" />
 

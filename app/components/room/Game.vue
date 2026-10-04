@@ -107,8 +107,12 @@ useHead({
 <template>
   <RoomTurnedAway v-if="turnedAway" :reason="turnedAway" />
 
+  <RoomLoading v-else-if="!state" />
+
   <main
-    v-else
+    v-if="!turnedAway"
+    :inert="!state"
+    :class="{ invisible: !state }"
     class="flex flex-col mx-auto w-full max-w-room gap-2 px-safe py-safe h-dvh overflow-y-auto
       overscroll-y-contain lg:gap-5 lg:h-auto lg:min-h-dvh lg:overflow-visible
       phone-landscape:grid phone-landscape:grid-cols-[auto_auto_minmax(0,1fr)]
