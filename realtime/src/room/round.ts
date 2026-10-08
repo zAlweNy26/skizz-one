@@ -1,6 +1,6 @@
 import type { Connection } from 'partyserver'
 import type { Room } from '#realtime/room/context'
-import type { AlarmKind } from '#realtime/room/state'
+import type { AlarmKind, RoomState } from '#realtime/room/state'
 import type { TurnEnd } from '#shared/utils/stats'
 import { activeCount, drawMs, emptyStats, isActive, listed, pruneDeparted, publicState, remainingMs, seated } from '#realtime/room/state'
 import { standings } from '#realtime/scoring'
@@ -98,6 +98,7 @@ function nextDrawerIndex(room: Room): number | null {
 
 async function waitForPlayers(room: Room) {
   const s = room.state
+  closeReactions(s)
   s.phase = 'lobby'
   s.drawerId = null
   s.word = null
@@ -129,7 +130,7 @@ export async function startTurn(room: Room) {
   s.rerolled = false
   s.revealed = []
   s.rules = NO_RULES
-  s.reactions = {}
+  closeReactions(s)
   room.canvas = ''
   room.saveCanvas()
   s.pausedMs = null
@@ -180,6 +181,7 @@ async function beginDrawing(room: Room, word: string) {
   const { rules, chaos } = drawTurnRules(s)
   s.rules = rules
   s.usedWords.push(word)
+  s.reactionsFor = s.drawerId
   s.endsAt = Date.now() + drawMs(s)
 
   await armRound(room)
@@ -220,9 +222,6 @@ export async function endRound(room: Room, reason: TurnEnd) {
     correct: Object.values(s.players).filter(p => p.guessed).length,
     ms: drawMs(s) - remaining,
   })
-  const likes = Object.values(s.reactions).filter(r => r === 'like').length
-  if (s.drawerId && likes > (s.stats.mostLiked?.likes ?? 0))
-    s.stats.mostLiked = { playerId: s.drawerId, likes }
 
   s.phase = 'intermission'
   s.endsAt = Date.now() + INTERMISSION_MS
@@ -235,6 +234,14 @@ export async function endRound(room: Room, reason: TurnEnd) {
   await room.save()
 
   room.broadcast({ t: 'roundEnd', word, state: publicState(s, room.name) })
+}
+
+function closeReactions(s: RoomState) {
+  const likes = Object.values(s.reactions).filter(r => r === 'like').length
+  if (s.reactionsFor && likes > (s.stats.mostLiked?.likes ?? 0))
+    s.stats.mostLiked = { playerId: s.reactionsFor, likes }
+  s.reactions = {}
+  s.reactionsFor = null
 }
 
 export async function finishGame(room: Room, completed: boolean) {
@@ -250,6 +257,7 @@ export async function finishGame(room: Room, completed: boolean) {
     })
   }
   s.gameStartedAt = null
+  closeReactions(s)
   s.phase = 'finished'
   s.drawerId = null
   s.word = null

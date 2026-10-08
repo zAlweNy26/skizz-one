@@ -49,8 +49,8 @@ function state(extra: Partial<GameState>): GameState {
   return {
     id: 'r', phase: 'lobby', round: 1, totalRounds: 3, language: 'en', drawTime: 80, hints: 2, customWordCount: 0,
     hostId: null, drawerId: null, endsAt: null, hint: '', players: [], paused: false, pauseVotes: [],
-    remainingMs: null, reactions: {}, kickVotes: {}, awards: [], public: false, noUndo: false, noEraser: false,
-    colorLimit: 0, chaos: false, rules: { noUndo: false, noEraser: false, colors: [] }, ...extra,
+    remainingMs: null, reactions: {}, reactionsFor: null, kickVotes: {}, awards: [], public: false, noUndo: false,
+    noEraser: false, colorLimit: 0, chaos: false, rules: { noUndo: false, noEraser: false, colors: [] }, ...extra,
   }
 }
 

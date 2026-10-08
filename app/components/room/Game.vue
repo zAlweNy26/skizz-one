@@ -53,7 +53,9 @@ const phase = computed(() => state.value?.phase ?? 'lobby')
 const betweenGames = computed(() => phase.value === 'lobby' || phase.value === 'finished')
 const drawerId = computed(() => state.value?.drawerId)
 const kickVotes = computed(() => state.value?.kickVotes)
-const reactions = computed(() => (phase.value === 'drawing' ? state.value?.reactions : undefined))
+const reactions = computed(() => (phase.value === 'drawing' || phase.value === 'intermission'
+  ? state.value?.reactions
+  : undefined))
 const lobbyCardClass = computed(() => (phase.value === 'lobby'
   ? ['phone-landscape:canvas-landscape phone-landscape:col-start-2 phone-landscape:row-span-full',
       'phone-landscape:content-center']
@@ -171,11 +173,11 @@ useHead({
               :drawerName="drawerName" :players="leaderboard" :you="you" :awards="state?.awards ?? []"
               @choose="game.send({ t: 'choose', index: $event })" @reroll="game.send({ t: 'reroll' })" />
             <DrawingReactions
-              v-if="reactions" :reactions="reactions" :isDrawer="isDrawer" :you="you"
+              v-if="reactions" :reactions="reactions" :isDrawer="you === state?.reactionsFor" :you="you"
               @react="game.send({ t: 'react', reaction: $event })" />
             <UButton
               v-if="hasDrawing" color="neutral" variant="outline" size="lg" icon="i-lucide-download"
-              class="pop-in absolute bottom-1 end-1 z-5 lg:bottom-2 lg:end-2"
+              class="pop-in absolute bottom-1 start-1 z-5 lg:bottom-2 lg:start-2"
               :label="$t('canvas.download')" @click="downloadDrawing()" />
             <svg
               ref="sketch"

@@ -277,6 +277,8 @@ export interface GameState {
   remainingMs: number | null
   /** Guessers' reactions to this turn's drawing, by player id. */
   reactions: Record<string, Reaction>
+  /** Whose drawing `reactions` are for, kept through the intermission. */
+  reactionsFor: string | null
   /** Active players voting to kick each target, by target id. */
   kickVotes: Record<string, string[]>
   /** Set once the game is over. */

@@ -214,7 +214,8 @@ function handleChat(room: Room, playerId: string, rawText: unknown) {
 
 async function react(room: Room, playerId: string, reaction: unknown) {
   const s = room.state
-  if (s.phase !== 'drawing' || playerId === s.drawerId || !s.players[playerId]) return
+  const voting = s.phase === 'drawing' || s.phase === 'intermission'
+  if (!voting || !s.reactionsFor || playerId === s.reactionsFor || !s.players[playerId]) return
 
   if (reaction === 'like' || reaction === 'dislike') s.reactions[playerId] = reaction
   else if (reaction === null) delete s.reactions[playerId]

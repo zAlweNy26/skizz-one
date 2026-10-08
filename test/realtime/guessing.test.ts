@@ -179,4 +179,37 @@ describe('reactions', () => {
     expect(alice.state!.phase).toBe('finished')
     expect(alice.state!.awards.find(a => a.key === 'mostLiked')).toEqual({ key: 'mostLiked', playerId: drawer.id, value: 2 })
   })
+
+  it('keeps voting open through the intermission, still not for the drawer', async () => {
+    const world = createWorld()
+    const players = await seat(world, 'Alice', 'Bob')
+    const { drawer, guessers: [bob] } = await startDrawing(players)
+    await world.advance(DRAW_MS)
+    expect(bob!.state!.phase).toBe('intermission')
+    expect(bob!.state!.reactionsFor).toBe(drawer.id)
+
+    await bob!.send({ t: 'react', reaction: 'like' })
+    expect(drawer.state!.reactions).toEqual({ [bob!.id]: 'like' })
+    await drawer.send({ t: 'react', reaction: 'dislike' })
+    expect(drawer.state!.reactions).toEqual({ [bob!.id]: 'like' })
+
+    await world.advance(5_000)
+    expect(bob!.state!.phase).toBe('choosing')
+    expect(bob!.state!.reactions).toEqual({})
+    expect(bob!.state!.reactionsFor).toBeNull()
+  })
+
+  it('counts likes given during the intermission towards the most liked drawing', async () => {
+    const world = createWorld()
+    const players = await seat(world, 'Alice', 'Bob', 'Carol')
+    const [alice] = players
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    await alice.send({ t: 'settings', settings: { totalRounds: 1 } })
+    const { drawer, guessers } = await startDrawing(players)
+    await world.advance(DRAW_MS)
+    for (const g of guessers) await g.send({ t: 'react', reaction: 'like' })
+    await world.advance(DRAW_MS * 10)
+    expect(alice.state!.phase).toBe('finished')
+    expect(alice.state!.awards.find(a => a.key === 'mostLiked')).toEqual({ key: 'mostLiked', playerId: drawer.id, value: 2 })
+  })
 })

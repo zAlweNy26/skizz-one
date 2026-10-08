@@ -65,6 +65,8 @@ export interface RoomState {
   /** The countdown frozen by a vote: which alarm to re-arm, and with how long. */
   pause: { kind: AlarmKind, remainingMs: number } | null
   reactions: Record<string, Reaction>
+  /** Whose drawing `reactions` are for, kept through the intermission. */
+  reactionsFor: string | null
   /** Voters against each target, by target id. */
   kickVotes: Record<string, string[]>
   /** Players kicked from the room, who can't rejoin it. */
@@ -127,6 +129,7 @@ export function initialState(): RoomState {
     pauseVotes: [],
     pause: null,
     reactions: {},
+    reactionsFor: null,
     kickVotes: {},
     banned: [],
     stats: emptyStats(),
@@ -242,6 +245,7 @@ export function publicState(s: RoomState, id: string): GameState {
     pauseVotes: pauseVoters(s),
     remainingMs: s.pause?.remainingMs ?? null,
     reactions: s.reactions,
+    reactionsFor: s.reactionsFor,
     kickVotes: Object.fromEntries(Object.keys(s.kickVotes).flatMap((target) => {
       const voters = kickVoters(s, target)
       return voters.length ? [[target, voters]] : []

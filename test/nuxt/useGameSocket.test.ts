@@ -78,6 +78,7 @@ function roomState(extra: Partial<GameState> = {}): GameState {
     pauseVotes: [],
     remainingMs: null,
     reactions: {},
+    reactionsFor: null,
     kickVotes: {},
     awards: [],
     public: false,
