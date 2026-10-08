@@ -67,7 +67,7 @@
     "happy-dom": "^20.14.5",
     "nitro-cloudflare-dev": "^0.2.2",
     "playwright-core": "^1.63.0",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vitest": "^5.0.2",
     "vue-tsc": "^3.3.12",
     "wrangler": "^4.144.0"
