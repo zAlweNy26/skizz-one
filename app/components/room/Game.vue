@@ -144,10 +144,10 @@ useHead({
 
     <section
       class="flex flex-col flex-1 min-h-0 w-full gap-2
-        lg:grid lg:flex-none lg:gap-5 lg:items-start
-        lg:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))]
-        xl:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))_22rem]
-        2xl:grid-cols-[minmax(min-content,1fr)_minmax(0,calc((100dvh-21rem)*4/3))_24rem] phone-landscape:contents">
+        lg:grid lg:flex-none lg:gap-5 lg:items-start lg:justify-center
+        lg:grid-cols-[16rem_minmax(0,max(34rem,calc((100dvh-21rem)*4/3)))]
+        xl:grid-cols-[16rem_minmax(0,max(34rem,calc((100dvh-21rem)*4/3)))_22rem]
+        2xl:grid-cols-[17rem_minmax(0,max(34rem,calc((100dvh-21rem)*4/3)))_24rem] phone-landscape:contents">
       <PlayerList
         :players="leaderboard" :drawerId="drawerId" :you="you" :kickVotes="kickVotes" :kick="kickRule"
         class="max-lg:hidden lg:order-1 lg:row-span-2 xl:row-span-1"
@@ -161,7 +161,7 @@ useHead({
 
         <SketchFrame
           :radius="16" :strokeWidth="3.5" :roughness="1.4"
-          class="p-1.5 w-full mx-auto lg:p-2.5 lg:max-w-[calc((100dvh-21rem)*4/3)]
+          class="p-1.5 w-full mx-auto lg:p-2.5 lg:max-w-[max(34rem,calc((100dvh-21rem)*4/3))]
             phone-landscape:canvas-landscape phone-landscape:col-start-2 phone-landscape:row-span-full
             phone-landscape:self-start"
           :class="{ 'phone-landscape:hidden': phase === 'lobby' }">
