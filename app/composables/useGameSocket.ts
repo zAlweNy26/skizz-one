@@ -12,7 +12,7 @@ import {
 
 /** A line in the chat panel. System lines keep their i18n key rather than text. */
 export type ChatEntry
-  = | { system: false, sender: string, text: string, private: boolean }
+  = | { system: false, sender: string, color?: string, text: string, private: boolean }
     | { system: true, level: LogLevel, key: LogKey | 'wordWas', params?: LogParams }
 
 const PING_INTERVAL_MS = 25_000
@@ -25,6 +25,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const token = useLocalStorage('playerToken', () => randomUUID())
   const nickname = useNickname()
   const avatar = useAvatarSeed()
+  const nameColor = useNameColor()
   /** Set by quick play: the room is created public if it doesn't exist yet. */
   const createPublic = useRoute().query.public === '1'
   /** Sets the word language of a room this tab creates. */
@@ -123,6 +124,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
       case 'chat':
         chat.value.push({
           sender: msg.sender,
+          color: msg.color,
           text: msg.text,
           system: false,
           private: msg.private ?? false,
@@ -164,6 +166,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
         token: token.value,
         name: nickname.value,
         avatar: avatar.value,
+        color: nameColor.value,
         lang: preferredLanguage(languages.value),
         ...(createPublic ? { public: '1' } : {}),
       }),

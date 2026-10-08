@@ -16,7 +16,7 @@ describe('guessing', () => {
     const { drawer, guessers: [bob, carol], word } = await startDrawing(players)
 
     await bob!.send({ t: 'guess', text: 'definitely not it' })
-    expect(drawer.last('chat')).toEqual({ t: 'chat', sender: 'Bob', text: 'definitely not it' })
+    expect(drawer.last('chat')).toMatchObject({ t: 'chat', sender: 'Bob', text: 'definitely not it' })
     expect(carol!.last('chat')?.text).toBe('definitely not it')
 
     await bob!.send({ t: 'guess', text: `${word}x` })
@@ -94,7 +94,7 @@ describe('guessing', () => {
     const world = createWorld()
     const [alice, bob] = await seat(world, 'Alice', 'Bob')
     await bob.send({ t: 'guess', text: '  hello  ' })
-    expect(alice.last('chat')).toEqual({ t: 'chat', sender: 'Bob', text: 'hello' })
+    expect(alice.last('chat')).toMatchObject({ t: 'chat', sender: 'Bob', text: 'hello' })
     await bob.send({ t: 'guess', text: '   ' })
     expect(alice.chat).toHaveLength(1)
   })

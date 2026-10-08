@@ -6,6 +6,7 @@ const name = defineModel<string>({ required: true })
 
 const { t } = useI18n()
 const avatar = useAvatarSeed()
+const color = useNameColor()
 const trimmedName = computed(() => name.value.trim())
 const nameError = computed(() => {
   const problem = nameProblem(name.value)
@@ -38,6 +39,16 @@ const nameError = computed(() => {
             color="neutral" variant="soft" icon="i-lucide-dices"
             :aria-label="$t('home.randomName')" @click="name = randomNickname()" />
         </UTooltip>
+        <UPopover>
+          <UTooltip :text="$t('home.nameColor')">
+            <UButton color="neutral" variant="soft" square :aria-label="$t('home.nameColor')">
+              <span class="block size-5 rounded-full bg-(--name)" :style="{ '--name': color }" />
+            </UButton>
+          </UTooltip>
+          <template #content>
+            <UColorPicker v-model="color" class="p-3" />
+          </template>
+        </UPopover>
       </UFieldGroup>
     </UFormField>
   </div>

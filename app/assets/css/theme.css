@@ -104,6 +104,22 @@
   --ui-text-muted: color-mix(in oklab, var(--on-stage) 80%, transparent);
 }
 
+/* A player's name in their chosen colour (`--name`), darkened or lightened just enough to read on paper. */
+@utility name-ink {
+  color: var(--name);
+  color: oklch(from var(--name) min(l, 0.55) c h);
+
+  @variant dark {
+    color: oklch(from var(--name) max(l, 0.78) c h);
+  }
+}
+
+/* As `name-ink`, on a light fill in both themes. */
+@utility name-ink-fixed {
+  color: var(--name);
+  color: oklch(from var(--name) min(l, 0.55) c h);
+}
+
 /* Shantell Sans' informal and bounce axes. */
 @utility font-display {
   font-variation-settings: 'INFM' 90, 'BNCE' 60;

@@ -86,7 +86,11 @@ const rows = computed(() => props.players.map(player => ({
         </span>
         <div class="min-w-0 grow flex flex-col gap-0.5">
           <p class="text-sm font-semibold truncate leading-tight">
-            {{ row.player.name }}
+            <span
+              class="me-1" :class="row.status ? 'name-ink-fixed' : 'name-ink'"
+              :style="{ '--name': row.player.color }">
+              {{ row.player.name }}
+            </span>
             <UBadge
               v-if="row.isYou" size="sm" class="font-display align-middle" :label="$t('players.you')" />
           </p>

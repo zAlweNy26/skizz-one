@@ -116,7 +116,7 @@ describe('pausing', () => {
     expect(bob!.logs).not.toContain('guessed')
 
     await carol!.send({ t: 'guess', text: 'still thinking' })
-    expect(bob!.last('chat')).toEqual({ t: 'chat', sender: 'Carol', text: 'still thinking' })
+    expect(bob!.last('chat')).toMatchObject({ t: 'chat', sender: 'Carol', text: 'still thinking' })
   })
 
   it('resumes on a majority with the time that was left', async () => {

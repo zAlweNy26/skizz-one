@@ -21,6 +21,20 @@ export const MAX_NAME_LENGTH = 24
 /** Longest DiceBear seed a player can send. */
 export const MAX_AVATAR_LENGTH = 32
 
+const NAME_COLOR = /^#[0-9a-f]{6}$/i
+
+/** The `#rrggbb` colour a player's name is shown in, lowercased; null when `value` isn't one. */
+export function parseNameColor(value: unknown) {
+  return typeof value === 'string' && NAME_COLOR.test(value) ? value.toLowerCase() : null
+}
+
+/** A stable colour for a player who didn't pick one. */
+export function defaultNameColor(id: string): string {
+  let hash = 0
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  return `#${(hash & 0xFFFFFF).toString(16).padStart(6, '0')}`
+}
+
 /** Room codes are this many lowercase hex characters. */
 export const ROOM_CODE_LENGTH = 8
 
@@ -242,6 +256,8 @@ export interface GamePlayer {
   name: string
   /** DiceBear seed, independent of the name. */
   avatar: string
+  /** `#rrggbb`. */
+  color: string
   /** Rounded for display; `rank` comes from the exact score. */
   points: number
   /** 1-based and never shared: exact score first, then join order. */
@@ -356,7 +372,7 @@ export type ServerMessage
     | { t: 'turn', drawerId: string, round: number, endsAt: number, hint: string, word?: string }
     | { t: 'roundEnd', word: string, state: GameState }
     | { t: 'log', level: LogLevel, key: LogKey, params?: LogParams }
-    | { t: 'chat', sender: string, text: string, private?: boolean }
+    | { t: 'chat', sender: string, color: string, text: string, private?: boolean }
     | { t: 'customWords', words: string[] }
   /** Sent only to the drawer while they pick the turn's word. */
     | { t: 'choices', words: string[], canReroll: boolean }

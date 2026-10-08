@@ -43,6 +43,11 @@ const LEVEL_CLASS: Record<LogLevel, string> = {
   info: 'text-muted',
 }
 
+function senderClass(entry: ChatEntry & { system: false }) {
+  if (entry.private) return 'text-success'
+  return entry.color ? 'name-ink' : 'text-primary'
+}
+
 function rowClass(entry: ChatEntry, index: number) {
   if (!entry.system && entry.private) return 'bg-success/12'
   return index % 2 ? 'bg-elevated' : ''
@@ -95,7 +100,9 @@ function submit() {
           <UIcon
             v-if="row.entry.private" name="i-lucide-lock" class="size-3.5 me-1 align-middle text-success"
             :aria-label="$t('chat.private')" />
-          <span class="font-bold" :class="row.entry.private ? 'text-success' : 'text-primary'">
+          <span
+            class="font-bold" :class="senderClass(row.entry)"
+            :style="{ '--name': row.entry.color }">
             {{ row.entry.sender }}
           </span>
           <span class="text-muted">: </span>

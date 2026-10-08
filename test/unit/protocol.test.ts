@@ -5,6 +5,7 @@ import {
   CANVAS_WIDTH,
   clampSetting,
   cleanCustomWords,
+  defaultNameColor,
   dequantize,
   DRAW_TIME,
   drawTurnRules,
@@ -22,6 +23,7 @@ import {
   maskWord,
   normalizeGuess,
   PALETTE,
+  parseNameColor,
   pickTurnColors,
   POINT_STRIDE,
   preferredLanguage,
@@ -39,6 +41,22 @@ describe('room codes', () => {
   it('rejects anything else', () => {
     for (const code of ['', 'abc', '0a1b2c3', '0a1b2c3d4', '0A1B2C3D', 'zzzzzzzz', '0a1b-c3d', '../0a1b2'])
       expect(isRoomCode(code), code).toBe(false)
+  })
+})
+
+describe('name colours', () => {
+  it('accepts any #rrggbb colour, lowercased', () => {
+    expect(parseNameColor('#1F8f95')).toBe('#1f8f95')
+    for (const value of ['', '#fff', '1f8f95', '#1f8f9g', 'red', '#1f8f95ff', null, 3]) expect(parseNameColor(value)).toBeNull()
+  })
+
+  it('gives each id a stable #rrggbb default colour', () => {
+    const ids = Array.from({ length: 64 }, (_, i) => `player-${i}`)
+    for (const id of ids) {
+      expect(defaultNameColor(id)).toBe(defaultNameColor(id))
+      expect(parseNameColor(defaultNameColor(id))).toBe(defaultNameColor(id))
+    }
+    expect(new Set(ids.map(defaultNameColor)).size).toBe(ids.length)
   })
 })
 

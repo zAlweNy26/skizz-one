@@ -160,7 +160,7 @@ function scoreGuess(room: Room, player: StoredPlayer) {
 /** Share a wrong guess, nudging its author privately when it was close. */
 async function missGuess(room: Room, connection: Connection, player: StoredPlayer, text: string, answer: string) {
   const s = room.state
-  room.broadcast({ t: 'chat', sender: player.name, text })
+  room.broadcast({ t: 'chat', sender: player.name, color: player.color, text })
   if (!answer || editDistance(normalizeGuess(text), answer, NEAR_MISS_DISTANCE) > NEAR_MISS_DISTANCE) return
 
   room.send(connection, { t: 'log', level: 'warning', key: 'close', params: { text } })
@@ -181,7 +181,7 @@ async function handleGuess(room: Room, connection: Connection, playerId: string,
 
   if (s.pause) {
     if (correct) room.send(connection, { t: 'log', level: 'warning', key: 'guessOnHold' })
-    else room.broadcast({ t: 'chat', sender: player.name, text })
+    else room.broadcast({ t: 'chat', sender: player.name, color: player.color, text })
     return
   }
 
@@ -201,11 +201,11 @@ function handleChat(room: Room, playerId: string, rawText: unknown) {
   if (!player || !text) return
 
   if (s.phase !== 'drawing') {
-    room.broadcast({ t: 'chat', sender: player.name, text })
+    room.broadcast({ t: 'chat', sender: player.name, color: player.color, text })
     return
   }
 
-  const payload = JSON.stringify({ t: 'chat', sender: player.name, text, private: true } satisfies ServerMessage)
+  const payload = JSON.stringify({ t: 'chat', sender: player.name, color: player.color, text, private: true } satisfies ServerMessage)
   for (const conn of room.connections()) {
     const id = playerIdOf(conn)
     if (id && (s.players[id]?.guessed || id === s.drawerId)) conn.send(payload)

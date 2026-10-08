@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DRAW_TIME, MAX_NAME_LENGTH, OUTDATED_CLOSE_CODE, PROTOCOL_VERSION } from '#shared/utils/protocol'
+import {
+  defaultNameColor,
+  DRAW_TIME,
+  MAX_NAME_LENGTH,
+  OUTDATED_CLOSE_CODE,
+  PROTOCOL_VERSION,
+} from '#shared/utils/protocol'
 import { createWorld, ROOM, seat } from '#test/realtime/harness'
 
 describe('joining', () => {
@@ -63,6 +69,22 @@ describe('joining', () => {
 
     const seeded = await world.join('Seeded', { avatar: 'fox' })
     expect(seeded.state!.players.find(p => p.id === seeded.id)!.avatar).toBe('fox')
+  })
+
+  it('keeps the name colour a player picked, or gives them a stable one', async () => {
+    const world = createWorld()
+    const picked = await world.join('Picked', { color: '#1F8F95' })
+    const unknown = await world.join('Unknown', { color: 'red' })
+    const colorOf = (id: string) => picked.state!.players.find(p => p.id === id)!.color
+
+    expect(colorOf(picked.id)).toBe('#1f8f95')
+    expect(colorOf(unknown.id)).toBe(defaultNameColor(unknown.id))
+
+    await world.join('Picked', { color: '#cf3a8a' })
+    world.hibernate()
+    await unknown.send({ t: 'chat', text: 'hi' })
+    expect(colorOf(picked.id)).toBe('#cf3a8a')
+    expect(picked.last('chat')).toMatchObject({ sender: 'Unknown', color: defaultNameColor(unknown.id) })
   })
 
   it('turns away a socket without a name or token', async () => {

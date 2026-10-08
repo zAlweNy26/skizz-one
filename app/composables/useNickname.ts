@@ -18,6 +18,10 @@ export function randomAvatarSeed() {
   return randomUUID().slice(0, 8)
 }
 
+export function randomNameColor() {
+  return `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`
+}
+
 /** Why `name` can't be played under, as an i18n key; null when it can. */
 export function nameProblem(name: string) {
   if (!name.trim()) return 'home.nameRequired'
@@ -32,6 +36,11 @@ export function useNickname() {
 /** The DiceBear seed this browser's avatar is drawn from. */
 export function useAvatarSeed() {
   return useLocalStorage('avatar', randomAvatarSeed)
+}
+
+/** The colour this browser's name is shown in. */
+export function useNameColor() {
+  return useLocalStorage('nameColor', randomNameColor)
 }
 
 /** Rooms this tab has already confirmed a name for, so a refresh skips the join screen. */

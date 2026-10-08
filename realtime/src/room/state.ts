@@ -18,6 +18,7 @@ export interface StoredPlayer {
   id: string
   name: string
   avatar: string
+  color: string
   points: number
   guessed: boolean
   connected: boolean
@@ -235,6 +236,7 @@ export function publicState(s: RoomState, id: string): GameState {
       id: p.id,
       name: p.name,
       avatar: p.avatar,
+      color: p.color,
       points: Math.round(p.points),
       rank: ranks.get(p.id)!,
       connected: p.connected,

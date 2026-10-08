@@ -131,15 +131,15 @@ describe('useGameSocket', () => {
 
   it('collects chat lines, announcements, choices and custom words', async () => {
     const { game, receive } = await setup()
-    receive({ t: 'chat', sender: 'Bob', text: 'hi' })
-    receive({ t: 'chat', sender: 'Bob', text: 'psst', private: true })
+    receive({ t: 'chat', sender: 'Bob', color: '#1f8f95', text: 'hi' })
+    receive({ t: 'chat', sender: 'Bob', color: '#1f8f95', text: 'psst', private: true })
     receive({ t: 'log', level: 'success', key: 'guessed', params: { name: 'Bob' } })
     receive({ t: 'choices', words: ['a', 'b', 'c'], canReroll: true })
     receive({ t: 'customWords', words: ['zeppelin'] })
 
     expect(game.chat.value).toEqual([
-      { system: false, sender: 'Bob', text: 'hi', private: false },
-      { system: false, sender: 'Bob', text: 'psst', private: true },
+      { system: false, sender: 'Bob', color: '#1f8f95', text: 'hi', private: false },
+      { system: false, sender: 'Bob', color: '#1f8f95', text: 'psst', private: true },
       { system: true, level: 'success', key: 'guessed', params: { name: 'Bob' } },
     ])
     expect(game.choices.value).toEqual(['a', 'b', 'c'])

@@ -17,6 +17,7 @@ import {
 import { maskProfanity } from '#shared/utils/profanity'
 import {
   AWAY_GRACE_MS,
+  defaultNameColor,
   DRAWER_GRACE_MS,
   isLanguage,
   KICKED_CLOSE_CODE,
@@ -24,6 +25,7 @@ import {
   MAX_AVATAR_LENGTH,
   MAX_NAME_LENGTH,
   OUTDATED_CLOSE_CODE,
+  parseNameColor,
   PROTOCOL_VERSION,
   PUBLIC_ROOM_CAP,
   ROOM_FULL_CLOSE_CODE,
@@ -53,7 +55,7 @@ async function identify(room: string, url: URL) {
   const id = await playerIdFor(room, url)
   const name = maskProfanity((url.searchParams.get('name') ?? '').trim().slice(0, MAX_NAME_LENGTH).trim())
   const avatar = (url.searchParams.get('avatar') ?? '').trim().slice(0, MAX_AVATAR_LENGTH) || name
-  return id && name ? { id, name, avatar } : null
+  return id && name ? { id, name, avatar, color: parseNameColor(url.searchParams.get('color')) ?? defaultNameColor(id) } : null
 }
 
 export function closeKicked(room: Room, connection: Connection) {
@@ -69,13 +71,14 @@ export function sendCustomWords(room: Room) {
 }
 
 /** Give a newcomer a seat, or a returning player theirs back. True when they were already seated. */
-function seat(room: Room, visitor: Pick<StoredPlayer, 'id' | 'name' | 'avatar'>, url: URL) {
+function seat(room: Room, visitor: Pick<StoredPlayer, 'id' | 'name' | 'avatar' | 'color'>, url: URL) {
   const s = room.state
   const existing = s.players[visitor.id]
   if (existing) {
     existing.connected = true
     existing.name = visitor.name
     existing.avatar = visitor.avatar
+    existing.color = visitor.color
     delete existing.awaySince
   } else {
     if (s.order.length === 0) {

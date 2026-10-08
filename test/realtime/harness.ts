@@ -102,6 +102,7 @@ interface JoinOptions {
   room?: string
   token?: string
   avatar?: string
+  color?: string
   public?: boolean
   lang?: string
   origin?: string
@@ -175,12 +176,17 @@ export function createWorld(vars: { ALLOWED_ORIGINS?: string } = {}) {
     async join(name: string, options: JoinOptions = {}) {
       const room = options.room ?? ROOM
       const token = options.token ?? `token-${name}`
-      const params = new URLSearchParams({ token, name })
       const version = options.version === undefined ? String(PROTOCOL_VERSION) : options.version
-      if (version !== null) params.set('v', version)
-      if (options.avatar) params.set('avatar', options.avatar)
-      if (options.public) params.set('public', '1')
-      if (options.lang) params.set('lang', options.lang)
+      const optional = {
+        v: version,
+        avatar: options.avatar,
+        color: options.color,
+        public: options.public ? '1' : null,
+        lang: options.lang,
+      }
+      const params = new URLSearchParams({ token, name })
+      for (const [key, value] of Object.entries(optional))
+        if (value) params.set(key, value)
 
       const res = await connect(`/parties/game-room/${room}?${params}`, options.origin)
       if (!res.webSocket) throw new Error(`join failed with ${res.status}`)
