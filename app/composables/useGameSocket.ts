@@ -34,7 +34,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const socket = shallowRef<PartySocket>()
   const connected = ref(false)
   const you = ref('')
-  const state = ref<GameState | null>(null)
+  const state = shallowRef<GameState | null>(null)
   const chat = ref<ChatEntry[]>([])
   /** The room voted you out; the socket stays closed. */
   const kicked = ref(false)

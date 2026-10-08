@@ -344,10 +344,22 @@ export function useDrawingSync(
     }
   }
 
+  /** Drop drauu's undo history while keeping the drawing's nodes as they are. */
+  function resetHistory() {
+    const instance = drauuInstance.value
+    const el = instance?.el
+    if (!el) return
+    const range = document.createRange()
+    range.selectNodeContents(el)
+    const drawing = range.extractContents()
+    instance.clear()
+    el.append(drawing)
+  }
+
   watch(game.isDrawer, () => {
     endStroke()
     clearPreviews()
-    load(dump() ?? '')
+    resetHistory()
   })
 
   game.onMessage((msg) => {

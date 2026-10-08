@@ -3,7 +3,7 @@ import type { ClientMessage, ServerMessage } from '#shared/utils/protocol'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { createEventHook } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { DRAW_FLUSH_MS, DRAW_FLUSH_POINTS } from '#shared/utils/protocol'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
@@ -23,8 +23,11 @@ async function setup(drawer: boolean, mode: Brush['mode'] = 'draw') {
     committed: createEventHook<void>(),
     canceled: createEventHook<void>(),
   }
+  const clear = vi.fn(() => {
+    el.innerHTML = ''
+  })
   const drauu = {
-    drauuInstance: ref({ el, model }),
+    drauuInstance: ref({ el, model, clear }),
     brush: ref<Brush>({ mode, color: '#ef130b', size: 16 }),
     onStart: hooks.start.on,
     onChanged: hooks.changed.on,
@@ -164,5 +167,22 @@ describe('useDrawingSync for a watcher', () => {
     expect(el.innerHTML).toBe('')
     await receive({ t: 'canvas', svg: '' })
     expect(drauu.load).toHaveBeenCalledWith('')
+  })
+})
+
+describe('useDrawingSync when the drawer changes', () => {
+  it('resets drauu\'s history but keeps the drawing\'s own nodes, dropping previews', async () => {
+    const { el, drauu, isDrawer, receive } = await setup(false)
+    await receive({ t: 'commit', id: 'done', svg: '<path d="M 1,1"></path>' })
+    await receive({ t: 'strokeStart', id: 's1', brush: { mode: 'line', color: '#000000', size: 8 } })
+    await receive({ t: 'preview', id: 's1', svg: '<line x1="0" y1="0" x2="5" y2="5"></line>' })
+    const stroke = el.firstElementChild
+
+    isDrawer.value = true
+    await nextTick()
+    expect(drauu.drauuInstance.value.clear).toHaveBeenCalledOnce()
+    expect(drauu.load).not.toHaveBeenCalled()
+    expect(el.innerHTML).toBe('<path d="M 1,1"></path>')
+    expect(el.firstElementChild).toBe(stroke)
   })
 })

@@ -22,9 +22,19 @@ export function pickQuickPlayRoom(rooms: readonly PublicRoom[]) {
   return open[Math.floor(Math.random() * open.length)] ?? null
 }
 
-export type Sound
-  = | 'your-turn' | 'turn-start' | 'guessed-self' | 'guessed-other' | 'tick'
-    | 'turn-end' | 'game-over' | 'join' | 'leave'
+export const SOUNDS = [
+  'your-turn',
+  'turn-start',
+  'guessed-self',
+  'guessed-other',
+  'tick',
+  'turn-end',
+  'game-over',
+  'join',
+  'leave',
+] as const
+
+export type Sound = typeof SOUNDS[number]
 
 type Players = Map<string, GamePlayer>
 

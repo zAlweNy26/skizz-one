@@ -35,6 +35,7 @@ const placeholder = computed(() => ({
 })[channel.value])
 
 const isDesktop = useIsDesktop()
+const { locale } = useI18n()
 
 const LEVEL_CLASS: Record<LogLevel, string> = {
   success: 'text-success',
@@ -91,8 +92,8 @@ function submit() {
       ref="log" class="overflow-y-auto overscroll-contain grow min-h-0 flex flex-col gap-0.5 text-sm pe-1"
       role="log">
       <div
-        v-for="row in shown" :key="row.index" class="flex items-start gap-2 px-2 py-1 rounded-sketch"
-        :class="row.class">
+        v-for="row in shown" :key="row.index" v-memo="[row.class, locale]"
+        class="flex items-start gap-2 px-2 py-1 rounded-sketch" :class="row.class">
         <p v-if="row.entry.system" class="font-display font-semibold" :class="LEVEL_CLASS[row.entry.level]">
           {{ $t(`log.${row.entry.key}`, row.entry.params ?? {}) }}
         </p>

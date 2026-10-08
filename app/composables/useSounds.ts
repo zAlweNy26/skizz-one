@@ -25,6 +25,7 @@ export function useSounds({ onMessage, you, state, secondsLeft }: Pick<
     if (!context) {
       if (navigator.audioSession) navigator.audioSession.type = 'playback'
       context = new AudioContext()
+      for (const sound of SOUNDS) load(context, sound)
     }
     if (context.state !== 'running') context.resume().catch(() => {})
   }
