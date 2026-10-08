@@ -83,7 +83,9 @@ export default defineNuxtConfig({
     provider: 'none',
     serverBundle: false,
     fallbackToApi: false,
-    clientBundle: { scan: true },
+    clientBundle: {
+      scan: { globInclude: ['**/*.{vue,md}', 'app/**/*.ts'] },
+    },
   },
 
   content: {

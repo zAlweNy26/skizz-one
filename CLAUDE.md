@@ -234,9 +234,10 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/room/Game
     stylesheet stack, because it can't resolve Nuxt UI's `#build/ui.css` alias.
     Add new design tokens to `theme.css`, never to `lint.css`.
   - Icons are bundled at build time (`icon` in `nuxt.config.ts`); nothing is
-    fetched. Write each name as a full `i-lucide-…` literal in a `.vue` file so
-    the scan finds it: a name built at runtime or only in a `.ts` file isn't
-    bundled and renders blank. Only Lucide (`@iconify-json/lucide`) is installed.
+    fetched. Write each name as a full `i-lucide-…` literal in a `.vue`/`.md`
+    file or a `.ts` file under `app/` so the scan finds it: a name built at
+    runtime, or only written elsewhere (`shared/`, `server/`), isn't bundled
+    and renders blank. Only Lucide (`@iconify-json/lucide`) is installed.
   - Components that share a name prefix live in a folder named after it, so
     Nuxt keeps the full name: `components/room/Header.vue` is `<RoomHeader>`,
     `components/drawing/Toolbar.vue` is `<DrawingToolbar>`. Add a new `Room…`,
