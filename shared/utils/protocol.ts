@@ -1,5 +1,5 @@
 /** Bump when a change breaks clients or servers built before it; the room turns other versions away. */
-export const PROTOCOL_VERSION = 1
+export const PROTOCOL_VERSION = 2
 
 /** SVG user-space the canvas is drawn in. */
 export const CANVAS_WIDTH = 1600
