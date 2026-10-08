@@ -56,11 +56,6 @@ async function quickPlay() {
   return room ? enter(room.id) : createRoom(true)
 }
 
-const footerUi = {
-  container: 'max-w-none px-4 sm:px-4 lg:px-4 py-6 lg:py-4 lg:gap-x-6',
-  center: 'on-stage flex-col gap-2 text-center text-muted',
-}
-
 const footerLinks = computed(() => [
   { label: t('home.terms'), to: '/terms' },
   { label: t('home.changelog'), to: '/changelog' },
@@ -141,7 +136,11 @@ useSchemaOrg([
       </div>
     </div>
 
-    <UFooter :ui="footerUi">
+    <UFooter
+      :ui="{
+        container: 'max-w-none px-4 sm:px-4 lg:px-4 py-6 lg:py-4 lg:gap-x-6 lg:items-end',
+        center: 'on-stage flex-col gap-2 text-center text-muted',
+      }">
       <template #left>
         <i18n-t keypath="home.copyright" tag="p" class="font-display font-semibold text-(--on-stage)">
           <template #year>

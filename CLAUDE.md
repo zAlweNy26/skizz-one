@@ -189,6 +189,8 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/room/Game
   - `interface` for object shapes, `type` for unions and aliases. No `any`.
   - No interface for a shape used only once: let the function's inferred return
     type carry it (derive it with `ReturnType<typeof fn>` / `Pick<…>` where needed).
+  - A `:ui` object used by a single component instance goes inline in its template
+    (`:ui="{ … }"`), not in a script constant.
   - Use a VueUse composable whenever one covers the job (timers, listeners,
     storage, media queries, focus, clipboard…) instead of hand-rolling it.
   - camelCase props and events in Vue templates (`:drawerId`, `@update:modelValue`).
