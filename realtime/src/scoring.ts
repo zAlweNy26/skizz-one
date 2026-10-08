@@ -8,7 +8,7 @@ const SPEED_CURVE = 1.5
 const ORDER_BONUS = [50, 25] as const
 
 /** Share of the guessers' average, order bonuses aside, that goes to the drawer. */
-const DRAWER_CUT = 0.9
+const DRAWER_CUT = 1.5
 
 /** Exact points for a correct guess, unrounded; `rank` is 0 for the turn's first correct guess. */
 export function guessPoints(remainingMs: number, drawMs: number, rank: number) {

@@ -37,24 +37,20 @@ describe('guessPoints', () => {
 })
 
 describe('drawerShare', () => {
-  it('adds up to 90% of the average of what the guessers earned without order bonuses', () => {
+  it('adds up to 150% of the average of what the guessers earned without order bonuses', () => {
     const earned = [300, 250, 180]
     const guessers = 4
     const total = earned.reduce((sum, points, rank) => sum + drawerShare(points, rank, guessers), 0)
-    expect(total).toBeCloseTo(0.9 * (250 + 225 + 180) / guessers)
+    expect(total).toBeCloseTo(1.5 * (250 + 225 + 180) / guessers)
   })
 
-  it('pays the drawer less than the guesser\'s own speed points in a two-player room', () => {
-    const first = guessPoints(DRAW_MS / 2, DRAW_MS, 0)
-    expect(drawerShare(first, 0, 1)).toBeLessThan(first - 50)
-  })
-
-  it('never pays the drawer as much as the first guesser', () => {
+  it('pays the drawer more than the average guesser when everyone guesses', () => {
     for (let guessers = 1; guessers <= 6; guessers++) {
       const earned = Array.from({ length: guessers }, (_, rank) =>
         guessPoints(DRAW_MS * (1 - rank / guessers), DRAW_MS, rank))
       const drawer = earned.reduce((sum, points, rank) => sum + drawerShare(points, rank, guessers), 0)
-      expect(drawer).toBeLessThan(earned[0]!)
+      const average = earned.reduce((sum, points) => sum + points, 0) / guessers
+      expect(drawer).toBeGreaterThan(average)
     }
   })
 
