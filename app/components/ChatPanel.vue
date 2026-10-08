@@ -60,12 +60,13 @@ watch([() => props.entries.length, isDesktop], async () => {
   if (el) el.scrollTop = isDesktop.value ? el.scrollHeight : 0
 })
 
-function submit(event: KeyboardEvent) {
-  const input = event.target as HTMLInputElement
-  const text = input.value.trim()
+const draft = ref('')
+
+function submit() {
+  const text = draft.value.trim()
   if (!text) return
   emit('guess', text)
-  input.value = ''
+  draft.value = ''
 }
 </script>
 
@@ -74,7 +75,7 @@ function submit(event: KeyboardEvent) {
     as="aside" :strokeWidth="2.5" :radius="18" class="flex flex-col gap-3 p-3"
     :aria-label="$t('chat.title')">
     <UInput
-      class="w-full lg:order-last" size="lg"
+      v-model="draft" class="w-full lg:order-last" size="lg"
       autocomplete="off" enterkeyhint="send"
       :placeholder="$t(placeholder)"
       :color="channel === 'private' ? 'success' : 'primary'"
