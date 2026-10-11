@@ -126,10 +126,10 @@ useSchemaOrg([
               <UInput
                 v-model="code" class="w-full" :placeholder="$t('home.codePlaceholder')"
                 @keyup.enter="join()" />
-              <UButton
-                :label="$t('home.join')" icon="i-lucide-log-in"
-                :color="invitedCode ? 'secondary' : 'primary'" :variant="invitedCode ? 'solid' : 'soft'"
-                :disabled="!nameOk || !validCode" @click="join()" />
+              <UButton :ui="{ label: 'hidden sm:block' }"
+                       :label="$t('home.join')" icon="i-lucide-log-in"
+                       :color="invitedCode ? 'secondary' : 'primary'" :variant="invitedCode ? 'solid' : 'soft'"
+                       :disabled="!nameOk || !validCode" @click="join()" />
             </UFieldGroup>
           </UFormField>
         </SketchFrame>

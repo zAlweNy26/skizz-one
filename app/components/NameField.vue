@@ -15,7 +15,7 @@ const nameError = computed(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-4">
+  <div class="flex flex-col items-center gap-4 sm:flex-row">
     <div class="relative shrink-0">
       <SketchFrame shape="circle" fill="var(--color-tangerine-200)" :strokeWidth="2.5" class="p-2 rotate-3">
         <UAvatar :src="avatarUrl(avatar)" size="4xl" :alt="trimmedName" />
@@ -28,17 +28,9 @@ const nameError = computed(() => {
       </UTooltip>
     </div>
     <UFormField
-      :label="$t('home.name')" :error="nameError" size="xl" class="grow"
+      :label="$t('home.name')" :error="nameError" size="xl" class="w-full grow"
       :ui="{ label: 'font-display' }">
       <UFieldGroup size="lg" class="w-full">
-        <UInput
-          v-model="name" class="w-full" autofocus :maxlength="MAX_NAME_LENGTH"
-          @keyup.enter="emit('submit')" />
-        <UTooltip :text="$t('home.randomName')">
-          <UButton
-            color="neutral" variant="soft" icon="i-lucide-dices"
-            :aria-label="$t('home.randomName')" @click="name = randomNickname()" />
-        </UTooltip>
         <UPopover>
           <UTooltip :text="$t('home.nameColor')">
             <UButton color="neutral" variant="soft" square :aria-label="$t('home.nameColor')">
@@ -49,6 +41,14 @@ const nameError = computed(() => {
             <UColorPicker v-model="color" class="p-3" />
           </template>
         </UPopover>
+        <UInput
+          v-model="name" class="w-full" autofocus :maxlength="MAX_NAME_LENGTH"
+          @keyup.enter="emit('submit')" />
+        <UTooltip :text="$t('home.randomName')">
+          <UButton
+            color="neutral" variant="soft" icon="i-lucide-dices"
+            :aria-label="$t('home.randomName')" @click="name = randomNickname()" />
+        </UTooltip>
       </UFieldGroup>
     </UFormField>
   </div>
