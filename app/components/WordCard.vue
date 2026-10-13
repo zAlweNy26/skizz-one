@@ -22,6 +22,30 @@ const spoken = computed(() => {
   const words = props.hint.split(/\s+/).map(w => [...w].map(c => (c === '_' ? t('header.blank') : c)).join(' '))
   return `${t('header.hint')}: ${words.join(', ')}`
 })
+
+/** Smallest share of the full size a long word shrinks to before it overflows. */
+const MIN_SCALE = 0.5
+
+const root = useTemplateRef<HTMLElement>('root')
+const text = useTemplateRef<HTMLElement>('text')
+const shown = computed(() => props.word || props.hint || '—')
+const scale = ref(1)
+
+/** Shrink the word until its longest word fits on one line; text doesn't scale exactly, so it checks a few times. */
+async function fit() {
+  scale.value = 1
+  for (let pass = 0; pass < 3; pass++) {
+    await nextTick()
+    const el = text.value
+    if (!el?.scrollWidth || el.scrollWidth <= el.clientWidth || scale.value === MIN_SCALE) return
+    scale.value = Math.max(MIN_SCALE, scale.value * el.clientWidth / el.scrollWidth)
+  }
+}
+
+const { width } = useElementSize(root)
+watch([shown, width], fit, { flush: 'post' })
+useEventListener(() => document.fonts, 'loadingdone', fit)
+
 const rules = computed(() => props.state?.rules ?? NO_RULES)
 const turnKey = computed(() => `${props.state?.round ?? 0}:${props.state?.drawerId ?? ''}:${props.state?.phase}`)
 
@@ -37,14 +61,14 @@ const timerFill = computed(() => ({
 </script>
 
 <template>
-  <div class="flex items-center justify-center gap-3 lg:gap-4">
+  <div ref="root" class="flex items-center justify-center gap-3 lg:gap-4">
     <SketchFrame
       :key="turnKey" :radius="18" :strokeWidth="3"
       class="pop-in flex items-center gap-3 px-4 py-1.5 min-h-12 min-w-0 lg:px-6 lg:py-2 lg:min-h-16">
-      <p
-        class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word
-          phone-landscape:text-xl phone-landscape:tracking-widest">
-        <span aria-hidden="true">{{ word || hint || '—' }}</span>
+      <p ref="text" class="font-bouncy font-bold text-2xl min-w-0 sm:text-3xl phone-landscape:text-xl">
+        <span
+          aria-hidden="true" class="tracking-widest sm:tracking-word phone-landscape:tracking-widest"
+          :style="{ fontSize: `${scale}em` }">{{ shown }}</span>
         <span class="sr-only">{{ spoken }}</span>
       </p>
       <UTooltip v-if="lengths.length" :text="$t('header.wordLengths', lengths.length)">
