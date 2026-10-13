@@ -77,7 +77,9 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
         you.value = msg.you
         state.value = msg.state
         endsAt.value = msg.state.endsAt
-        if (msg.state.phase === 'drawing') hint.value = msg.state.hint
+        hint.value = msg.state.hint
+        word.value = null
+        choices.value = []
         break
       case 'state':
         state.value = msg.state

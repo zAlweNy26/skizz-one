@@ -129,6 +129,14 @@ describe('useGameSocket', () => {
     expect(game.chat.value.at(-1)).toEqual({ system: true, level: 'info', key: 'wordWas', params: { word: 'cat' } })
   })
 
+  it('forgets the last turn\'s word when it rejoins a later one', async () => {
+    const { game, receive } = await setup()
+    receive({ t: 'turn', drawerId: 'me', round: 1, endsAt: 9, hint: '___', word: 'cat' })
+    receive({ t: 'welcome', you: 'me', state: roomState({ phase: 'drawing', drawerId: 'bob', hint: '____' }) })
+    expect(game.word.value).toBeNull()
+    expect(game.hint.value).toBe('____')
+  })
+
   it('collects chat lines, announcements, choices and custom words', async () => {
     const { game, receive } = await setup()
     receive({ t: 'chat', sender: 'Bob', color: '#1f8f95', text: 'hi' })
