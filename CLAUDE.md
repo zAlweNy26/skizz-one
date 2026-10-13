@@ -116,8 +116,10 @@ Two Workers, one shared protocol:
   sees through accents, stretched letters and leetspeak. Chat isn't filtered.
 - **Security headers** — `nuxt-security` (`security` in `nuxt.config.ts`)
   sets an enforced CSP with a per-response nonce on the page shell, plus
-  the other security headers. Its request middleware (rate limiter, XSS
-  validator, size limiter, CORS) and COEP are off. A new third-party origin
+  the other security headers; `Permissions-Policy` allows fullscreen for the
+  page itself, which the room's fullscreen button needs. Its request
+  middleware (rate limiter, XSS validator, size limiter, CORS) and COEP are
+  off. A new third-party origin
   (script, image, font, fetch) must be added to the matching directive, or
   the browser blocks it.
 - **Observability** — both workers have Workers Logs on. Browser errors go

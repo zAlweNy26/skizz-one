@@ -48,6 +48,10 @@ async function shareGame() {
   toast.add({ title: t('share.title'), description: t('share.description'), icon: 'i-lucide-link' })
 }
 
+const { isFullscreen, isSupported: canFullscreen, toggle: toggleFullscreen } = useFullscreen()
+const fullscreenLabel = computed(() => isFullscreen.value ? t('fullscreen.exit') : t('fullscreen.enter'))
+const fullscreenIcon = computed(() => isFullscreen.value ? 'i-lucide-minimize' : 'i-lucide-maximize')
+
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
 
@@ -59,6 +63,9 @@ const menuItems = computed(() => [
       : []),
     { label: t('header.share'), icon: 'i-lucide-share-2', onSelect: shareGame },
     { label: t('qr.open'), icon: 'i-lucide-qr-code', onSelect: () => emit('openQr') },
+    ...(canFullscreen.value
+      ? [{ label: fullscreenLabel.value, icon: fullscreenIcon.value, onSelect: toggleFullscreen }]
+      : []),
     {
       label: muted.value ? t('sound.unmute') : t('sound.mute'),
       icon: muted.value ? 'i-lucide-volume-x' : 'i-lucide-volume-2',
@@ -103,6 +110,11 @@ const menuItems = computed(() => [
             class="font-mono" :label="gameId"
             :aria-label="`${$t('header.gameId', { id: gameId })}. ${$t('header.share')}`"
             @click="shareGame()" />
+        </UTooltip>
+        <UTooltip v-if="canFullscreen" :text="fullscreenLabel">
+          <UButton
+            square variant="outline" color="neutral" size="lg" :icon="fullscreenIcon"
+            :aria-label="fullscreenLabel" :aria-pressed="isFullscreen" @click="toggleFullscreen()" />
         </UTooltip>
         <UButton
           square variant="outline" color="neutral" size="lg"

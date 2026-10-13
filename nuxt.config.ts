@@ -162,6 +162,7 @@ export default defineNuxtConfig({
     headers: {
       crossOriginEmbedderPolicy: false,
       referrerPolicy: 'strict-origin-when-cross-origin',
+      permissionsPolicy: { fullscreen: ['self'] },
       strictTransportSecurity: { maxAge: 31536000, includeSubdomains: false },
       contentSecurityPolicy: {
         'default-src': ['\'self\''],
