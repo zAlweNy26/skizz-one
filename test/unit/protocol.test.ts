@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CUSTOM_WORD_WEIGHT, pickWord, pickWords, WORDS } from '#realtime/words'
+import { CUSTOM_WORD_WEIGHT, pickWords, WORDS } from '#realtime/words'
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -176,7 +176,7 @@ describe('word selection', () => {
   it('never repeats a word still in the used list', () => {
     const used: string[] = []
     for (let i = 0; i < 40; i++) {
-      const word = pickWord('en', used)
+      const word = pickWords('en', 1, used)[0]
       expect(used).not.toContain(word)
       used.push(word)
     }
@@ -191,7 +191,7 @@ describe('word selection', () => {
     const custom = ['zeppelin', 'grandma']
     const counts = new Map<string, number>()
     for (let i = 0; i < 20_000; i++) {
-      const word = pickWord('en', [], custom)
+      const word = pickWords('en', 1, [], custom)[0]
       counts.set(word, (counts.get(word) ?? 0) + 1)
     }
     const perCustom = ((counts.get('zeppelin') ?? 0) + (counts.get('grandma') ?? 0)) / 2
@@ -203,12 +203,12 @@ describe('word selection', () => {
 
   it('never repeats a used custom word', () => {
     const custom = ['zeppelin']
-    for (let i = 0; i < 200; i++) expect(pickWord('en', custom, custom)).not.toBe('zeppelin')
+    for (let i = 0; i < 200; i++) expect(pickWords('en', 1, custom, custom)[0]).not.toBe('zeppelin')
   })
 
   it('still yields a word once the list is exhausted', () => {
     const everything = pickWords('en', 500)
-    expect(pickWord('en', everything)).toBeTruthy()
+    expect(pickWords('en', 1, everything)[0]).toBeTruthy()
   })
 })
 
@@ -225,7 +225,7 @@ describe('word lists', () => {
   })
 
   it('draws only from the requested language', () => {
-    expect(WORDS.it).toContain(pickWord('it'))
+    expect(WORDS.it).toContain(pickWords('it', 1)[0])
   })
 })
 

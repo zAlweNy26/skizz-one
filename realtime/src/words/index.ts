@@ -34,7 +34,3 @@ export function pickWords(
   }
   return picked
 }
-
-export function pickWord(language: Language, used: readonly string[] = [], custom: readonly string[] = []): string {
-  return pickWords(language, 1, used, custom)[0]!
-}
