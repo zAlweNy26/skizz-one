@@ -18,11 +18,9 @@ const toast = useToast()
 
 const paused = computed(() => props.state?.paused ?? false)
 const votedPause = computed(() => props.state?.pauseVotes.includes(props.you) ?? false)
-/** Not while a dropped drawer's grace runs, which the room won't pause. */
-const canVotePause = computed(() => {
-  const s = props.state
-  return s?.phase === 'intermission' || (s?.phase === 'drawing' && (s.paused || s.endsAt !== null))
-})
+const canVotePause = computed(() => props.state?.phase === 'drawing' || props.state?.phase === 'intermission')
+/** A dropped drawer's grace is running, which the room won't pause. */
+const pauseLocked = computed(() => props.state?.phase === 'drawing' && !paused.value && props.state.endsAt === null)
 const pauseTally = computed(() => ({
   votes: props.state?.pauseVotes.length ?? 0,
   needed: votesNeeded(props.state?.players.filter(p => p.connected && !p.away).length ?? 0, paused.value),
@@ -56,7 +54,9 @@ const isDark = computed(() => colorMode.value === 'dark')
 const menuItems = computed(() => [
   [{ type: 'label' as const, label: t('header.gameId', { id: props.gameId }) }],
   [
-    ...(canVotePause.value ? [{ label: pauseLabel.value, icon: pauseIcon.value, onSelect: togglePause }] : []),
+    ...(canVotePause.value
+      ? [{ label: pauseLabel.value, icon: pauseIcon.value, disabled: pauseLocked.value, onSelect: togglePause }]
+      : []),
     { label: t('header.share'), icon: 'i-lucide-share-2', onSelect: shareGame },
     { label: t('qr.open'), icon: 'i-lucide-qr-code', onSelect: () => emit('openQr') },
     {
@@ -95,7 +95,7 @@ const menuItems = computed(() => [
           <UButton
             :icon="pauseIcon" color="neutral" variant="outline" size="lg" :active="votedPause"
             :activeColor="paused ? 'success' : 'warning'" activeVariant="solid" :label="pauseLabel"
-            @click="togglePause()" />
+            :disabled="pauseLocked" @click="togglePause()" />
         </UTooltip>
         <UTooltip :text="$t('header.share')">
           <UButton
