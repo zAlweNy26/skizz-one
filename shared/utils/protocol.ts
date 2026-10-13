@@ -47,7 +47,7 @@ export function isRoomCode(code: string) {
 /** WebSocket close code for a player voted out of the room. */
 export const KICKED_CLOSE_CODE = 4003
 
-/** WebSocket close code for a newcomer turned away from a full public room. */
+/** WebSocket close code for a newcomer turned away from a full room. */
 export const ROOM_FULL_CLOSE_CODE = 4004
 
 /** WebSocket close code for a client built for another `PROTOCOL_VERSION`. */
@@ -311,6 +311,9 @@ export interface GameState {
 /** Seats in a public room; newcomers beyond it are turned away. */
 export const PUBLIC_ROOM_CAP = 10
 
+/** Seats in a private room. */
+export const PRIVATE_ROOM_CAP = 20
+
 /** A public room as the home page lists it. */
 export interface PublicRoom {
   id: string
@@ -378,7 +381,7 @@ export type ServerMessage
     | { t: 'choices', words: string[], canReroll: boolean }
   /** Sent to a kicked player just before their socket is closed. */
     | { t: 'kicked' }
-  /** Sent to a newcomer turned away from a full public room just before their socket is closed. */
+  /** Sent to a newcomer turned away from a full room just before their socket is closed. */
     | { t: 'roomFull' }
   /** Sent to a client built for another `PROTOCOL_VERSION` just before its socket is closed. */
     | { t: 'outdated' }

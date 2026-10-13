@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PUBLIC_ROOM_CAP } from '#shared/utils/protocol'
+import { PRIVATE_ROOM_CAP, PUBLIC_ROOM_CAP } from '#shared/utils/protocol'
 
 defineProps<{ reason: 'kicked' | 'roomFull' | 'outdated' }>()
 
@@ -21,7 +21,7 @@ async function reloadApp() {
         {{ $t(`${reason}.title`) }}
       </h1>
       <p class="text-muted text-center">
-        {{ $t(`${reason}.description`, { n: PUBLIC_ROOM_CAP }) }}
+        {{ $t(`${reason}.description`, { n: PUBLIC_ROOM_CAP, private: PRIVATE_ROOM_CAP }) }}
       </p>
       <UButton
         v-if="reason === 'outdated'" size="xl" color="secondary" icon="i-lucide-refresh-cw"

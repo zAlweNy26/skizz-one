@@ -26,6 +26,7 @@ import {
   MAX_NAME_LENGTH,
   OUTDATED_CLOSE_CODE,
   parseNameColor,
+  PRIVATE_ROOM_CAP,
   PROTOCOL_VERSION,
   PUBLIC_ROOM_CAP,
   ROOM_FULL_CLOSE_CODE,
@@ -144,7 +145,8 @@ export async function connect(room: Room, connection: Connection, url: URL) {
 
   setPlayerId(connection, visitor.id)
 
-  if (s.public && !s.players[visitor.id]?.connected && seated(s).length >= PUBLIC_ROOM_CAP) {
+  const cap = s.public ? PUBLIC_ROOM_CAP : PRIVATE_ROOM_CAP
+  if (!s.players[visitor.id]?.connected && seated(s).length >= cap) {
     room.send(connection, { t: 'roomFull' })
     connection.close(ROOM_FULL_CLOSE_CODE, 'room is full')
     return

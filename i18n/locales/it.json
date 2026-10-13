@@ -219,7 +219,7 @@
   },
   "roomFull": {
     "title": "Questa stanza è piena",
-    "description": "Le stanze pubbliche ospitano fino a {n} giocatori. Prova un'altra stanza o creane una tua.",
+    "description": "Le stanze pubbliche ospitano fino a {n} giocatori, quelle private {private}. Prova un'altra stanza o creane una tua.",
     "home": "Torna alla home"
   },
   "awards": {

@@ -219,7 +219,7 @@
   },
   "roomFull": {
     "title": "This room is full",
-    "description": "Public rooms hold up to {n} players. Try another room or start your own.",
+    "description": "Public rooms hold up to {n} players, private ones {private}. Try another room or start your own.",
     "home": "Back to the home page"
   },
   "awards": {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AWAY_GRACE_MS, PUBLIC_ROOM_CAP, ROOM_FULL_CLOSE_CODE } from '#shared/utils/protocol'
+import { AWAY_GRACE_MS, PRIVATE_ROOM_CAP, PUBLIC_ROOM_CAP, ROOM_FULL_CLOSE_CODE } from '#shared/utils/protocol'
 import { createWorld, ROOM } from '#test/realtime/harness'
 
 const STALE_MS = 30 * 60_000
@@ -73,7 +73,7 @@ describe('the public room list', () => {
   })
 })
 
-describe('a full public room', () => {
+describe('a full room', () => {
   it('turns newcomers away but lets its own players back in', async () => {
     const world = createWorld()
     const seated = []
@@ -93,11 +93,11 @@ describe('a full public room', () => {
     expect(seated[0]!.state!.players).toHaveLength(PUBLIC_ROOM_CAP)
   })
 
-  it('does not cap a private room', async () => {
+  it('gives a private room more seats', async () => {
     const world = createWorld()
-    for (let i = 0; i <= PUBLIC_ROOM_CAP; i++) await world.join(`P${i}`)
+    for (let i = 0; i < PRIVATE_ROOM_CAP; i++) await world.join(`P${i}`)
     const extra = await world.join('Xan')
-    expect(extra.closed).toBeNull()
-    expect(extra.state!.players).toHaveLength(PUBLIC_ROOM_CAP + 2)
+    expect(extra.closed?.code).toBe(ROOM_FULL_CLOSE_CODE)
+    expect(extra.all('welcome')).toEqual([])
   })
 })

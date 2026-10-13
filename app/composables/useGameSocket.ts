@@ -38,7 +38,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const chat = ref<ChatEntry[]>([])
   /** The room voted you out; the socket stays closed. */
   const kicked = ref(false)
-  /** A public room with no seat left turned you away; the socket stays closed. */
+  /** A room with no seat left turned you away; the socket stays closed. */
   const full = ref(false)
   /** The room speaks a newer protocol than this build; the socket stays closed until a reload. */
   const outdated = ref(false)
