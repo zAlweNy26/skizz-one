@@ -1,6 +1,5 @@
 import { useLocalStorage, useSessionStorage } from '@vueuse/core'
 import { pascalCase } from 'scule'
-import { randomUUID } from 'uncrypto'
 import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator'
 import { isProfane } from '#shared/utils/profanity'
 import { MAX_NAME_LENGTH } from '#shared/utils/protocol'
@@ -15,7 +14,7 @@ export function randomNickname() {
 }
 
 export function randomAvatarSeed() {
-  return randomUUID().slice(0, 8)
+  return crypto.randomUUID().slice(0, 8)
 }
 
 export function randomNameColor() {

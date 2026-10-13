@@ -1,7 +1,6 @@
 import type { ClientMessage, GameState, LogKey, LogLevel, LogParams, ServerMessage } from '#shared/utils/protocol'
 import { createEventHook, useDocumentVisibility, useIntervalFn, useLocalStorage, usePreferredLanguages, useTimeoutFn } from '@vueuse/core'
 import PartySocket from 'partysocket'
-import { randomUUID } from 'uncrypto'
 import {
   KICKED_CLOSE_CODE,
   OUTDATED_CLOSE_CODE,
@@ -22,7 +21,7 @@ const WAKE_PROBE_MS = 3_000
 
 export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   /** A secret that outlives the connection; the room derives your public id from it. */
-  const token = useLocalStorage('playerToken', () => randomUUID())
+  const token = useLocalStorage('playerToken', () => crypto.randomUUID())
   const nickname = useNickname()
   const avatar = useAvatarSeed()
   const nameColor = useNameColor()

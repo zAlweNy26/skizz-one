@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { randomUUID } from 'uncrypto'
 import { useSchemaOrg } from '#imports'
 import { isRoomCode, ROOM_CODE_LENGTH } from '#shared/utils/protocol'
 
@@ -47,7 +46,7 @@ function enter(room: string, isPublic = false) {
 }
 
 function createRoom(isPublic = false) {
-  return enter(randomUUID().replaceAll('-', '').slice(0, ROOM_CODE_LENGTH), isPublic)
+  return enter(crypto.randomUUID().replaceAll('-', '').slice(0, ROOM_CODE_LENGTH), isPublic)
 }
 
 async function quickPlay() {
