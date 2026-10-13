@@ -28,7 +28,7 @@ describe('summarizeStats', () => {
     const stats = summarizeStats(rows)
     expect(stats).toMatchObject({
       games: 10,
-      rematchRate: 2 / 5,
+      rematchRate: 2 / 8,
       completedShare: 5 / 8,
       avgPlayers: 3.8,
       avgMinutes: 12,

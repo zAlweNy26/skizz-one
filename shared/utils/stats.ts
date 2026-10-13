@@ -57,7 +57,7 @@ export function summarizeStats(rows: StatsRows) {
 
   return {
     games,
-    rematchRate: ratio(rematches, completed),
+    rematchRate: ratio(rematches, finished),
     completedShare: ratio(completed, finished),
     avgPlayers: ratio(total(rows.started, 'players'), games),
     avgMinutes: ratio(total(rows.finished, 'ms', row => row.outcome === 'completed') / 60_000, completed),
