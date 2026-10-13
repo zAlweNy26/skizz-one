@@ -10,6 +10,7 @@
     "share": "Condividi il link della partita",
     "wordLengths": "Lettere della parola | Lettere di ogni parola",
     "hint": "Parola da indovinare",
+    "blank": "vuota",
     "roundShort": "{round}/{total}",
     "menu": "Menu della partita"
   },

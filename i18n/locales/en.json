@@ -10,6 +10,7 @@
     "share": "Share game link",
     "wordLengths": "Letters in the word | Letters in each word",
     "hint": "Word to guess",
+    "blank": "blank",
     "roundShort": "{round}/{total}",
     "menu": "Game menu"
   },

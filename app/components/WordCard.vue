@@ -12,6 +12,16 @@ const props = defineProps<{
 }>()
 
 const lengths = computed(() => wordLengths(props.word ?? props.hint))
+
+const { t } = useI18n()
+/** The word card as a screen reader says it: the masked hint letter by letter, blanks named. */
+const spoken = computed(() => {
+  if (props.word) return props.word
+  if (!props.hint) return t('header.hint')
+  if (!props.hint.includes('_')) return props.hint
+  const words = props.hint.split(/\s+/).map(w => [...w].map(c => (c === '_' ? t('header.blank') : c)).join(' '))
+  return `${t('header.hint')}: ${words.join(', ')}`
+})
 const rules = computed(() => props.state?.rules ?? NO_RULES)
 const turnKey = computed(() => `${props.state?.round ?? 0}:${props.state?.drawerId ?? ''}:${props.state?.phase}`)
 
@@ -35,7 +45,7 @@ const timerFill = computed(() => ({
         class="font-bouncy font-bold text-2xl tracking-widest break-words min-w-0 sm:text-3xl sm:tracking-word
           phone-landscape:text-xl phone-landscape:tracking-widest">
         <span aria-hidden="true">{{ word || hint || '—' }}</span>
-        <span class="sr-only">{{ word ?? $t('header.hint') }}</span>
+        <span class="sr-only">{{ spoken }}</span>
       </p>
       <UTooltip v-if="lengths.length" :text="$t('header.wordLengths', lengths.length)">
         <SketchFrame
