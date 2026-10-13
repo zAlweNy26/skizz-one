@@ -18,7 +18,11 @@ const toast = useToast()
 
 const paused = computed(() => props.state?.paused ?? false)
 const votedPause = computed(() => props.state?.pauseVotes.includes(props.you) ?? false)
-const canVotePause = computed(() => props.state?.phase === 'drawing' || props.state?.phase === 'intermission')
+/** Not while a dropped drawer's grace runs, which the room won't pause. */
+const canVotePause = computed(() => {
+  const s = props.state
+  return s?.phase === 'intermission' || (s?.phase === 'drawing' && (s.paused || s.endsAt !== null))
+})
 const pauseTally = computed(() => ({
   votes: props.state?.pauseVotes.length ?? 0,
   needed: votesNeeded(props.state?.players.filter(p => p.connected && !p.away).length ?? 0, paused.value),
