@@ -14,8 +14,6 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxt/content',
     '@nuxt/eslint',
-    '@nuxt/image',
-    '@nuxt/scripts',
     '@nuxt/test-utils',
     '@vueuse/nuxt',
     '@nuxtjs/i18n',
