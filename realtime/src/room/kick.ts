@@ -53,6 +53,6 @@ async function kick(room: Room, player: StoredPlayer) {
     s.pauseVotes = []
     if (s.phase === 'choosing') await startTurn(room)
     else if (s.phase === 'drawing') await endRound(room, 'drawerKicked')
-  } else if (s.phase === 'drawing')
+  } else if (s.phase === 'drawing' && !s.pause)
     await endRoundIfEveryoneGuessed(room)
 }

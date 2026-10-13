@@ -153,6 +153,23 @@ describe('pausing', () => {
     expect(alice.state!.pauseVotes).toEqual([])
   })
 
+  it('stays paused when a kick leaves only players who guessed', async () => {
+    const world = createWorld()
+    const players = await seat(world, 'Hana', 'Pia', 'Sol', 'Tom')
+    const { drawer, guessers: [pia, sol, tom], word } = await startDrawing(players)
+    await pia!.send({ t: 'guess', text: word })
+    await sol!.send({ t: 'guess', text: word })
+    for (const p of players) await p.send({ t: 'pause', want: true })
+
+    await pia!.send({ t: 'kick', target: tom!.id, want: true })
+    await sol!.send({ t: 'kick', target: tom!.id, want: true })
+    expect(drawer.state).toMatchObject({ phase: 'drawing', paused: true })
+
+    for (const p of [drawer, pia!]) await p.send({ t: 'pause', want: true })
+    expect(drawer.state!.paused).toBe(false)
+    expect(drawer.last('roundEnd')?.word).toBe(word)
+  })
+
   it('drops the vote of a player who leaves', async () => {
     const world = createWorld()
     const players = await seat(world, 'Alice', 'Bob', 'Carol')
