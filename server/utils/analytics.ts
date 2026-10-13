@@ -27,7 +27,7 @@ export async function queryStats(days: StatsPeriod) {
       FROM skizz_games WHERE blob1 = 'turn_ended' AND ${since} GROUP BY reason`),
     rows(`SELECT blob2 AS language, blob4 AS word, SUM(_sample_interval) AS turns,
         SUM(double1 * _sample_interval) AS guessers, SUM(double2 * _sample_interval) AS correct
-      FROM skizz_games WHERE blob1 = 'turn_ended' AND double1 > 0 AND ${since}
+      FROM skizz_games WHERE blob1 = 'turn_ended' AND blob4 != '' AND double1 > 0 AND ${since}
       GROUP BY language, word ORDER BY turns DESC LIMIT 500`),
   ])
   return summarizeStats({ started, finished, turns, words })

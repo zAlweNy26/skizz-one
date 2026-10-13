@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DRAW_TIME } from '#shared/utils/protocol'
 import { chooseWord, createWorld, ROOM, seat, startDrawing } from '#test/realtime/harness'
 
@@ -45,6 +45,19 @@ describe('game analytics', () => {
     for (const guesser of next.guessers) await guesser.send({ t: 'guess', text: next.word })
     expect(world.events.at(-1)!.blobs).toEqual(['turn_ended', 'en', 'guessed', next.word])
     expect(world.events.at(-1)!.doubles).toEqual([2, 2, 5_000])
+  })
+
+  it('leaves out a host\'s custom word', async () => {
+    const world = createWorld()
+    const players = await seat(world, 'Alice', 'Bob')
+    await players[0].send({ t: 'settings', settings: { customWords: ['secret one', 'secret two', 'secret three'] } })
+    vi.spyOn(Math, 'random').mockReturnValue(0.9999)
+    const { word } = await startDrawing(players)
+    vi.restoreAllMocks()
+    expect(word).toMatch(/^secret/)
+
+    await world.advance(DRAW_MS)
+    expect(world.events.at(-1)!.blobs).toEqual(['turn_ended', 'en', 'timeUp', ''])
   })
 
   it('records a completed game, then a rematch', async () => {

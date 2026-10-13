@@ -4,7 +4,7 @@ import type { AlarmKind, RoomState } from '#realtime/room/state'
 import type { TurnEnd } from '#shared/utils/stats'
 import { activeCount, drawMs, emptyStats, isActive, listed, pruneDeparted, publicState, remainingMs, seated } from '#realtime/room/state'
 import { standings } from '#realtime/scoring'
-import { pickWords } from '#realtime/words'
+import { pickWords, WORDS } from '#realtime/words'
 import { drawTurnRules, hintBudget, hintRevealAt, maskWord, NO_RULES, WORD_CHOICES } from '#shared/utils/protocol'
 
 /** Pause between the word reveal and the next turn. */
@@ -217,7 +217,7 @@ export async function endRound(room: Room, reason: TurnEnd) {
     event: 'turn_ended',
     language: s.language,
     reason,
-    word,
+    word: WORDS[s.language].includes(word) ? word : '',
     guessers: s.order.filter(id => id !== s.drawerId && s.players[id]?.connected).length,
     correct: Object.values(s.players).filter(p => p.guessed).length,
     ms: drawMs(s) - remaining,

@@ -9,8 +9,8 @@ import type { TurnEnd } from '#shared/utils/stats'
  *                    double1 players, double2 rounds, double3 draw time (s)
  * - `game_finished`: blob2 language, blob3 `completed`/`abandoned`; double1 players, double2 rounds played,
  *                    double3 length (ms)
- * - `turn_ended`:    blob2 language, blob3 how it ended, blob4 word; double1 guessers, double2 correct guesses,
- *                    double3 time drawn (ms)
+ * - `turn_ended`:    blob2 language, blob3 how it ended, blob4 word (empty for a host's custom word);
+ *                    double1 guessers, double2 correct guesses, double3 time drawn (ms)
  */
 export type GameEvent
   = | {
