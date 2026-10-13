@@ -55,6 +55,7 @@ export class GameRoom extends Server<Env> {
       const stored = await ctx.storage.get<RoomState | string>(['state', 'canvas'])
       this.#state = { ...initialState(), ...(stored.get('state') as RoomState | undefined) }
       this.#canvas = (stored.get('canvas') as string | undefined) ?? ''
+      await this.#markDroppedAway()
     })
     this.#room = this.#createRoom()
   }
@@ -82,6 +83,16 @@ export class GameRoom extends Server<Env> {
       state: { get: () => this.#state },
       canvas: { get: () => this.#canvas, set: (svg: string) => { this.#canvas = svg } },
     }) as Room
+  }
+
+  /** Mark away the seated players left with no socket, whose close a restart never delivered. */
+  async #markDroppedAway() {
+    const dropped = Object.values(this.#state.players)
+      .filter(p => p.connected && p.awaySince === undefined && !this.ctx.getWebSockets(p.id).length)
+    if (!dropped.length) return
+    for (const player of dropped) player.awaySince = Date.now()
+    await this.ctx.storage.put('state', this.#state)
+    await this.#scheduleAlarm()
   }
 
   #saveCanvas() {

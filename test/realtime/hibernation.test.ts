@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AWAY_GRACE_MS, DRAW_TIME } from '#shared/utils/protocol'
-import { createWorld, seat, startDrawing } from '#test/realtime/harness'
+import { createWorld, ROOM, seat, startDrawing } from '#test/realtime/harness'
 
 const DRAW_MS = DRAW_TIME.default * 1000
 
@@ -58,6 +58,20 @@ describe('waking from hibernation', () => {
     await world.advance(AWAY_GRACE_MS)
     expect(alice.state!.players.map(p => p.name)).toEqual(['Alice', 'Carol'])
     expect(carol.logs).toContain('disconnected')
+  })
+
+  it('frees the seat of a player whose socket a restart dropped without a close', async () => {
+    const world = createWorld()
+    const [alice, bob] = await seat(world, 'Alice', 'Bob', 'Carol')
+    const state = world.rooms.states.get(ROOM)!
+    state.sockets.splice(state.sockets.findIndex(s => s.ws === bob.socket.peer), 1)
+    bob.socket.close(1006)
+
+    world.hibernate()
+    await alice.send({ t: 'chat', text: 'anyone there?' })
+    expect(alice.last('chat')).toMatchObject({ text: 'anyone there?' })
+    await world.advance(AWAY_GRACE_MS)
+    expect(alice.state!.players.map(p => p.name)).toEqual(['Alice', 'Carol'])
   })
 
   it('remembers who was kicked', async () => {
