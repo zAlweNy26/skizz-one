@@ -106,7 +106,7 @@ useSchemaOrg([
         </header>
 
         <SketchFrame :radius="22" :strokeWidth="3" class="w-full p-6 sm:p-8 flex flex-col gap-6">
-          <NameField v-model="name" @submit="invitedCode ? enter(roomCode) : createRoom()" />
+          <NameField v-model="name" @submit="invitedCode ? join() : createRoom()" />
 
           <UButton
             v-if="!invitedCode" block size="xl" color="secondary" icon="i-lucide-sparkles"
