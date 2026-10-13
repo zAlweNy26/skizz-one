@@ -204,3 +204,18 @@ describe('awards', () => {
     expect(players[0].state!.awards).toEqual([])
   })
 })
+
+describe('the intermission', () => {
+  it('shows the word to anyone who joins during it, and only then', async () => {
+    const world = createWorld()
+    const players = await seat(world, 'Alice', 'Bob')
+    const { guessers: [bob], word } = await startDrawing(players)
+    await bob!.send({ t: 'guess', text: word })
+
+    const carol = await world.join('Carol')
+    expect(carol.state).toMatchObject({ phase: 'intermission', hint: word })
+
+    await world.advance(INTERMISSION_MS)
+    expect(carol.state).toMatchObject({ phase: 'choosing', hint: '' })
+  })
+})

@@ -45,6 +45,8 @@ export interface RoomState {
   drawerId: string | null
   endsAt: number | null
   word: string | null
+  /** The word of the turn that ended last, shown in its intermission. */
+  lastWord: string | null
   /** Words offered to the drawer while choosing. */
   choices: string[]
   /** The drawer already swapped this turn's choices. */
@@ -117,6 +119,7 @@ export function initialState(): RoomState {
     drawerId: null,
     endsAt: null,
     word: null,
+    lastWord: null,
     choices: [],
     rerolled: false,
     revealed: [],
@@ -231,7 +234,7 @@ export function publicState(s: RoomState, id: string): GameState {
     hostId: s.hostId,
     drawerId: s.drawerId,
     endsAt: s.endsAt,
-    hint: s.word ? maskWord(s.word, s.revealed) : '',
+    hint: s.word ? maskWord(s.word, s.revealed) : s.phase === 'intermission' ? s.lastWord ?? '' : '',
     players: players.map<GamePlayer>(p => ({
       id: p.id,
       name: p.name,

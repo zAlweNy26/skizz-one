@@ -283,7 +283,7 @@ export interface GameState {
   drawerId: string | null
   /** Epoch ms the current phase ends, or null when untimed. */
   endsAt: number | null
-  /** Masked word shown to guessers, e.g. `____`. */
+  /** Masked word shown to guessers, e.g. `____`; the whole word in the intermission. */
   hint: string
   players: GamePlayer[]
   paused: boolean

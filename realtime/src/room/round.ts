@@ -225,6 +225,7 @@ export async function endRound(room: Room, reason: TurnEnd) {
 
   s.phase = 'intermission'
   s.endsAt = Date.now() + INTERMISSION_MS
+  s.lastWord = word
   s.word = null
   s.revealed = []
   s.drawerId = null
