@@ -52,6 +52,9 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   const choices = ref<string[]>([])
   const canReroll = ref(false)
 
+  /** The room's clock minus this device's, in ms. */
+  const clockOffset = ref(0)
+
   const messageHook = createEventHook<ServerMessage>()
 
   const isDrawer = computed(() => Boolean(you.value) && state.value?.drawerId === you.value)
@@ -72,6 +75,8 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
   }
 
   function handle(msg: ServerMessage) {
+    if ('state' in msg && msg.state.now !== undefined) clockOffset.value = msg.state.now - Date.now()
+
     switch (msg.t) {
       case 'welcome':
         you.value = msg.you
@@ -234,6 +239,7 @@ export function useGameSocket(roomId: MaybeRefOrGetter<string>) {
     word,
     hint,
     endsAt,
+    clockOffset,
     customWords,
     choices,
     canReroll,

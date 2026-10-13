@@ -18,7 +18,7 @@ const drauu = useDrauu(sketch, {
 
 const game = useGameSocket(gameId)
 const {
-  state, chat, word, hint, endsAt, leaderboard, isDrawer, isHost, connected, you,
+  state, chat, word, hint, endsAt, clockOffset, leaderboard, isDrawer, isHost, connected, you,
   hasGuessed, paused, customWords, choices, canReroll, kicked, full, outdated,
 } = game
 
@@ -44,7 +44,7 @@ const now = useNow({ scheduler: cb => useIntervalFn(cb, 250) })
 const secondsLeft = computed(() => {
   if (paused.value) return Math.ceil((state.value?.remainingMs ?? 0) / 1000)
   if (!endsAt.value) return null
-  return Math.max(0, Math.ceil((endsAt.value - now.value.getTime()) / 1000))
+  return Math.max(0, Math.ceil((endsAt.value - now.value.getTime() - clockOffset.value) / 1000))
 })
 
 const { muted } = useSounds({ onMessage: game.onMessage, you, state, secondsLeft })

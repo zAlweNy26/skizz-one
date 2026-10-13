@@ -234,6 +234,7 @@ export function publicState(s: RoomState, id: string): GameState {
     hostId: s.hostId,
     drawerId: s.drawerId,
     endsAt: s.endsAt,
+    now: Date.now(),
     hint: s.word ? maskWord(s.word, s.revealed) : s.phase === 'intermission' ? s.lastWord ?? '' : '',
     players: players.map<GamePlayer>(p => ({
       id: p.id,

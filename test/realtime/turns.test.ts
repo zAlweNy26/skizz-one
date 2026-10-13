@@ -205,6 +205,17 @@ describe('awards', () => {
   })
 })
 
+describe('the room clock', () => {
+  it('stamps every state with the room\'s time', async () => {
+    const world = createWorld()
+    const alice = await world.join('Alice')
+    expect(alice.last('welcome')!.state.now).toBe(Date.now())
+    await world.advance(1_000)
+    await world.join('Bob')
+    expect(alice.last('state')!.state.now).toBe(Date.now())
+  })
+})
+
 describe('the intermission', () => {
   it('shows the word to anyone who joins during it, and only then', async () => {
     const world = createWorld()

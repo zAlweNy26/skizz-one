@@ -283,6 +283,8 @@ export interface GameState {
   drawerId: string | null
   /** Epoch ms the current phase ends, or null when untimed. */
   endsAt: number | null
+  /** The room's clock when this state was sent, in epoch ms; missing from rooms built before it. */
+  now?: number
   /** Masked word shown to guessers, e.g. `____`; the whole word in the intermission. */
   hint: string
   players: GamePlayer[]

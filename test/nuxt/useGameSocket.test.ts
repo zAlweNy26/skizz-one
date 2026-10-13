@@ -118,6 +118,18 @@ describe('useGameSocket', () => {
     expect(game.endsAt.value).toBe(5)
   })
 
+  it('learns how far this device\'s clock is from the room\'s', async () => {
+    const { game, receive } = await setup()
+    const sent = Date.now()
+    receive({ t: 'welcome', you: 'me', state: roomState({ now: sent + 20_000 }) })
+    expect(game.clockOffset.value).toBeGreaterThan(19_000)
+    expect(game.clockOffset.value).toBeLessThanOrEqual(20_000)
+
+    const offset = game.clockOffset.value
+    receive({ t: 'state', state: roomState() })
+    expect(game.clockOffset.value).toBe(offset)
+  })
+
   it('keeps the word for the drawer only until the turn ends', async () => {
     const { game, receive } = await setup()
     receive({ t: 'turn', drawerId: 'me', round: 1, endsAt: 9, hint: '___', word: 'cat' })
