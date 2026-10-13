@@ -143,6 +143,7 @@ describe('the worker', () => {
   it('rejects malformed room codes and unknown paths', async () => {
     const world = createWorld()
     expect((await world.request('/parties/game-room/NOT-A-CODE?token=t&name=A')).status).toBe(404)
+    expect((await world.request('/parties/lobby/other')).status).toBe(404)
     expect((await world.request('/elsewhere')).status).toBe(404)
   })
 })

@@ -13,7 +13,7 @@ export default {
       return new Response('Forbidden', { status: 403 })
 
     const [, party, room] = new URL(request.url).pathname.split('/').filter(Boolean)
-    if (party === 'game-room' && !isRoomCode(room ?? ''))
+    if ((party === 'game-room' && !isRoomCode(room ?? '')) || (party === 'lobby' && room !== 'global'))
       return new Response('Not found', { status: 404 })
 
     return (await routePartykitRequest(request, env))
