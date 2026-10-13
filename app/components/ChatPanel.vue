@@ -54,8 +54,15 @@ function rowClass(entry: ChatEntry, index: number) {
   return index % 2 ? 'bg-elevated' : ''
 }
 
+/** Latest lines rendered; older ones drop off the top. */
+const MAX_ROWS = 200
+
 const shown = computed(() => {
-  const list = props.entries.map((entry, index) => ({ entry, index, class: rowClass(entry, index) }))
+  const start = Math.max(0, props.entries.length - MAX_ROWS)
+  const list = props.entries.slice(start).map((entry, offset) => {
+    const index = start + offset
+    return { entry, index, class: rowClass(entry, index) }
+  })
   return isDesktop.value ? list : list.reverse()
 })
 
