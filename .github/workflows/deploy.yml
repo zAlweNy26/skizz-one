@@ -36,9 +36,9 @@ jobs:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
 
-      - name: Deploy the realtime worker
-        run: bun run deploy:realtime
       - name: Build the app
         run: bun run build
+      - name: Deploy the realtime worker
+        run: bun run deploy:realtime
       - name: Deploy the app
         run: bunx wrangler deploy --cwd .output
