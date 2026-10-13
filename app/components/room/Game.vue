@@ -71,8 +71,12 @@ useEventListener(sketch, 'touchmove', (event: TouchEvent) => {
 }, { passive: false })
 
 const hasDrawing = ref(false)
-watch(phase, (now) => {
-  hasDrawing.value = now === 'intermission' && Boolean(sketch.value?.childElementCount)
+function checkDrawing() {
+  hasDrawing.value = phase.value === 'intermission' && Boolean(sketch.value?.childElementCount)
+}
+watch(phase, checkDrawing)
+game.onMessage((msg) => {
+  if (msg.t === 'canvas') checkDrawing()
 })
 
 function downloadDrawing() {
