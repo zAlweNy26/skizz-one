@@ -72,6 +72,10 @@ export default defineNuxtConfig({
     zeroRuntime: true,
   },
 
+  aiReady: false,
+
+  skewProtection: false,
+
   ogImage: {
     enabled: false,
   },
