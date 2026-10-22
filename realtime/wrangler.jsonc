@@ -3,6 +3,9 @@
   "name": "skizz-realtime",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-11",
+  "routes": [
+    { "pattern": "skizz.app/parties/*", "zone_name": "skizz.app" }
+  ],
   "dev": {
     "port": 8787
   },

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "source": {
+    "name": "skizz",
+    "compatibility_date": "2026-09-11",
+    "compatibility_flags": [
+      "nodejs_compat",
+      "nodejs_als"
+    ],
+    "routes": [
+      {
+        "pattern": "skizz.app",
+        "custom_domain": true
+      }
+    ],
+    "workers_dev": false,
+    "preview_urls": false,
+    "observability": {
+      "enabled": true
+    }
+  },
+  "resolved": {
+    "name": "skizz",
+    "compatibility_date": "2026-09-11",
+    "compatibility_flags": [
+      "nodejs_compat",
+      "nodejs_als"
+    ],
+    "routes": [
+      {
+        "pattern": "skizz.app",
+        "custom_domain": true
+      }
+    ],
+    "observability": {
+      "enabled": true
+    },
+    "account_id": "28f9d81693d9f738ed980133d3e09488",
+    "workers_dev": false,
+    "preview_urls": false
+  },
+  "text": "{\n  \"name\": \"skizz\",\n  \"compatibility_date\": \"2026-09-11\",\n  \"compatibility_flags\": [\n    \"nodejs_compat\",\n    \"nodejs_als\"\n  ],\n  \"routes\": [\n    {\n      \"pattern\": \"skizz.app\",\n      \"custom_domain\": true\n    }\n  ],\n  \"observability\": {\n    \"enabled\": true\n  },\n  \"account_id\": \"28f9d81693d9f738ed980133d3e09488\",\n  \"workers_dev\": false,\n  \"preview_urls\": false\n}\n"
+}

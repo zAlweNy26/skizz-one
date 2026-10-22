@@ -30,3 +30,8 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+
+# Void
+.void
+.void-wrangler.jsonc
+server/middleware/__void-dev-trigger.ts

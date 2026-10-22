@@ -73,11 +73,12 @@ silently move and the page would talk to a stale worker.
 Two Workers, one shared protocol:
 
 - **App** (repo root, `app/`) — `ssr: false` Nuxt SPA on Nitro's
-  `cloudflare_module` preset. In production, `preset/entry.ts` replaces Nitro's
-  generated entry to forward `/parties/*` WebSocket upgrades to the realtime
-  worker via the `REALTIME` service binding (`wrangler.jsonc`). That entry is
-  wired under `$production` only; in dev the client connects straight to
-  `localhost:8787` (`runtimeConfig.public.realtimeHost`).
+  `cloudflare-module` preset, deployed with Void (`void/nitro` module and
+  `voidPlugin()` in `nuxt.config.ts`; its Worker config lives in `void.config.ts`,
+  generated as `.void-wrangler.jsonc`). It never sees `/parties/*`: in production
+  the realtime worker's `skizz.app/parties/*` route runs before the app's custom
+  domain; in dev the client connects straight to `localhost:8787`
+  (`runtimeConfig.public.realtimeHost`).
 - **Realtime** (`realtime/`, worker `skizz-realtime`) — `partyserver`, one
   `GameRoom` Durable Object per room, reached at `/parties/game-room/:roomId`
   (routing uses the kebab-cased *binding* name). Owns turns, scoring, timers
@@ -254,7 +255,7 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/room/Game
     three-column grid. Keep tap targets ≥44px (`size="lg"` or larger) and check
     changes at 390×844.
 - **fallow:** entries or class members only reached by frameworks (e.g. new
-  `partyserver` lifecycle hooks, `preset/entry.ts`) must be listed in
+  `partyserver` lifecycle hooks, `void.config.ts`) must be listed in
   `.fallowrc.json`, or they're reported as unused.
 
 ## Deploy
@@ -262,4 +263,6 @@ Client side of a room (`app/pages/room/[code].vue` → `app/components/room/Game
 Every push to `main` deploys once CI passes (`.github/workflows/deploy.yml`,
 which needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository
 secrets). By hand: deploy `skizz-realtime` first (`bun run deploy:realtime`), then the app with
-`bun run build && bunx wrangler deploy --cwd .output`.
+`bunx void deploy --platform cloudflare`, which builds it too. Commit `void.lock.json`
+when a deploy changes it. The realtime worker stays on Wrangler: Void doesn't
+support custom Durable Objects in framework mode.

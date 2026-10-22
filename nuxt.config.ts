@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'node:url'
+import { voidPlugin } from 'void'
 import { version } from './package.json'
 
 const siteTitle = 'SkizzOne – Online drawing and guessing game'
@@ -9,7 +9,6 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   modules: [
-    'nitro-cloudflare-dev',
     '@formkit/auto-animate/nuxt',
     '@nuxt/ui',
     '@nuxt/content',
@@ -69,6 +68,10 @@ export default defineNuxtConfig({
     disallow: ['/parties/'],
   },
 
+  sitemap: {
+    zeroRuntime: true,
+  },
+
   ogImage: {
     enabled: false,
   },
@@ -103,10 +106,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-09-11',
 
   nitro: {
-    preset: 'cloudflare_module',
+    preset: 'cloudflare-module',
+    modules: ['void/nitro'],
     cloudflare: {
-      deployConfig: true,
       nodeCompat: true,
+      dev: { configPath: './.void-wrangler.jsonc' },
     },
   },
 
@@ -137,17 +141,6 @@ export default defineNuxtConfig({
       headers: {
         contentSecurityPolicy: {
           'connect-src': ['\'self\'', 'ws://localhost:8787'],
-        },
-      },
-    },
-  },
-
-  $production: {
-    nitro: {
-      entry: fileURLToPath(new URL('./preset/entry.ts', import.meta.url)),
-      hooks: {
-        'prerender:config': function (config) {
-          delete config.entry
         },
       },
     },
@@ -231,6 +224,7 @@ export default defineNuxtConfig({
   },
 
   vite: {
+    plugins: [voidPlugin()],
     optimizeDeps: {
       include: [
         '@unhead/schema-org/vue',

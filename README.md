@@ -8,8 +8,8 @@ The app is **two Cloudflare Workers**:
 
 | Worker | Source | Role |
 | --- | --- | --- |
-| `skizz` | repo root | The Nuxt SPA on [skizz.app](https://skizz.app). Serves assets and forwards `/parties/*` websocket upgrades. |
-| `skizz-realtime` | `realtime/` | One `partyserver` Durable Object per game room: canvas relay, turns, scoring. |
+| `skizz` | repo root | The Nuxt SPA on [skizz.app](https://skizz.app). |
+| `skizz-realtime` | `realtime/` | One `partyserver` Durable Object per game room: canvas relay, turns, scoring. Serves `skizz.app/parties/*`. |
 
 The realtime half lives in its own Worker because **Durable Objects are the only
 way fan-out works on Cloudflare**. Nitro's `cloudflare_module` preset compiles
@@ -19,10 +19,12 @@ under `nuxi dev` (which uses the Node adapter). Nitro's own `cloudflare_durable`
 preset does not help either: it hardcodes a single global DO instance named
 `server`, and Cloudflare's guidance for realtime games is one DO *per room*.
 
-`preset/entry.ts` replaces Nitro's generated Worker entry so that a websocket
-upgrade can be handed to `skizz-realtime` over a service binding. This cannot be
-done from a Nitro server route: `localFetch` round-trips through node-mock-http,
-and a 101 response carrying a `webSocket` does not survive that.
+The page and its websockets share the `skizz.app` origin: `realtime/wrangler.jsonc`
+gives `skizz-realtime` the route `skizz.app/parties/*`, and a Worker on a route
+runs before the app's custom domain, so the app never sees those requests. The
+upgrade can't be forwarded from a Nitro server route instead: `localFetch`
+round-trips through node-mock-http, and a 101 response carrying a `webSocket`
+does not survive that.
 
 ### How the drawing streams
 
@@ -59,18 +61,12 @@ game rooms (`dev:realtime`, on :8787), since Durable Objects cannot run under
 `nuxt dev`. The page connects straight to :8787. Either can be run alone with
 `bun run dev:app` or `bun run dev:realtime`.
 
-To run both as a single multi-worker session with the service binding wired up,
-build first and then:
-
-```bash
-bun run build
-bunx wrangler dev -c .output/server/wrangler.json -c realtime/wrangler.jsonc
-```
-
 ## Deploy
 
 Every push to `main` runs CI and, once it passes, deploys both Workers
-(`.github/workflows/deploy.yml`). It needs two repository secrets:
+(`.github/workflows/deploy.yml`): `skizz-realtime` with Wrangler, then the app
+with [Void](https://void.cloud/integrations/frameworks/nuxt) (`void deploy`),
+which builds it and generates its Cloudflare config from `void.config.ts`. It needs two repository secrets:
 `CLOUDFLARE_API_TOKEN` (with permission to edit Workers) and
 `CLOUDFLARE_ACCOUNT_ID`. Deploys never overlap: while one runs, only the newest
 waiting push is kept.
@@ -86,17 +82,21 @@ bunx wrangler secret put NUXT_ANALYTICS_API_TOKEN --name skizz
 
 Secrets survive deploys. Without them, `/stats` shows its empty state.
 
-To deploy by hand, `skizz-realtime` must exist before the app's service binding
-can resolve:
+To deploy by hand, deploy `skizz-realtime` first, since it owns the
+`skizz.app/parties/*` route:
 
 ```bash
 bun run deploy:realtime
-bun run build && bunx wrangler deploy --cwd .output
+bunx void deploy --platform cloudflare
 ```
 
-Both Workers are configured entirely from their `wrangler.jsonc`: a deploy
-replaces whatever was set in the dashboard. The app's custom domain
-(`skizz.app`) is declared there too, so it stays attached.
+The app is configured entirely from `void.config.ts` and the realtime worker
+from `realtime/wrangler.jsonc`: a deploy replaces whatever was set in the
+dashboard. The app's custom domain (`skizz.app`) is declared in
+`void.config.ts`, so it stays attached. `void.lock.json` records the Worker's
+link and migration history; commit it whenever a deploy changes it. The
+realtime worker stays on Wrangler because Void doesn't support custom Durable
+Objects in framework mode.
 
 `ALLOWED_ORIGINS` in `realtime/wrangler.jsonc` is set to `https://skizz.app`.
 Browsers do not send a CORS preflight for websocket upgrades, so that variable
