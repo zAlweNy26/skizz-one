@@ -44,6 +44,11 @@ export class Lobby extends Server<Env> {
 
   /** Called by a game room: list or refresh it, or pass `null` to take it down. */
   async update(id: string, room: PublicRoom | null) {
+    const listed = this.#listings.get(id)
+    if (room && listed && JSON.stringify(room) === JSON.stringify(listed.room)) {
+      listed.updatedAt = Date.now()
+      return
+    }
     if (room) this.#listings.set(id, { room, updatedAt: Date.now() })
     else if (!this.#listings.delete(id)) return
     await this.#save()

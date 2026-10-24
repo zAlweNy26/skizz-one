@@ -59,6 +59,17 @@ describe('the public room list', () => {
     expect(lobby.rooms).toEqual([])
   })
 
+  it('stays quiet when a woken room reports an unchanged listing', async () => {
+    const world = createWorld()
+    const lobby = await world.watchLobby()
+    const hugo = await world.join('Hugo', { public: true })
+    const sent = lobby.all('rooms').length
+
+    world.hibernate()
+    await hugo.send({ t: 'settings', settings: { drawTime: 90 } })
+    expect(lobby.all('rooms')).toHaveLength(sent)
+  })
+
   it('checks a listing that has gone quiet with its room', async () => {
     const world = createWorld()
     const lobby = await world.watchLobby()
