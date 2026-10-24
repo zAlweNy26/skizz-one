@@ -117,8 +117,10 @@ export class GameRoom extends Server<Env> {
     const due = Object.values(s.players).flatMap(p => (p.awaySince === undefined ? [] : [p.awaySince + AWAY_GRACE_MS]))
     if (s.alarmKind && s.alarmAt !== null) due.push(s.alarmAt)
     if (s.emptySince !== null) due.push(s.emptySince + ROOM_RETENTION_MS)
-    if (due.length) await this.ctx.storage.setAlarm(Math.min(...due))
-    else await this.ctx.storage.deleteAlarm()
+    const at = due.length ? Math.min(...due) : null
+    if (at === await this.ctx.storage.getAlarm()) return
+    if (at === null) await this.ctx.storage.deleteAlarm()
+    else await this.ctx.storage.setAlarm(at)
   }
 
   #broadcastState() {

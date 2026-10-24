@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AWAY_GRACE_MS, DRAW_TIME, DRAWER_GRACE_MS } from '#shared/utils/protocol'
 import { createWorld, seat, startDrawing } from '#test/realtime/harness'
 
@@ -54,6 +54,22 @@ describe('a dropped player', () => {
     expect(carol.state!.hostId).toBe(carol.id)
     expect(carol.all('log').find(l => l.key === 'hostLeft')?.params).toEqual({ name: 'Alice', host: 'Carol' })
     expect(carol.last('customWords')?.words).toEqual(['zeppelin'])
+  })
+})
+
+describe('the room alarm', () => {
+  it('is only written when its time changes', async () => {
+    const world = createWorld()
+    const [, bob] = await seat(world, 'Alice', 'Bob')
+    const storage = world.storage()
+    const set = vi.spyOn(storage, 'setAlarm')
+    const del = vi.spyOn(storage, 'deleteAlarm')
+
+    await world.join('Carol')
+    expect(del).not.toHaveBeenCalled()
+    await bob!.disconnect()
+    await world.join('Dan')
+    expect(set).toHaveBeenCalledTimes(1)
   })
 })
 

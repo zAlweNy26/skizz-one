@@ -34,9 +34,11 @@ export class Lobby extends Server<Env> {
 
   async #save() {
     await this.ctx.storage.put('listings', [...this.#listings.values()])
-    const oldest = Math.min(...[...this.#listings.values()].map(l => l.updatedAt))
-    if (this.#listings.size) await this.ctx.storage.setAlarm(oldest + STALE_MS)
-    else await this.ctx.storage.deleteAlarm()
+    const at = this.#listings.size ? Math.min(...[...this.#listings.values()].map(l => l.updatedAt)) + STALE_MS : null
+    if (at !== await this.ctx.storage.getAlarm()) {
+      if (at === null) await this.ctx.storage.deleteAlarm()
+      else await this.ctx.storage.setAlarm(at)
+    }
     this.broadcast(this.#message())
   }
 
