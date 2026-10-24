@@ -15,7 +15,7 @@ import { AWAY_GRACE_MS } from '#shared/utils/protocol'
 const ROOM_RETENTION_MS = 15 * 60_000
 
 /** Canvas writes are batched this long. */
-const CANVAS_SAVE_MS = 1_000
+const CANVAS_SAVE_MS = 5_000
 
 /** Guesses and chat lines a player can send at once, then one per refill. */
 const TEXT_BURST = 5

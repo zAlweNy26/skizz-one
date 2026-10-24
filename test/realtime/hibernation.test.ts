@@ -42,7 +42,7 @@ describe('waking from hibernation', () => {
     const players = await seat(world, 'Alice', 'Bob')
     const { drawer } = await startDrawing(players)
     await drawer.send({ t: 'commit', id: 'a', svg: '<path d="M 1,1"/>' })
-    await world.advance(1_000)
+    await world.advance(5_000)
 
     world.hibernate()
     const carol = await world.join('Carol')

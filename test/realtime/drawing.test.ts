@@ -118,7 +118,7 @@ describe('the cached canvas', () => {
     await drawer.send({ t: 'canvas', svg: '<path d="M 5,5"/>' })
     expect(world.storage().data.get('canvas') ?? '').toBe('')
 
-    await world.advance(1_000)
+    await world.advance(5_000)
     expect(world.storage().data.get('canvas')).toBe('<path d="M 5,5"/>')
   })
 
