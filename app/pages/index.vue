@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { QuickPlayPick } from '#shared/utils/protocol'
 import { useSchemaOrg } from '#imports'
 import { isRoomCode, ROOM_CODE_LENGTH } from '#shared/utils/protocol'
 
 const { t } = useI18n()
-const { rooms, ready } = useLobby()
 const nickname = useNickname()
 const joinedRooms = useJoinedRooms()
 
@@ -30,7 +30,7 @@ const validCode = computed(() => isRoomCode(roomCode.value))
 const triedInvalid = ref(false)
 watch(code, () => triedInvalid.value = false)
 
-/** How long quick play waits for the public room list before creating a room. */
+/** How long quick play waits for the lobby's pick before creating a room. */
 const LOBBY_WAIT_MS = 3_000
 
 function join() {
@@ -50,9 +50,11 @@ function createRoom(isPublic = false) {
 }
 
 async function quickPlay() {
-  await until(ready).toBe(true, { timeout: LOBBY_WAIT_MS })
-  const room = pickQuickPlayRoom(rooms.value)
-  return room ? enter(room.id) : createRoom(true)
+  const host = useRuntimeConfig().public.realtimeHost as string || window.location.host
+  const { id } = await $fetch<QuickPlayPick>(`${window.location.protocol}//${host}/parties/lobby/global`, {
+    timeout: LOBBY_WAIT_MS,
+  }).catch(() => ({ id: null }))
+  return id ? enter(id) : createRoom(true)
 }
 
 const footerLinks = computed(() => [

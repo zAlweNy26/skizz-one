@@ -1,4 +1,4 @@
-import type { ClientMessage, GameState, LobbyMessage, ServerMessage } from '#shared/utils/protocol'
+import type { ClientMessage, GameState, PublicRoom, QuickPlayPick, ServerMessage } from '#shared/utils/protocol'
 import type { FakeWebSocket } from '#test/realtime/runtime'
 import { vi } from 'vitest'
 import worker, { GameRoom, Lobby } from '#realtime/index'
@@ -39,12 +39,6 @@ class Client<M extends { t: string }> {
 
   clear() {
     this.messages = []
-  }
-}
-
-class LobbyWatcher extends Client<LobbyMessage> {
-  get rooms() {
-    return this.history.at(-1)?.rooms ?? []
   }
 }
 
@@ -209,9 +203,20 @@ export function createWorld(vars: { ALLOWED_ORIGINS?: string } = {}) {
       return player
     },
 
-    async watchLobby() {
-      const res = await connect('/parties/lobby/global')
-      return new LobbyWatcher(res.webSocket!)
+    /** The room quick play would join, as the lobby picks it. */
+    async quickPlay() {
+      const res = await worker.fetch(new Request('https://skizz.app/parties/lobby/global'), env)
+      return (await res.json() as QuickPlayPick).id
+    },
+
+    /** The public rooms the lobby lists, as it stored them. */
+    listings() {
+      const stored = lobbies.states.get('global')?.storage.data.get('listings') as { room: PublicRoom }[] | undefined
+      return (stored ?? []).map(l => l.room)
+    },
+
+    lobbyStorage() {
+      return lobbies.states.get('global')!.storage
     },
 
     /** Forget the room's in-memory object, as hibernation would, keeping its storage and sockets. */

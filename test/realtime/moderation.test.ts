@@ -14,9 +14,8 @@ describe('names', () => {
 
   it('lists a public room under its masked host name', async () => {
     const world = createWorld()
-    const lobby = await world.watchLobby()
     await world.join('cazzo', { public: true })
-    expect(lobby.rooms[0]?.hostName).toBe('c****')
+    expect(world.listings()[0]?.hostName).toBe('c****')
   })
 
   it('leaves chat as written', async () => {

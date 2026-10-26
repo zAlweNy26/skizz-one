@@ -144,7 +144,7 @@ export default defineNuxtConfig({
     security: {
       headers: {
         contentSecurityPolicy: {
-          'connect-src': ['\'self\'', 'ws://localhost:8787'],
+          'connect-src': ['\'self\'', 'ws://localhost:8787', 'http://localhost:8787'],
         },
       },
     },

@@ -1,6 +1,6 @@
-import type { Connection } from 'partyserver'
-import type { LobbyMessage, PublicRoom } from '#shared/utils/protocol'
+import type { PublicRoom, QuickPlayPick } from '#shared/utils/protocol'
 import { getServerByName, Server } from 'partyserver'
+import { PUBLIC_ROOM_CAP } from '#shared/utils/protocol'
 
 /** How long a listing goes without an update before the lobby asks its room whether it is still open. */
 const STALE_MS = 30 * 60_000
@@ -10,7 +10,7 @@ interface Listing {
   updatedAt: number
 }
 
-/** The single directory of public rooms, at `/parties/lobby/global`. */
+/** The single directory of public rooms, at `/parties/lobby/global`, which quick play asks for a room. */
 export class Lobby extends Server<Env> {
   static options = { hibernate: true }
 
@@ -24,14 +24,6 @@ export class Lobby extends Server<Env> {
     })
   }
 
-  #rooms(): PublicRoom[] {
-    return [...this.#listings.values()].map(l => l.room)
-  }
-
-  #message(): string {
-    return JSON.stringify({ t: 'rooms', rooms: this.#rooms() } satisfies LobbyMessage)
-  }
-
   async #save() {
     await this.ctx.storage.put('listings', [...this.#listings.values()])
     const at = this.#listings.size ? Math.min(...[...this.#listings.values()].map(l => l.updatedAt)) + STALE_MS : null
@@ -39,7 +31,6 @@ export class Lobby extends Server<Env> {
       if (at === null) await this.ctx.storage.deleteAlarm()
       else await this.ctx.storage.setAlarm(at)
     }
-    this.broadcast(this.#message())
   }
 
   /** Called by a game room: list or refresh it, or pass `null` to take it down. */
@@ -54,8 +45,14 @@ export class Lobby extends Server<Env> {
     await this.#save()
   }
 
-  onConnect(connection: Connection) {
-    connection.send(this.#message())
+  /** Answers quick play with a random public room that has space and hasn't finished. */
+  onRequest() {
+    const open = [...this.#listings.values()]
+      .filter(l => l.room.players < PUBLIC_ROOM_CAP && l.room.phase !== 'finished')
+    const pick = open[Math.floor(Math.random() * open.length)]
+    return Response.json({ id: pick?.room.id ?? null } satisfies QuickPlayPick, {
+      headers: { 'Access-Control-Allow-Origin': '*' },
+    })
   }
 
   async onAlarm() {

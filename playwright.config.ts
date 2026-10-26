@@ -28,7 +28,9 @@ export default defineConfig<ConfigOptions>({
         runtimeConfig: { public: { realtimeHost: `localhost:${REALTIME_PORT}` } },
         security: {
           headers: {
-            contentSecurityPolicy: { 'connect-src': ['\'self\'', `ws://localhost:${REALTIME_PORT}`] },
+            contentSecurityPolicy: {
+              'connect-src': ['\'self\'', `ws://localhost:${REALTIME_PORT}`, `http://localhost:${REALTIME_PORT}`],
+            },
           },
         },
       },

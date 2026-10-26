@@ -1,5 +1,4 @@
-import type { GamePlayer, GameState, PublicRoom } from '#shared/utils/protocol'
-import { PUBLIC_ROOM_CAP } from '#shared/utils/protocol'
+import type { GamePlayer, GameState } from '#shared/utils/protocol'
 
 export function avatarUrl(seed: string) {
   return `https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(seed)}`
@@ -14,12 +13,6 @@ export function leaderId(players: readonly GamePlayer[]) {
 /** The top three of a best-first list. */
 export function podium(players: readonly GamePlayer[]) {
   return players.slice(0, 3).map(player => ({ player, rank: player.rank }))
-}
-
-/** A random room quick play can drop you into: any with space that hasn't finished. */
-export function pickQuickPlayRoom(rooms: readonly PublicRoom[]) {
-  const open = rooms.filter(r => r.players < PUBLIC_ROOM_CAP && r.phase !== 'finished')
-  return open[Math.floor(Math.random() * open.length)] ?? null
 }
 
 export const SOUNDS = [

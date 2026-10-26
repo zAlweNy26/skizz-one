@@ -328,8 +328,8 @@ export interface PublicRoom {
   totalRounds: number
 }
 
-/** What the lobby at `/parties/lobby/global` sends. */
-export interface LobbyMessage { t: 'rooms', rooms: PublicRoom[] }
+/** What the lobby at `/parties/lobby/global` answers: a random open public room, or null if there is none. */
+export interface QuickPlayPick { id: string | null }
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error'
 
